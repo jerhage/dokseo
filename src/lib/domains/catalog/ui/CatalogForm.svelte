@@ -20,7 +20,7 @@
   ] as const;
 
   let open = $state(true);
-  const adding = $derived(view.target?.kind === 'add');
+  const adding = $derived(view.dialog.kind === 'editing' && view.dialog.target.kind === 'add');
   const testing = $derived(view.connection.kind === 'testing');
 
   function requestOpen(next: boolean): void {

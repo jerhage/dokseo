@@ -9,6 +9,7 @@ import type { AddCatalogResult } from '../use-cases/add-catalog';
 import type { EditCatalogResult } from '../use-cases/edit-catalog';
 import type { RemoveCatalogResult } from '../use-cases/remove-catalog';
 import type { TestCatalogConnectionResult } from '../use-cases/test-catalog-connection';
+import { createCatalogDialog } from './catalog-dialog.svelte';
 import {
   CatalogSettingsView,
   GONE,
@@ -96,7 +97,11 @@ function setup(overrides: Partial<Answers> = {}) {
       return Promise.resolve(answers.test);
     },
   };
-  const view = new CatalogSettingsView(cases, (notice) => notices.push(notice));
+  const view = new CatalogSettingsView(
+    cases,
+    (notice) => notices.push(notice),
+    createCatalogDialog(),
+  );
   return { view, notices, calls, unlocked, tested };
 }
 
@@ -189,7 +194,7 @@ describe('CatalogSettingsView save', () => {
     fill(view, 'Mine', 'https://x.example/opds');
     await view.save();
     expect(calls).toEqual(['add', 'invalidate catalog/catalogs']);
-    expect(view.target).toBeNull();
+    expect(view.dialog).toEqual({ kind: 'closed' });
   });
 
   it('unlocks a basic catalog with the typed password', async () => {
@@ -227,7 +232,7 @@ describe('CatalogSettingsView save', () => {
     const { view, calls } = setup({ add: () => ({ kind: 'empty-title' }) });
     view.startAdd();
     await view.save();
-    expect(view.target).toEqual({ kind: 'add' });
+    expect(view.dialog.kind).toBe('editing');
     expect(view.titleError).toBe('A catalog needs a name.');
     expect(calls).toEqual(['add', 'invalidate catalog/catalogs']);
   });
@@ -251,7 +256,7 @@ describe('CatalogSettingsView save', () => {
     view.startAdd();
     await view.save();
     expect(notices).toEqual([{ tone: 'danger', title: SAVE_FAILED, message: STORAGE_BLOCKED }]);
-    expect(view.target).toEqual({ kind: 'add' });
+    expect(view.dialog).toEqual({ kind: 'editing', target: { kind: 'add' }, refusal: null });
     expect(view.saving).toBe(false);
   });
 
@@ -267,7 +272,7 @@ describe('CatalogSettingsView save', () => {
       'invalidate catalog/catalogs',
       'invalidate catalog/feed/private',
     ]);
-    expect(view.target).toBeNull();
+    expect(view.dialog).toEqual({ kind: 'closed' });
   });
 
   it('closes the form and invalidates the list when the edited catalog is gone', async () => {
@@ -275,7 +280,7 @@ describe('CatalogSettingsView save', () => {
     view.startEdit(OPEN_CATALOG);
     await view.save();
     expect(notices).toEqual([{ tone: 'warning', title: SAVE_FAILED, message: GONE }]);
-    expect(view.target).toBeNull();
+    expect(view.dialog).toEqual({ kind: 'closed' });
     expect(calls).toEqual(['edit', 'invalidate catalog/catalogs', 'invalidate catalog/feed/open']);
   });
 
@@ -284,7 +289,7 @@ describe('CatalogSettingsView save', () => {
     view.startEdit(OPEN_CATALOG);
     await view.save();
     expect(notices).toEqual([{ tone: 'warning', title: SAVE_FAILED, message: UNREADABLE }]);
-    expect(view.target).not.toBeNull();
+    expect(view.dialog.kind).toBe('editing');
   });
 
   it('clears the previous form when it opens again', async () => {
@@ -304,7 +309,7 @@ describe('CatalogSettingsView remove', () => {
   it('removes after confirmation, drops the feeds and covers read from it and invalidates the list', async () => {
     const { view, calls } = setup();
     view.askRemove(OPEN_CATALOG);
-    expect(view.removing).toEqual({ id: OPEN, name: 'Home' });
+    expect(view.dialog).toEqual({ kind: 'removing', removal: { id: OPEN, name: 'Home' } });
     await view.confirmRemove();
     expect(calls).toEqual([
       'remove',
@@ -313,7 +318,7 @@ describe('CatalogSettingsView remove', () => {
       'invalidate catalog/catalogs',
       'invalidate catalog/origins',
     ]);
-    expect(view.removing).toBeNull();
+    expect(view.dialog).toEqual({ kind: 'closed' });
   });
 
   it('removes nothing when dismissed', async () => {
@@ -342,7 +347,7 @@ describe('CatalogSettingsView remove', () => {
     view.askRemove(OPEN_CATALOG);
     await view.confirmRemove();
     expect(notices).toEqual([{ tone: 'danger', title: REMOVE_FAILED, message: STORAGE_BLOCKED }]);
-    expect(view.removing).not.toBeNull();
+    expect(view.dialog.kind).toBe('removing');
     expect(view.removeBusy).toBe(false);
   });
 
@@ -350,6 +355,6 @@ describe('CatalogSettingsView remove', () => {
     const { view } = setup({ remove: { kind: 'not-found', id: OPEN } });
     view.askRemove(OPEN_CATALOG);
     await view.confirmRemove();
-    expect(view.removing).toBeNull();
+    expect(view.dialog).toEqual({ kind: 'closed' });
   });
 });

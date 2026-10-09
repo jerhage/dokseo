@@ -1,7 +1,8 @@
 <script lang="ts">
   import Button from '$lib/ui/components/Button.svelte';
   import Modal from '$lib/ui/components/Modal.svelte';
-  import type { CatalogSettingsView, RemovalTarget } from './catalog-settings.svelte';
+  import type { RemovalTarget } from './catalog-dialog.svelte';
+  import type { CatalogSettingsView } from './catalog-settings.svelte';
 
   type Props = { readonly view: CatalogSettingsView; readonly removal: RemovalTarget };
 

@@ -7,6 +7,7 @@
   import type { Notify } from '$lib/shared/notice';
   import type { CatalogReads } from '../queries/catalog-queries';
   import { catalogListOf } from './catalog-list';
+  import { createCatalogDialog } from './catalog-dialog.svelte';
   import { CatalogSettingsView } from './catalog-settings.svelte';
   import type { CatalogSettingsUseCases } from './catalog-settings.svelte';
   import { catalogDescription } from './catalog-texts';
@@ -30,6 +31,7 @@
       testCatalogConnection: (draft, password) => catalog.testCatalogConnection(draft, password),
     },
     (notice) => notify(notice),
+    createCatalogDialog(),
   );
 </script>
 
@@ -98,10 +100,9 @@
     {/snippet}
   </CatalogsData>
 
-  {#if view.target !== null}
+  {#if view.dialog.kind === 'editing'}
     <CatalogForm {view} />
-  {/if}
-  {#if view.removing !== null}
-    <RemoveCatalog {view} removal={view.removing} />
+  {:else if view.dialog.kind === 'removing'}
+    <RemoveCatalog {view} removal={view.dialog.removal} />
   {/if}
 </div>

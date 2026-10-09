@@ -20,6 +20,7 @@ import type { EditCatalogResult } from '../use-cases/edit-catalog';
 import type { RemoveCatalogResult } from '../use-cases/remove-catalog';
 import type { TestCatalogConnectionResult } from '../use-cases/test-catalog-connection';
 import type { UnlockCatalogResult } from '../use-cases/unlock-catalog';
+import type { CatalogDialog, FormTarget, createCatalogDialog } from './catalog-dialog.svelte';
 import { connectionOutcome, fieldRefusal } from './catalog-texts';
 import type { ConnectionOutcome, FormField } from './catalog-texts';
 
@@ -29,18 +30,12 @@ type CatalogSettingsUseCases = CatalogWrites & {
 
 type AuthChoice = 'none' | 'basic';
 
-type FormTarget = { readonly kind: 'add' } | { readonly kind: 'edit'; readonly id: CatalogId };
-
 type ConnectionTest =
   | { readonly kind: 'idle' }
   | { readonly kind: 'testing' }
   | { readonly kind: 'done'; readonly outcome: ConnectionOutcome };
 
-type RemovalTarget = { readonly id: CatalogId; readonly name: string };
-
 type SavedResult = AddCatalogResult | EditCatalogResult;
-
-type ShownRefusal = { readonly field: FormField; readonly text: string };
 
 const IDLE: ConnectionTest = { kind: 'idle' };
 
@@ -57,19 +52,17 @@ const GONE = 'That catalog no longer exists.';
 const UNREADABLE = 'That catalog could not be read, so it cannot be changed. Remove it instead.';
 
 class CatalogSettingsView {
-  target = $state.raw<FormTarget | null>(null);
   title = $state('');
   rootUrl = $state('');
   authChoice = $state<AuthChoice>('none');
   username = $state('');
   password = $state('');
-  refusal = $state.raw<ShownRefusal | null>(null);
   connection = $state.raw<ConnectionTest>(IDLE);
   saving = $state(false);
-  removing = $state.raw<RemovalTarget | null>(null);
   removeBusy = $state(false);
 
   #cases: CatalogSettingsUseCases;
+  #dialog: ReturnType<typeof createCatalogDialog>;
   #notify: Notify;
   #generation = 0;
   #adding: WriteQuery<AddCatalogResult, CatalogDraft>;
@@ -77,9 +70,14 @@ class CatalogSettingsView {
   #removal: WriteQuery<RemoveCatalogResult, CatalogId>;
   #testing: WriteQuery<TestCatalogConnectionResult, ConnectionRequest>;
 
-  constructor(cases: CatalogSettingsUseCases, notify: Notify) {
+  constructor(
+    cases: CatalogSettingsUseCases,
+    notify: Notify,
+    dialog: ReturnType<typeof createCatalogDialog>,
+  ) {
     const client = useQueryClient();
     this.#cases = cases;
+    this.#dialog = dialog;
     this.#notify = notify;
     this.#adding = writeQuery(() => ({
       ...addCatalogMutation(cases),
@@ -119,6 +117,10 @@ class CatalogSettingsView {
     return this.#errorAt('username');
   }
 
+  get dialog(): CatalogDialog {
+    return this.#dialog.dialog;
+  }
+
   startAdd(): void {
     this.#open({ kind: 'add' }, '', '', 'none', '');
   }
@@ -136,9 +138,8 @@ class CatalogSettingsView {
 
   closeForm(): void {
     this.#generation++;
-    this.target = null;
+    this.#dialog.close();
     this.password = '';
-    this.refusal = null;
     this.connection = IDLE;
   }
 
@@ -151,7 +152,7 @@ class CatalogSettingsView {
     if (this.connection.kind === 'testing' || this.saving) return;
 
     const generation = ++this.#generation;
-    this.refusal = null;
+    this.#dialog.refuse(null);
     this.connection = { kind: 'testing' };
     const draft = this.#draft();
     const result = await this.#testing.run({
@@ -169,16 +170,17 @@ class CatalogSettingsView {
       result.kind === 'invalid-url' ||
       result.kind === 'missing-username'
     ) {
-      this.refusal = fieldRefusal(result);
+      this.#dialog.refuse(fieldRefusal(result));
     }
   }
 
   async save(): Promise<void> {
-    const target = this.target;
-    if (target === null || this.saving) return;
+    const { dialog } = this.#dialog;
+    if (dialog.kind !== 'editing' || this.saving) return;
+    const { target } = dialog;
 
     this.saving = true;
-    this.refusal = null;
+    this.#dialog.refuse(null);
     try {
       const draft = this.#draft();
       const result =
@@ -192,29 +194,29 @@ class CatalogSettingsView {
   }
 
   askRemove(catalog: Catalog): void {
-    this.removing = { id: catalog.id, name: catalog.title };
+    this.#dialog.remove({ id: catalog.id, name: catalog.title });
   }
 
   askRemoveUnreadable(id: CatalogId): void {
-    this.removing = { id, name: UNREADABLE_NAME };
+    this.#dialog.remove({ id, name: UNREADABLE_NAME });
   }
 
   dismissRemove(): void {
-    this.removing = null;
+    if (this.#dialog.dialog.kind === 'removing') this.#dialog.close();
   }
 
   async confirmRemove(): Promise<void> {
-    const removing = this.removing;
-    if (removing === null || this.removeBusy) return;
+    const { dialog } = this.#dialog;
+    if (dialog.kind !== 'removing' || this.removeBusy) return;
 
     this.removeBusy = true;
     try {
-      const result = await this.#removal.run(removing.id);
+      const result = await this.#removal.run(dialog.removal.id);
       if (result.kind === 'storage-unavailable') {
         this.#notify({ tone: 'danger', title: REMOVE_FAILED, message: STORAGE_BLOCKED });
         return;
       }
-      this.removing = null;
+      this.dismissRemove();
     } finally {
       this.removeBusy = false;
     }
@@ -250,7 +252,7 @@ class CatalogSettingsView {
   }
 
   #refuse(refusal: DraftRefusal): void {
-    this.refusal = fieldRefusal(refusal);
+    this.#dialog.refuse(fieldRefusal(refusal));
   }
 
   #open(
@@ -261,13 +263,12 @@ class CatalogSettingsView {
     username: string,
   ): void {
     this.#generation++;
-    this.target = target;
+    this.#dialog.edit(target);
     this.title = title;
     this.rootUrl = rootUrl;
     this.authChoice = authChoice;
     this.username = username;
     this.password = '';
-    this.refusal = null;
     this.connection = IDLE;
   }
 
@@ -289,10 +290,12 @@ class CatalogSettingsView {
   }
 
   #errorAt(field: FormField): string | undefined {
-    const refusal = this.refusal;
+    const { dialog } = this.#dialog;
+    if (dialog.kind !== 'editing') return undefined;
+    const { refusal } = dialog;
     return refusal !== null && refusal.field === field ? refusal.text : undefined;
   }
 }
 
 export { CatalogSettingsView, GONE, REMOVE_FAILED, SAVE_FAILED, STORAGE_BLOCKED, UNREADABLE };
-export type { AuthChoice, CatalogSettingsUseCases, ConnectionTest, FormTarget, RemovalTarget };
+export type { AuthChoice, CatalogSettingsUseCases, ConnectionTest };
