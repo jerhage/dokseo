@@ -7,7 +7,6 @@
   import { getToaster } from '$lib/ui/components/toast-context';
   import { ACTION_NOTICE_MS } from '$lib/shared/notice';
   import { toastNotify } from '$lib/shared/notice-toast';
-  import { bookId } from '$lib/shared/ids';
   import type { BookId } from '$lib/shared/ids';
   import type { RemotePublication } from '../domain/remote-publication';
   import type { CatalogReads } from '../queries/catalog-queries';
@@ -19,7 +18,7 @@
   import { refreshOrigins } from './catalog-refresh';
   import { createFeedReadings } from './feed-readings.svelte';
   import { createFeedSearch } from './feed-search.svelte';
-  import type { DeviceDetailsLink } from './device-details';
+  import type { DeviceDetailsLink } from './device-details.svelte';
   import type { DeviceDetailsView, LibraryExtras, LibraryNeeds } from './library-extras';
   import { DEVICE_TAB, effectiveTab } from './library-tabs';
   import { linkReaderFor, readFirstPage } from './link-resolution';
@@ -101,14 +100,10 @@
   onMount(() => deviceDetails.connect(navigation));
 
   function followHistory(): void {
+    const detailsOpen = navigation.detailsOf(DEVICE_TAB) !== null;
     navigation.observe(page.state.library);
+    if (detailsOpen && navigation.detailsOf(DEVICE_TAB) === null) details.hide();
   }
-
-  $effect(() => {
-    const shown = navigation.detailsOf(DEVICE_TAB);
-    if (shown === null) details.hide();
-    else details.show(bookId(shown));
-  });
 
   afterNavigate(() => navigation.arrive(page.state.library));
 

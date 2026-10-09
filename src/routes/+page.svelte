@@ -4,7 +4,7 @@
   import { page } from '$app/state';
   import { getToaster } from '$lib/ui/components/toast-context';
   import { useContainer } from '$lib/context';
-  import { createDeviceDetails } from '$lib/domains/catalog/ui/device-details';
+  import { createDeviceDetails } from '$lib/domains/catalog/ui/device-details.svelte';
   import LibraryWithCatalogs from '$lib/domains/catalog/ui/LibraryWithCatalogs.svelte';
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
   import { CATALOG_NEEDS } from '$lib/domains/library/ui/catalog-needs';

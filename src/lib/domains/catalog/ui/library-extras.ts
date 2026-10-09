@@ -15,7 +15,6 @@ type LibraryNeeds = {
 };
 
 type DeviceDetailsView = {
-  readonly show: (id: BookId) => void;
   readonly hide: () => void;
 };
 

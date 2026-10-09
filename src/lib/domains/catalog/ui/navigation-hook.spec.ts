@@ -572,6 +572,17 @@ describe('createNavigation details', () => {
     expect(browser.calls.at(-1)).toBe('back');
   });
 
+  it('closes the details at once, before the browser answers', () => {
+    const { browser, navigation } = setup();
+    navigation.select(HOME);
+    navigation.openDetails('book-1');
+    browser.deliver = () => undefined;
+
+    navigation.closeDetails();
+
+    expect(navigation.detailsOf(HOME)).toBeNull();
+  });
+
   it('closes the details when the reader goes back by the browser', () => {
     const { browser, navigation } = setup();
     navigation.select(HOME);

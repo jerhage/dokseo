@@ -220,7 +220,14 @@ function createNavigation(
       pushTo(pushedDetails(session.navigation, entryId, newId));
     },
     closeDetails(): void {
-      if (session.navigation.current.kind === 'details') port.back();
+      if (session.navigation.current.kind !== 'details') return;
+      const { before } = session.navigation;
+      const previous = before.at(-1);
+      if (previous !== undefined) {
+        const found = moved(session.navigation, previous.id);
+        if (found !== null) keep(found);
+      }
+      port.back();
     },
     identify,
     resolveFirstPage,
