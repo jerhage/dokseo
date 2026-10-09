@@ -20,9 +20,14 @@
   import LessonScrim from '$lib/shared/LessonScrim.svelte';
   import PageBar from '$lib/shared/PageBar.svelte';
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
-  import { FOCUSED_OR_OPEN, ReaderFrameView } from '$lib/shared/reader-frame.svelte';
+  import { isNarrow } from '$lib/shared/panel-dock';
+  import {
+    FOCUSED_OR_OPEN,
+    createBarsToggle,
+    createPanelDock,
+  } from '$lib/shared/reader-frame.svelte';
   import SwipeLine from '$lib/shared/SwipeLine.svelte';
-  import { TouchGuide } from '$lib/shared/touch-guide.svelte';
+  import { createTouchGuide } from '$lib/shared/touch-guide.svelte';
   import { chooseTouchTurns, touchTurns } from '$lib/shared/chosen-touch-turns.svelte';
   import { chooseEdgeClicksTurn } from '$lib/shared/edge-clicks.svelte';
   import { shownTurnSettings } from '$lib/shared/turn-settings';
@@ -113,7 +118,7 @@
     selection: (chapter) => shownSelection(chapter.doc),
     origin: (chapter) => frameOrigin(chapter.doc),
   });
-  const touchGuide = new TouchGuide(() => flowGuideKind(view.navigation.paging));
+  const touchGuide = createTouchGuide(() => flowGuideKind(view.navigation.paging));
   const chapters = new Set<Document>();
   const coarse = window.matchMedia('(pointer: coarse)').matches;
 
@@ -128,8 +133,17 @@
   const turning = $derived(view.navigation.direction);
   const marks = $derived(tickOffsets(view.navigation.ticks, turning));
   const passages = $derived(askedPassages(anchors));
-  const readerFrame = new ReaderFrameView(FOCUSED_OR_OPEN, () => dialogOpen);
-  const narrow = $derived(readerFrame.narrow);
+  let bodyWidth = $state(0);
+  let compactWidth = $state(0);
+  let topBar = $state<HTMLElement | null>();
+  let bottomBar = $state<HTMLElement | null>();
+  const bars = createBarsToggle(
+    () => [topBar, bottomBar],
+    FOCUSED_OR_OPEN,
+    () => dialogOpen,
+  );
+  const dock = createPanelDock();
+  const narrow = $derived(isNarrow(bodyWidth, compactWidth));
   const turns = $derived(
     turnOrder(turning).map((turn, slot) => ({
       icon: ICONS[slot] ?? ChevronRight,
@@ -139,7 +153,7 @@
     })),
   );
 
-  const awake = $derived(readerFrame.barsShown);
+  const awake = $derived(bars.shown);
 
   const input = $derived(flowInput(lastPointerType, coarse));
   const guideOffered = $derived(offersFlowGuide({ open: reading, input }));
@@ -217,7 +231,7 @@
       .with({ kind: 'nothing' }, () => undefined)
       .with({ kind: 'turn' }, () => undefined)
       .with({ kind: 'chrome' }, () => {
-        readerFrame.toggleBars(document.activeElement, stage);
+        bars.toggle(document.activeElement, stage);
       })
       .exhaustive();
   }
@@ -295,7 +309,7 @@
     for (const doc of chapters) forgetSelection(doc);
     if (passage === null) return;
 
-    if (panel !== undefined) readerFrame.panelAfterCapture();
+    if (panel !== undefined) dock.afterCapture(narrow);
     onLift?.(passage);
   }
 
@@ -374,8 +388,13 @@
 <svelte:window onkeydown={onkey} />
 
 <ReaderFrame
-  frame={readerFrame}
+  {dock}
   shown={awake}
+  onfocuschange={bars.refresh}
+  bind:bodyWidth
+  bind:compactWidth
+  bind:topBar
+  bind:bottomBar
   class="flow-viewer"
   pageClass="layout-overlay-bare"
   {panel}

@@ -13,7 +13,7 @@
   import LessonScrim from '$lib/shared/LessonScrim.svelte';
   import type { PagePicture } from '$lib/shared/page-source';
   import SwipeLine from '$lib/shared/SwipeLine.svelte';
-  import { TouchGuide } from '$lib/shared/touch-guide.svelte';
+  import { createTouchGuide } from '$lib/shared/touch-guide.svelte';
   import type { ReadingPosition } from '../domain/reading-position';
   import {
     relayoutFor,
@@ -126,7 +126,7 @@
     chromeShown,
   }));
 
-  const touchGuide = new TouchGuide(() => STRIP_GUIDE_KIND);
+  const touchGuide = createTouchGuide(() => STRIP_GUIDE_KIND);
   touchGuide.open();
   const guideShown = $derived(touchGuide.shownWhen(offersTouchGuide(pointing)));
 

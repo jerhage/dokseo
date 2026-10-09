@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
-  import { ReaderFrameView } from '$lib/shared/reader-frame.svelte';
+  import { createPanelDock } from '$lib/shared/reader-frame.svelte';
   import { readQuery } from '$lib/shared/read-query.svelte';
   import type { ReadingSettings } from '../domain/reading-settings';
   import { readingSettingsQuery } from '../queries/flowing-queries';
@@ -20,15 +20,15 @@
 
   const stored = readQuery(() => readingSettingsQuery(flowing));
   const opening = $derived(openingSettings(stored.state));
-  const frame = new ReaderFrameView();
+  const dock = createPanelDock();
 </script>
 
 {#if opening.kind === 'read'}
   {@render children(opening.settings)}
 {:else}
   <ReaderFrame
-    {frame}
-    shown={frame.barsShown}
+    {dock}
+    shown={false}
     class="flow-viewer"
     pageClass="layout-overlay-bare"
     {panel}

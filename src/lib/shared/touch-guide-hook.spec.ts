@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GuideKind } from './guide-kind';
-import { TouchGuide } from './touch-guide.svelte';
+import { createTouchGuide } from './touch-guide.svelte';
 import type { SeenGuides } from './touch-guide.svelte';
 
 function seenGuides(...kinds: GuideKind[]): SeenGuides & { readonly kinds: GuideKind[] } {
@@ -13,9 +13,9 @@ function seenGuides(...kinds: GuideKind[]): SeenGuides & { readonly kinds: Guide
   };
 }
 
-describe('TouchGuide', () => {
+describe('createTouchGuide', () => {
   it('makes the guide due when the surface opens on a kind never dismissed', () => {
-    const guide = new TouchGuide(() => 'tap-zones', seenGuides());
+    const guide = createTouchGuide(() => 'tap-zones', seenGuides());
 
     guide.open();
 
@@ -23,7 +23,7 @@ describe('TouchGuide', () => {
   });
 
   it('keeps the guide back when the surface opens on a kind already dismissed', () => {
-    const guide = new TouchGuide(() => 'tap-zones', seenGuides('tap-zones'));
+    const guide = createTouchGuide(() => 'tap-zones', seenGuides('tap-zones'));
 
     guide.open();
 
@@ -31,7 +31,7 @@ describe('TouchGuide', () => {
   });
 
   it('makes a seen guide due again when it is recalled', () => {
-    const guide = new TouchGuide(() => 'strip-scroll', seenGuides('strip-scroll'));
+    const guide = createTouchGuide(() => 'strip-scroll', seenGuides('strip-scroll'));
 
     guide.open();
     guide.recall();
@@ -42,7 +42,7 @@ describe('TouchGuide', () => {
   it('marks the kind shown at the moment of dismissal as seen', () => {
     let kind: GuideKind = 'swipe-left';
     const seen = seenGuides();
-    const guide = new TouchGuide(() => kind, seen);
+    const guide = createTouchGuide(() => kind, seen);
 
     guide.open();
     kind = 'swipe-right';
@@ -54,7 +54,7 @@ describe('TouchGuide', () => {
 
   it('marks nothing seen when the surface closes', () => {
     const seen = seenGuides();
-    const guide = new TouchGuide(() => 'vertical-pages', seen);
+    const guide = createTouchGuide(() => 'vertical-pages', seen);
 
     guide.open();
     guide.close();
@@ -64,7 +64,7 @@ describe('TouchGuide', () => {
   });
 
   it('shows the guide only where it is offered and while it is due', () => {
-    const guide = new TouchGuide(() => 'tap-zones', seenGuides());
+    const guide = createTouchGuide(() => 'tap-zones', seenGuides());
 
     expect(guide.due).toBe(false);
     expect(guide.shownWhen(true)).toBe(false);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ChromeFocus } from './chrome-focus.svelte';
+import { createChromeFocus } from './chrome-focus.svelte';
 import type { ChromeBar } from './reader-chrome';
 
 const PILL = {} as Element;
@@ -11,7 +11,7 @@ function bar(held: readonly Element[]): ChromeBar {
 }
 
 class Harness {
-  readonly focus: ChromeFocus;
+  readonly focus: ReturnType<typeof createChromeFocus>;
 
   #queued: (() => void)[] = [];
   #bars: readonly (ChromeBar | undefined)[] = [bar([PILL])];
@@ -19,7 +19,7 @@ class Harness {
   #reads = 0;
 
   constructor() {
-    this.focus = new ChromeFocus(
+    this.focus = createChromeFocus(
       () => this.#bars,
       () => {
         this.#reads += 1;
@@ -47,7 +47,7 @@ class Harness {
   }
 }
 
-describe('ChromeFocus', () => {
+describe('createChromeFocus', () => {
   it('reports nothing held and reads no focus until the deferred turn runs', () => {
     const held = new Harness();
     held.looking(PILL);
@@ -106,7 +106,7 @@ describe('ChromeFocus', () => {
   });
 
   it('waits for a microtask when nothing else says when to look', async () => {
-    const focus = new ChromeFocus(
+    const focus = createChromeFocus(
       () => [bar([PILL])],
       () => [PILL],
     );

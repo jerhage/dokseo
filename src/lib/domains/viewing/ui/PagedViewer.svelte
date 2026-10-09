@@ -19,7 +19,7 @@
   import { SIDE_ZONE_SHARE, swipeMayStart } from '$lib/shared/page-turn';
   import type { FrameSpan, TouchTurns } from '$lib/shared/page-turn';
   import SwipeLine from '$lib/shared/SwipeLine.svelte';
-  import { TouchGuide } from '$lib/shared/touch-guide.svelte';
+  import { createTouchGuide } from '$lib/shared/touch-guide.svelte';
   import type { PageGroup } from '../domain/page-pairing';
   import type { Point } from '../domain/selection';
   import type { ViewportFit } from '../domain/viewport';
@@ -121,7 +121,7 @@
   }));
 
   const guide = $derived(pagedGuide(turns, direction));
-  const touchGuide = new TouchGuide(() => guide.kind);
+  const touchGuide = createTouchGuide(() => guide.kind);
   touchGuide.open();
   const guideShown = $derived(touchGuide.shownWhen(offersTouchGuide(pointing)));
 

@@ -9,33 +9,25 @@ type Defer = (read: () => void) => void;
 
 const NEXT_MICROTASK: Defer = (read) => queueMicrotask(read);
 
-class ChromeFocus {
-  #bars: ChromeBars;
-  #focused: FocusedNodes;
-  #defer: Defer;
-  #held = $state(false);
-  #due = false;
+function createChromeFocus(bars: ChromeBars, focused: FocusedNodes, defer: Defer = NEXT_MICROTASK) {
+  let held = $state(false);
+  let due = false;
 
-  constructor(bars: ChromeBars, focused: FocusedNodes, defer: Defer = NEXT_MICROTASK) {
-    this.#bars = bars;
-    this.#focused = focused;
-    this.#defer = defer;
-  }
+  return {
+    get held(): boolean {
+      return held;
+    },
+    refresh(): void {
+      if (due) return;
+      due = true;
 
-  get held(): boolean {
-    return this.#held;
-  }
-
-  refresh(): void {
-    if (this.#due) return;
-    this.#due = true;
-
-    this.#defer(() => {
-      this.#due = false;
-      this.#held = chromeHolds(this.#bars(), this.#focused());
-    });
-  }
+      defer(() => {
+        due = false;
+        held = chromeHolds(bars(), focused());
+      });
+    },
+  };
 }
 
-export { ChromeFocus };
+export { createChromeFocus };
 export type { ChromeBars, Defer, FocusedNodes };

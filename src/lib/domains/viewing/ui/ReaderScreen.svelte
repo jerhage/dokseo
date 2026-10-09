@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import type { Component, Snippet } from 'svelte';
   import { match } from 'ts-pattern';
   import Alert from '$lib/ui/components/Alert.svelte';
@@ -27,8 +27,10 @@
   import PageBar from '$lib/shared/PageBar.svelte';
   import { shownTurnSettings } from '$lib/shared/turn-settings';
   import type { ShownTurnSettings } from '$lib/shared/turn-settings';
+  import { isNarrow } from '$lib/shared/panel-dock';
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
-  import { FOCUSED_OR_OPEN, NOTHING_HOLDS, ReaderFrameView } from '$lib/shared/reader-frame.svelte';
+  import { createBarsToggle, createPanelDock } from '$lib/shared/reader-frame.svelte';
+  import { reportedScreen } from '$lib/shared/reader-frame-rules';
   import { dragOrigin, NOTE_MODE_LABEL, SELECT_MODE_LABELS } from './drag-mode';
   import { handlesOwnKeys } from './keyboard';
   import { moveOrder } from './page-moves';
@@ -99,13 +101,22 @@
   let settingsOpen = $state(false);
   let turnSettings = $state.raw<ShownTurnSettings>(presentTurnSettings());
 
-  const readerFrame = new ReaderFrameView(FOCUSED_OR_OPEN, NOTHING_HOLDS, (screen) =>
-    view.grouping.fitScreen(screen),
-  );
+  let bodyWidth = $state(0);
+  let compactWidth = $state(0);
+  let topBar = $state<HTMLElement | null>();
+  let bottomBar = $state<HTMLElement | null>();
 
-  const shown = $derived(readerFrame.barsShown);
+  const bars = createBarsToggle(() => [topBar, bottomBar]);
+  const dock = createPanelDock();
+
+  const shown = $derived(bars.shown);
   const makes = $derived(dragOrigin(noting));
-  const narrow = $derived(readerFrame.narrow);
+  const narrow = $derived(isNarrow(bodyWidth, compactWidth));
+  const screen = $derived(reportedScreen(bodyWidth, compactWidth));
+
+  $effect(() => {
+    if (screen !== null) untrack(() => view.grouping.fitScreen(screen));
+  });
   const lit = $derived(shownGlow(glow, everyGlow, allCapturesWanted()));
   const touchGuide = $derived(paged?.offersGuide() ?? strip?.offersGuide() ?? false);
 
@@ -119,7 +130,7 @@
   }
 
   function toggleChrome(): void {
-    readerFrame.toggleBars(document.activeElement, paged?.surface() ?? strip?.surface() ?? null);
+    bars.toggle(document.activeElement, paged?.surface() ?? strip?.surface() ?? null);
   }
 
   const book = $derived(view.book);
@@ -165,7 +176,7 @@
 
   function commit(regions: readonly ImageRegion[], arrangement: Arrangement): void {
     view.selection.select(regions);
-    if (panel !== undefined) readerFrame.panelAfterCapture();
+    if (panel !== undefined) dock.afterCapture(narrow);
     if (makes === 'written') onNote?.(regions);
     else onSelect?.(regions, arrangement);
   }
@@ -264,8 +275,13 @@
 <svelte:window {onkeydown} />
 
 <ReaderFrame
-  frame={readerFrame}
+  {dock}
   {shown}
+  onfocuschange={bars.refresh}
+  bind:bodyWidth
+  bind:compactWidth
+  bind:topBar
+  bind:bottomBar
   class="reader-screen"
   pageClass="col gap-0"
   {panel}
