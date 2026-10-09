@@ -13,7 +13,7 @@ import {
   markFailedTitle,
   mergeNotice,
   undoOffer,
-} from './book-changes.svelte';
+} from './book-change-rules';
 
 function book(overrides: Partial<Book> = {}): Book {
   return {

@@ -18,7 +18,7 @@ import {
   uploadNotice,
   uploadReported,
   uploadingBook,
-} from './book-upload.svelte';
+} from './upload-rules';
 
 function book(id: string, title: string): Book {
   return {

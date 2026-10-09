@@ -1,3 +1,4 @@
+import type { BookId } from '$lib/shared/ids';
 import { shownTitle } from '$lib/shared/shown-title';
 import type { Language } from '$lib/shared/language';
 import type { Book } from '../domain/book/book';
@@ -19,6 +20,8 @@ type BookDetails = {
   readonly readLabel: string;
   readonly actions: readonly BookAction[];
 };
+
+type OpenedBook = { readonly book: Book; readonly details: BookDetails };
 
 function detailsProgress(book: Book): BookDetailsProgress {
   if (book.finishedAt !== null) return { kind: 'finished' };
@@ -47,5 +50,10 @@ function bookDetails(book: Book): BookDetails {
   };
 }
 
-export { bookActions, bookDetails };
-export type { BookAction, BookDetails, BookDetailsProgress };
+function openedBook(books: readonly Book[], openId: BookId | null): OpenedBook | null {
+  const book = books.find((candidate) => candidate.id === openId);
+  return book === undefined ? null : { book, details: bookDetails(book) };
+}
+
+export { bookActions, bookDetails, openedBook };
+export type { BookAction, BookDetails, BookDetailsProgress, OpenedBook };

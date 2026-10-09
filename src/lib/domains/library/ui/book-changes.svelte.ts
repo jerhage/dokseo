@@ -2,9 +2,8 @@ import { useQueryClient } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
 import type { BookId } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
-import type { Notice, Notify } from '$lib/shared/notice';
+import type { Notify } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
-import { shownTitle } from '$lib/shared/shown-title';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { Book, BookEdit } from '../domain/book/book';
@@ -31,7 +30,17 @@ import type { MarkFinishedResult } from '../use-cases/mark-finished';
 import type { MarkUnreadResult } from '../use-cases/mark-unread';
 import type { RemoveBookResult } from '../use-cases/remove-book';
 import { refreshLibrary } from './library-refresh';
-import { onShelf } from './library-shelves';
+import {
+  CAPTURES_LEFT,
+  CAPTURES_LEFT_ADVICE,
+  EDIT_FAILED,
+  MERGE_FAILED,
+  REMOVE_FAILED,
+  UNDO_MARK_FAILED,
+  markFailedTitle,
+  mergeNotice,
+  undoOffer,
+} from './book-change-rules';
 import type { Shelf } from './library-shelves';
 
 type ChangeOutcome = 'changed' | 'failed' | 'skipped';
@@ -43,70 +52,6 @@ type BookChange =
   | { readonly kind: 'editing'; readonly id: BookId };
 
 const NO_CHANGE: BookChange = { kind: 'idle' };
-
-const EDIT_FAILED = 'Could not save the book settings';
-
-const REMOVE_FAILED = 'Could not remove that book';
-
-const CAPTURES_LEFT = 'Removed that book, but not all of its captures';
-
-const CAPTURES_LEFT_ADVICE = 'It is listed under Removed books, where Delete captures finishes it.';
-
-const MERGE_FAILED = 'Could not merge that book';
-
-const MERGED_ADVICE = 'Its captures were moved onto it.';
-
-const MERGE_LEFT = 'Moved its captures, but could not clear the unreadable book';
-
-const MERGE_LEFT_ADVICE = 'Merge it again to finish.';
-
-const FINISH_FAILED = 'Could not mark that book finished';
-
-const UNREAD_FAILED = 'Could not mark that book unread';
-
-const UNDO_MARK_FAILED = 'Could not undo that change';
-
-function markedTitle(mark: BookMark, book: Book): string {
-  return mark === 'finished'
-    ? `Marked ${shownTitle(book)} finished`
-    : `Marked ${shownTitle(book)} unread`;
-}
-
-function undoOffer(
-  mark: BookMark,
-  before: Book | undefined,
-  marked: Book,
-  shelf: Shelf,
-): string | null {
-  if (before === undefined) return null;
-  if (!onShelf(before, shelf) || onShelf(marked, shelf)) return null;
-  return markedTitle(mark, marked);
-}
-
-function mergeNotice(merged: BookMerge, into: Book): Notice {
-  return match(merged)
-    .returnType<Notice>()
-    .with({ kind: 'merged' }, () => ({
-      tone: 'success',
-      title: `Merged into ${shownTitle(into)}`,
-      message: MERGED_ADVICE,
-    }))
-    .with({ kind: 'partly-merged' }, () => ({
-      tone: 'warning',
-      title: MERGE_LEFT,
-      message: MERGE_LEFT_ADVICE,
-    }))
-    .with({ kind: 'storage-unavailable' }, (refusal) => ({
-      tone: 'danger',
-      title: MERGE_FAILED,
-      message: describeLibraryRefusal(refusal),
-    }))
-    .exhaustive();
-}
-
-function markFailedTitle(mark: BookMark): string {
-  return mark === 'finished' ? FINISH_FAILED : UNREAD_FAILED;
-}
 
 class BookChanges {
   #state = $state.raw<BookChange>(NO_CHANGE);
@@ -289,21 +234,5 @@ class BookChanges {
   }
 }
 
-export {
-  BookChanges,
-  CAPTURES_LEFT,
-  CAPTURES_LEFT_ADVICE,
-  EDIT_FAILED,
-  FINISH_FAILED,
-  MERGED_ADVICE,
-  MERGE_FAILED,
-  MERGE_LEFT,
-  MERGE_LEFT_ADVICE,
-  REMOVE_FAILED,
-  UNDO_MARK_FAILED,
-  UNREAD_FAILED,
-  markFailedTitle,
-  mergeNotice,
-  undoOffer,
-};
+export { BookChanges };
 export type { BookChange, ChangeOutcome };

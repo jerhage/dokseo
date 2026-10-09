@@ -2,8 +2,8 @@ import { returnFocus } from '$lib/shared/focus-return';
 import type { FocusReturn } from '$lib/shared/focus-return';
 import type { BookId } from '$lib/shared/ids';
 import type { Book } from '../domain/book/book';
-import { bookDetails } from './book-details';
-import type { BookDetails } from './book-details';
+import { openedBook } from './book-details';
+import type { OpenedBook } from './book-details';
 
 type DetailsHooks = {
   readonly opened: (id: BookId) => void;
@@ -11,8 +11,6 @@ type DetailsHooks = {
 };
 
 const NO_HOOKS: DetailsHooks = { opened: () => undefined, closed: () => undefined };
-
-type OpenedBook = { readonly book: Book; readonly details: BookDetails };
 
 class BookDetailsView {
   #openId = $state<BookId | null>(null);
@@ -49,10 +47,9 @@ class BookDetailsView {
   }
 
   opened(books: readonly Book[]): OpenedBook | null {
-    const book = books.find((candidate) => candidate.id === this.#openId);
-    return book === undefined ? null : { book, details: bookDetails(book) };
+    return openedBook(books, this.#openId);
   }
 }
 
 export { BookDetailsView };
-export type { DetailsHooks, OpenedBook };
+export type { DetailsHooks };
