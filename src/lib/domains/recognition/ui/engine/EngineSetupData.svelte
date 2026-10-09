@@ -10,8 +10,8 @@
   import { unreachable } from '$lib/shared/unreachable';
   import { computeQuery, recognizerSetupQuery, setupState } from '../../queries/engine-queries';
   import type { EngineReads } from '../../queries/engine-queries';
-  import { engineChoiceOf } from './engine-setup.svelte';
-  import type { EngineChoice } from './engine-setup.svelte';
+  import { engineChoiceOf } from './engine-setup';
+  import type { EngineChoice } from './engine-setup';
 
   type Props = {
     readonly recognition: EngineReads;

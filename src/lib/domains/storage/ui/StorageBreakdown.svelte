@@ -3,7 +3,7 @@
   import ListRow from '$lib/ui/components/ListRow.svelte';
   import Progress from '$lib/ui/components/Progress.svelte';
   import type { StorageAccount } from '../domain/storage-parts';
-  import { measuredFigure, originFigure } from './storage-view.svelte';
+  import { measuredFigure, originFigure } from './storage-view';
   import { UNNAMED_KEY, breakdownRows, breakdownScale } from './storage-overview';
 
   type Props = { readonly account: StorageAccount };

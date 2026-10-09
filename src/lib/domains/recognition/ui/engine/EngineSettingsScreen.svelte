@@ -25,8 +25,8 @@
   } from './engine-settings.svelte';
   import type { EngineSettingsView } from './engine-settings.svelte';
   import { REMOVAL_WARNING } from './model-removal.svelte';
-  import { isModelStored, isResumable } from './model-storage.svelte';
-  import { engineLanguages, shownModel } from './engine-setup.svelte';
+  import { isModelStored, isResumable } from './model-storage';
+  import { engineLanguages, shownModel } from './engine-setup';
   import EngineSetupData from './EngineSetupData.svelte';
   import ModelStorageData from './ModelStorageData.svelte';
   import EngineTrade from './EngineTrade.svelte';

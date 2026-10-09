@@ -14,7 +14,7 @@ import {
   resumeLabel,
   storedFigure,
 } from './engine-settings.svelte';
-import { engineLanguages, firstEngineLanguage } from './engine-setup.svelte';
+import { engineLanguages, firstEngineLanguage } from './engine-setup';
 
 const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 

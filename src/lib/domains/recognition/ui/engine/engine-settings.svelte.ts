@@ -20,10 +20,10 @@ import type { LanguageSetup, LanguageSetupRead, SetupChange } from '../../querie
 import { recognitionKeys } from '../../queries/recognition-keys';
 import type { SaveRecognizerSetupResult } from '../../use-cases/engine/save-recognizer-setup';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
-import { firstEngineLanguage, shownModel } from './engine-setup.svelte';
+import { firstEngineLanguage, shownModel } from './engine-setup';
 import { ModelDownload } from './model-download.svelte';
 import { ModelRemoval } from './model-removal.svelte';
-import { isModelStored, isResumable } from './model-storage.svelte';
+import { isModelStored, isResumable } from './model-storage';
 import { OperationClock } from './operation-clock';
 
 const FULL_PERCENT = 100;

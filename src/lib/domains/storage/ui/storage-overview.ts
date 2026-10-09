@@ -5,7 +5,7 @@ import {
   partFigure,
   unnamedFigure,
   unnamedNote,
-} from './storage-view.svelte';
+} from './storage-view';
 
 type BreakdownRow = {
   readonly key: string;

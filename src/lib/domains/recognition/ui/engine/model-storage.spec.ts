@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { LOADING, readFailed, readReady } from '$lib/shared/read-state';
 import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
-import { isModelStored, isResumable, shownStorage } from './model-storage.svelte';
+import { isModelStored, isResumable, shownStorage } from './model-storage';
 
 const WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 

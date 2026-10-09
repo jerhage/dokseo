@@ -7,7 +7,7 @@ import {
   persistenceNote,
   unnamedFigure,
   unnamedNote,
-} from './storage-view.svelte';
+} from './storage-view';
 
 const MODEL: StoragePart = {
   key: 'model',

@@ -3,8 +3,8 @@
   import { readQuery } from '$lib/shared/read-query.svelte';
   import { modelStorageQuery } from '../../queries/engine-queries';
   import type { EngineReads } from '../../queries/engine-queries';
-  import { shownStorage } from './model-storage.svelte';
-  import type { ShownStorage } from './model-storage.svelte';
+  import { shownStorage } from './model-storage';
+  import type { ShownStorage } from './model-storage';
 
   type Props = {
     readonly recognition: EngineReads;

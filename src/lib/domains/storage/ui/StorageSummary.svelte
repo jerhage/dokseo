@@ -3,7 +3,7 @@
   import Progress from '$lib/ui/components/Progress.svelte';
   import Stat from '$lib/ui/components/Stat.svelte';
   import type { StorageAccount } from '../domain/storage-parts';
-  import { allowanceNote, persistenceNote } from './storage-view.svelte';
+  import { allowanceNote, persistenceNote } from './storage-view';
   import { allowanceOf, usedHeadline } from './storage-overview';
 
   type Props = { readonly account: StorageAccount };

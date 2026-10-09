@@ -7,7 +7,7 @@
   import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
   import type { EngineSettingsView } from './engine-settings.svelte';
   import { activeDevice, activeEngine } from './engine-screen';
-  import { engineChoiceOf, shownModel } from './engine-setup.svelte';
+  import { engineChoiceOf, shownModel } from './engine-setup';
   import ModelStorageData from './ModelStorageData.svelte';
 
   type Props = { readonly recognition: EngineReads; readonly view: EngineSettingsView };

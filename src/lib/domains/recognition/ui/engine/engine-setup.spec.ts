@@ -4,7 +4,7 @@ import type { GpuDetection } from '../../domain/engine/compute-choice';
 import { modelsFor } from '../../domain/model/model-footprint';
 import { offeredModels } from '../../queries/engine-queries';
 import type { LanguageSetup, OfferedModels } from '../../queries/engine-queries';
-import { engineChoiceOf, shownModel } from './engine-setup.svelte';
+import { engineChoiceOf, shownModel } from './engine-setup';
 
 const DETECTED: GpuDetection = { available: true, description: 'Test GPU' };
 
