@@ -100,7 +100,9 @@
 
   onMount(() => deviceDetails.connect(navigation));
 
-  $effect(() => navigation.observe(page.state.library));
+  function followHistory(): void {
+    navigation.observe(page.state.library);
+  }
 
   $effect(() => {
     const shown = navigation.detailsOf(DEVICE_TAB);
@@ -112,6 +114,8 @@
 
   onDestroy(() => search.dispose());
 </script>
+
+<svelte:window onpopstate={followHistory} />
 
 <CatalogsData {catalog}>
   {#snippet children(catalogsState)}
