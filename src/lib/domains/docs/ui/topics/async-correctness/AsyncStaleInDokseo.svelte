@@ -36,9 +36,10 @@
   <DocsCode label={READER_PICTURE.label} code={READER_PICTURE.code} />
   <p>
     The same counter appears wherever a screen can move on during a wait. <code>FlowView</code>, the
-    EPUB reader's view model, keeps its own <code>#generation</code>. The page grouping and the book
-    preferences receive the reader's generation as a function and check it after their own awaits.
-    On the OCR engine settings screen, the download and the removal of a model share one
+    EPUB reader's view model, keeps its own <code>#generation</code>. The read of the page sizes
+    checks the reader's counter too, and the book preferences receive it as a function and check it
+    after their own await. On the OCR engine settings screen, the download and the removal of a
+    model share one
     <code>OperationClock</code>, so a newer operation on that screen makes an older one's late
     reports stale.
   </p>
