@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { FileToSave, SaveFileOutcome } from '$lib/platform/files/save-file';
-import {
-  ANOTHER_TAP_PROMPT,
-  BookCapturesExport,
-  exportOffer,
-  savedCapturesText,
-} from './book-captures-export.svelte';
-import type { BookCapturesFile, BookCapturesFileRead } from './book-captures-export.svelte';
+import { BookCapturesExport } from './book-captures-export.svelte';
+import { ANOTHER_TAP_PROMPT } from './book-captures-export-rules';
+import type { BookCapturesFile, BookCapturesFileRead } from './book-captures-export-rules';
 import { bookId } from './ids';
 import { STORAGE_UNAVAILABLE } from './storage-unavailable';
 
@@ -198,20 +194,5 @@ describe('BookCapturesExport', () => {
     await expect(view.save()).rejects.toThrow('no disk');
 
     expect(view.state).toEqual({ kind: 'ready', exported: EXPORTED });
-  });
-});
-
-describe('exportOffer', () => {
-  it('offers nothing while the file is being prepared', () => {
-    expect(exportOffer({ kind: 'preparing' })).toEqual({ kind: 'none' });
-  });
-});
-
-describe('savedCapturesText', () => {
-  it.each([
-    [1, 'Saved 1 capture.'],
-    [2, 'Saved 2 captures.'],
-  ])('reports %i as %j', (count, text) => {
-    expect(savedCapturesText(count)).toBe(text);
   });
 });

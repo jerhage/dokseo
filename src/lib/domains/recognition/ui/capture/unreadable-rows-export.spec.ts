@@ -1,12 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { FileToSave, SaveFileOutcome } from '$lib/platform/files/save-file';
-import { ANOTHER_TAP_PROMPT } from '$lib/shared/book-captures-export.svelte';
-import {
-  UnreadableRowsExport,
-  savedRowsText,
-  unreadableRowsOffer,
-} from './unreadable-rows-export.svelte';
-import type { UnreadableRowsFile, UnreadableRowsFileBuilt } from './unreadable-rows-export.svelte';
+import { ANOTHER_TAP_PROMPT } from '$lib/shared/book-captures-export-rules';
+import { UnreadableRowsExport } from './unreadable-rows-export.svelte';
+import { unreadableRowsOffer } from './unreadable-rows-rules';
+import type { UnreadableRowsFile, UnreadableRowsFileBuilt } from './unreadable-rows-rules';
 
 const FILE: FileToSave = {
   text: '{"format":"dokseo-captures"}',
@@ -115,16 +112,5 @@ describe('UnreadableRowsExport', () => {
 
     await expect(view.save(BUILT)).rejects.toBe(failure);
     expect(view.state).toEqual({ kind: 'idle' });
-  });
-});
-
-describe('savedRowsText', () => {
-  it.each([
-    [{ captures: 1, tags: 0 }, 'Saved 1 unreadable capture.'],
-    [{ captures: 0, tags: 2 }, 'Saved 2 unreadable tags.'],
-    [{ captures: 0, tags: 1 }, 'Saved 1 unreadable tag.'],
-    [{ captures: 2, tags: 1 }, 'Saved 3 unreadable rows.'],
-  ])('counts %j as %s', (counts, text) => {
-    expect(savedRowsText({ file: FILE, ...counts })).toBe(text);
   });
 });

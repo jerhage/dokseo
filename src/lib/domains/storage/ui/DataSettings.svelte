@@ -4,8 +4,9 @@
   import ListGroup from '$lib/ui/components/ListGroup.svelte';
   import ListRow from '$lib/ui/components/ListRow.svelte';
   import { browserFileSaving, saveFile } from '$lib/platform/files/save-file';
-  import { CapturesExportView, exportStatus } from './captures-export.svelte';
+  import { CapturesExportView } from './captures-export.svelte';
   import type { CapturesExporting } from './captures-export.svelte';
+  import { exportStatus } from './captures-export-rules';
   import type { CapturesImporting } from './captures-import.svelte';
   import CapturesImport from './CapturesImport.svelte';
 

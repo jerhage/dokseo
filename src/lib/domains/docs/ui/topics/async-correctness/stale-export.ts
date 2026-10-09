@@ -1,9 +1,9 @@
 import { match } from 'ts-pattern';
+import type { BookCapturesExporting } from '$lib/shared/book-captures-export.svelte';
 import type {
   BookCapturesExportState,
-  BookCapturesExporting,
   BookCapturesFile,
-} from '$lib/shared/book-captures-export.svelte';
+} from '$lib/shared/book-captures-export-rules';
 import type { BookId } from '$lib/shared/ids';
 
 type RehearsalBook = {
