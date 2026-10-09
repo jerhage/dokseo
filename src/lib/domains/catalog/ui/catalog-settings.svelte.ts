@@ -87,15 +87,22 @@ class CatalogSettingsView {
     }));
     this.#editing = writeQuery(() => ({
       ...editCatalogMutation(cases),
-      onSettled: () => client.invalidateQueries({ queryKey: catalogKeys.catalogs() }),
+      onSettled: (_result, _error, { id }) =>
+        Promise.all([
+          client.invalidateQueries({ queryKey: catalogKeys.catalogs() }),
+          client.invalidateQueries({ queryKey: catalogKeys.feeds(id) }),
+        ]),
     }));
     this.#removal = writeQuery(() => ({
       ...removeCatalogMutation(cases),
-      onSettled: () =>
-        Promise.all([
+      onSettled: (_result, _error, id) => {
+        client.removeQueries({ queryKey: catalogKeys.feeds(id) });
+        client.removeQueries({ queryKey: catalogKeys.covers(id) });
+        return Promise.all([
           client.invalidateQueries({ queryKey: catalogKeys.catalogs() }),
           client.invalidateQueries({ queryKey: catalogKeys.origins() }),
-        ]),
+        ]);
+      },
     }));
     this.#testing = writeQuery(() => testConnectionMutation(cases));
   }

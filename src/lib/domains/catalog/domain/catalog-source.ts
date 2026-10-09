@@ -1,5 +1,5 @@
 import type { CatalogId } from '$lib/shared/ids';
-import type { CatalogFeed, FeedAddress, FeedSearch, TrailStep } from './catalog-feed';
+import type { FeedAddress, FeedPage, FeedSearch, TrailStep } from './catalog-feed';
 import type { CatalogProtocol } from './catalog-protocol';
 import type { Acquisition } from './remote-publication';
 
@@ -18,7 +18,7 @@ type ClientFailure =
 type FeedPlacement = { readonly catalogId: CatalogId; readonly path: readonly TrailStep[] };
 
 type ReadFeedResult =
-  | { readonly kind: 'success'; readonly reading: CatalogFeed }
+  | { readonly kind: 'success'; readonly page: FeedPage }
   | { readonly kind: 'not-a-catalog' }
   | ClientFailure;
 

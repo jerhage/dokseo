@@ -18,6 +18,8 @@ function setup(list: ListCatalogsResult) {
   const cases: CatalogTabsUseCases = {
     browseCatalog: () => Promise.resolve({ kind: 'offline' }),
     searchCatalog: () => Promise.resolve({ kind: 'offline' }),
+    heldOrigins: () => Promise.resolve({ kind: 'success', held: new Map() }),
+    forgetDanglingOrigins: () => Promise.resolve({ kind: 'success', forgotten: 0 }),
     unlockCatalog: () => ({ kind: 'success' }),
     readCatalogCover: () => Promise.resolve({ kind: 'not-found' }),
     updatePublication: () => Promise.resolve({ kind: 'aborted' }),
@@ -36,6 +38,7 @@ function setup(list: ListCatalogsResult) {
       refreshed.push(1);
       return Promise.resolve();
     },
+    refreshOrigins: () => Promise.resolve(),
   });
   return { view, session, notices, opened, refreshed };
 }

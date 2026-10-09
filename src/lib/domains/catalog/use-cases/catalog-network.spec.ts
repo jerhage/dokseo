@@ -16,10 +16,12 @@ import type {
 import type { OriginRepository } from '../domain/origin-repository';
 import type { Acquisition, RemotePublication } from '../domain/remote-publication';
 import { browseCatalog } from './browse-catalog';
-import type { ReadBook } from './browse-catalog';
 import { downloadPublication } from './download-publication';
 import type { OpenFile } from './download-publication';
+import { forgetDanglingOrigins } from './forget-dangling-origins';
 import { forgetOrigin } from './forget-origin';
+import { heldOrigins } from './held-origins';
+import type { ReadBook } from './held-origins';
 import { readCatalogCover } from './read-catalog-cover';
 import { searchCatalog } from './search-catalog';
 import { updatePublication } from './update-publication';
@@ -86,7 +88,7 @@ function origin(book: BookId, entry: string): BookOrigin {
   };
 }
 
-function setup(feed: ReadFeedResult = { kind: 'success', reading: SHELF_FICTION_FEED }) {
+function setup(feed: ReadFeedResult = { kind: 'success', page: SHELF_FICTION_FEED }) {
   const requests: string[] = [];
   const credentialsSeen: unknown[] = [];
   let downloadAnswer: DownloadResult = {
@@ -184,11 +186,11 @@ function setup(feed: ReadFeedResult = { kind: 'success', reading: SHELF_FICTION_
 
 describe('browseCatalog', () => {
   it('reads the root url of the catalog when no url is given', async () => {
-    const world = setup({ kind: 'success', reading: HOME_ROOT_FEED });
+    const world = setup({ kind: 'success', page: HOME_ROOT_FEED });
 
     const browsed = await browseCatalog(world, OPEN, null, []);
 
-    expect(browsed.kind === 'success' && browsed.reading.kind).toBe('navigation');
+    expect(browsed.kind === 'success' && browsed.page.kind).toBe('navigation');
     expect(world.requests).toEqual(['feed https://example.org/opds']);
   });
 
@@ -251,66 +253,94 @@ describe('browseCatalog', () => {
 
     expect(world.credentialsSeen).toEqual([{ kind: 'basic', username: 'jo', password: 'secret' }]);
   });
+});
 
+describe('heldOrigins', () => {
   it('maps an entry to the link of its origin when the book is held', async () => {
     const world = setup();
     const book = bookId('b1');
     world.liveBooks.add(book);
     world.rows.set(book, origin(book, ENTRY));
 
-    const browsed = await browseCatalog(world, OPEN, null, []);
+    const held = await heldOrigins(world, OPEN);
 
-    expect(browsed.kind === 'success' && [...browsed.held.entries()]).toEqual([
+    expect(held.kind === 'success' && [...held.held.entries()]).toEqual([
       [ENTRY, { bookId: book, updated: '2026-06-01T00:00:00Z' }],
     ]);
     expect(world.deleted).toEqual([]);
   });
 
-  it('deletes the origin of a removed book and does not return it as held', async () => {
+  it('leaves out the origin of a removed book and deletes nothing', async () => {
     const world = setup();
     const book = bookId('b1');
     world.rows.set(book, origin(book, ENTRY));
 
-    const browsed = await browseCatalog(world, OPEN, null, []);
+    const held = await heldOrigins(world, OPEN);
 
-    expect(browsed.kind === 'success' && browsed.held.size).toBe(0);
-    expect(world.deleted).toEqual([book]);
-    expect(world.rows.size).toBe(0);
-  });
-
-  it('leaves the origins of entries outside the feed alone', async () => {
-    const world = setup();
-    const book = bookId('b1');
-    world.rows.set(book, origin(book, 'urn:other'));
-
-    await browseCatalog(world, OPEN, null, []);
-
+    expect(held.kind === 'success' && held.held.size).toBe(0);
     expect(world.deleted).toEqual([]);
+    expect(world.rows.size).toBe(1);
   });
 
-  it('passes storage unavailable on from the held check', async () => {
+  it('passes storage unavailable on from the book check', async () => {
     const world = setup();
     const unavailable: ReadBook = () => Promise.resolve(STORAGE_UNAVAILABLE);
     const book = bookId('b1');
     world.rows.set(book, origin(book, ENTRY));
 
-    expect(await browseCatalog({ ...world, readBook: unavailable }, OPEN, null, [])).toEqual(
+    expect(await heldOrigins({ ...world, readBook: unavailable }, OPEN)).toEqual(
       STORAGE_UNAVAILABLE,
     );
   });
 });
 
-describe('searchCatalog', () => {
-  it('hands the opaque search and the query to the source and checks the held entries', async () => {
+describe('forgetDanglingOrigins', () => {
+  it('deletes the origin of a removed book and keeps the origin of a held one', async () => {
+    const world = setup();
+    const removed = bookId('b1');
+    const held = bookId('b2');
+    world.liveBooks.add(held);
+    world.rows.set(removed, origin(removed, ENTRY));
+    world.rows.set(held, origin(held, 'urn:other'));
+
+    const forgotten = await forgetDanglingOrigins(world, OPEN);
+
+    expect(forgotten).toEqual({ kind: 'success', forgotten: 1 });
+    expect(world.deleted).toEqual([removed]);
+    expect([...world.rows.keys()]).toEqual([held]);
+  });
+
+  it('forgets nothing when every book is held', async () => {
     const world = setup();
     const book = bookId('b1');
     world.liveBooks.add(book);
     world.rows.set(book, origin(book, ENTRY));
 
+    expect(await forgetDanglingOrigins(world, OPEN)).toEqual({ kind: 'success', forgotten: 0 });
+    expect(world.deleted).toEqual([]);
+  });
+
+  it('passes storage unavailable on and deletes nothing when a book cannot be read', async () => {
+    const world = setup();
+    const unavailable: ReadBook = () => Promise.resolve(STORAGE_UNAVAILABLE);
+    const book = bookId('b1');
+    world.rows.set(book, origin(book, ENTRY));
+
+    expect(await forgetDanglingOrigins({ ...world, readBook: unavailable }, OPEN)).toEqual(
+      STORAGE_UNAVAILABLE,
+    );
+    expect(world.deleted).toEqual([]);
+  });
+});
+
+describe('searchCatalog', () => {
+  it('hands the opaque search and the query to the source', async () => {
+    const world = setup();
+
     const searched = await searchCatalog(world, OPEN, HOME_SEARCH, 'lantern', []);
 
     expect(world.requests).toEqual([`search ${HOME_SEARCH.handle} for lantern`]);
-    expect(searched.kind === 'success' && [...searched.held.keys()]).toEqual([ENTRY]);
+    expect(searched.kind).toBe('success');
   });
 
   it('answers locked without a request when a basic catalog has no password', async () => {

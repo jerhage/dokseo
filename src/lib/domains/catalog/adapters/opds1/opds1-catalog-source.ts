@@ -35,9 +35,9 @@ class Opds1CatalogSource implements CatalogSource {
   ): Promise<ReadFeedResult> {
     const fetched = await this.#http.readText(address.handle, credentials, signal);
     if (fetched.kind !== 'success') return fetched;
-    const reading = readOpdsFeed(fetched.text, address.handle, placement.catalogId, placement.path);
-    if (reading.kind === 'not-a-feed') return { kind: 'not-a-catalog' };
-    return { kind: 'success', reading };
+    const page = readOpdsFeed(fetched.text, address.handle, placement.catalogId, placement.path);
+    if (page.kind === 'not-a-feed') return { kind: 'not-a-catalog' };
+    return { kind: 'success', page };
   }
 
   search(

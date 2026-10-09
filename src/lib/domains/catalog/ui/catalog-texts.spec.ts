@@ -5,12 +5,15 @@ import type { TestCatalogConnectionResult } from '../use-cases/test-catalog-conn
 import {
   BLOCKED_TEXT,
   OFFLINE_CATALOG_TEXT,
+  PASSWORD_NEEDED_TEXT,
+  UNAUTHORIZED_TEXT,
   UNSUPPORTED_TEXT,
   browseFailureText,
   catalogDescription,
   catalogHost,
   connectionOutcome,
   downloadFailureText,
+  feedProblemText,
   fieldRefusal,
 } from './catalog-texts';
 
@@ -143,6 +146,32 @@ describe('downloadFailureText', () => {
   it('asks for the sign-in again when the server refused it', () => {
     expect(downloadFailureText({ kind: 'unauthorized' }, () => '')).toBe(
       'The server refused the username or password.',
+    );
+  });
+});
+
+describe('feedProblemText', () => {
+  it('asks for the password when the catalog is locked', () => {
+    expect(feedProblemText({ kind: 'locked', id: catalogId('home') }, 'opds1')).toBe(
+      PASSWORD_NEEDED_TEXT,
+    );
+  });
+
+  it('says the server refused the password when it is unauthorized', () => {
+    expect(feedProblemText({ kind: 'unauthorized' }, 'opds1')).toBe(UNAUTHORIZED_TEXT);
+  });
+
+  it('shows the message of an unexpected failure as it is', () => {
+    expect(
+      feedProblemText({ kind: 'unexpected', message: 'Something went wrong: x' }, 'opds1'),
+    ).toBe('Something went wrong: x');
+  });
+
+  it('words an expected failure as the browse texts do', () => {
+    expect(feedProblemText({ kind: 'offline' }, 'opds1')).toBe(OFFLINE_CATALOG_TEXT);
+    expect(feedProblemText({ kind: 'server-error', status: 503 }, 'opds1')).toContain('503');
+    expect(feedProblemText({ kind: 'not-a-catalog' }, 'opds1')).toBe(
+      browseFailureText({ kind: 'not-a-catalog' }, 'opds1'),
     );
   });
 });

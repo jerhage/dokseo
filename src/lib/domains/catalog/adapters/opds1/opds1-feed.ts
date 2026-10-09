@@ -3,10 +3,11 @@ import { LANGUAGES } from '$lib/shared/language';
 import type { Language } from '$lib/shared/language';
 import { LINE_BREAK, attributeOf, parseXml } from '$lib/shared/xml-document';
 import type { XmlElement } from '$lib/shared/xml-document';
+import { unknownTotal } from '$lib/shared/read-paged-state';
 import type {
-  CatalogFeed,
   FeedAddress,
-  FeedPaging,
+  FeedEntry,
+  FeedPage,
   NavigationLink,
   TrailStep,
 } from '../../domain/catalog-feed';
@@ -18,7 +19,7 @@ import type {
   RemotePublication,
 } from '../../domain/remote-publication';
 
-type OpdsFeedReading = CatalogFeed | { readonly kind: 'not-a-feed' };
+type OpdsFeedReading = FeedPage | { readonly kind: 'not-a-feed' };
 
 const MAX_FEED_CHARACTERS = 2_000_000;
 
@@ -87,9 +88,9 @@ function addressOf(href: string): FeedAddress {
   return { handle: href };
 }
 
-function pagingOf(feed: XmlElement, base: string): FeedPaging {
+function nextOf(feed: XmlElement, base: string): FeedAddress | null {
   const next = resolvedLink(linksWithRel(feed, 'next')[0], base);
-  return { next: next === null ? null : addressOf(next) };
+  return next === null ? null : addressOf(next);
 }
 
 function searchTemplateOf(feed: XmlElement, base: string): string | null {
@@ -199,21 +200,27 @@ function readOpdsFeed(
   const entries = childrenNamed(root, 'entry');
   const id = childText(root, 'id');
   const title = childText(root, 'title');
-  const paging = pagingOf(root, feedUrl);
   const template = searchTemplateOf(root, feedUrl);
-  const search = template === null ? null : { handle: template };
-  if (entries.some(hasAcquisition)) {
-    const publications = entries.map((entry) => publicationOf(entry, feedUrl, catalogId, path));
-    return {
-      kind: 'acquisition',
-      feed: { id, title, address: addressOf(feedUrl), paging, search, publications },
-    };
-  }
-  const links = entries.flatMap((entry) => navigationLinkOf(entry, feedUrl) ?? []);
-  return {
-    kind: 'navigation',
-    feed: { id, title, address: addressOf(feedUrl), paging, search, links },
+  const head = {
+    id,
+    title,
+    address: addressOf(feedUrl),
+    next: nextOf(root, feedUrl),
+    search: template === null ? null : { handle: template },
+    total: unknownTotal(),
   };
+  if (entries.some(hasAcquisition)) {
+    const items = entries.map((entry): FeedEntry => ({
+      kind: 'publication',
+      publication: publicationOf(entry, feedUrl, catalogId, path),
+    }));
+    return { kind: 'acquisition', items, ...head };
+  }
+  const items = entries.flatMap((entry): FeedEntry[] => {
+    const link = navigationLinkOf(entry, feedUrl);
+    return link === null ? [] : [{ kind: 'link', link }];
+  });
+  return { kind: 'navigation', items, ...head };
 }
 
 export { MAX_FEED_CHARACTERS, SEARCH_PLACEHOLDER, readOpdsFeed };

@@ -7,9 +7,13 @@
   import type { CatalogBrowseView } from './catalog-browse.svelte';
   import { UNAUTHORIZED_TEXT } from './catalog-texts';
 
-  type Props = { readonly view: CatalogBrowseView; readonly refused: boolean };
+  type Props = {
+    readonly view: CatalogBrowseView;
+    readonly refused: boolean;
+    readonly ondismiss: () => void;
+  };
 
-  let { view, refused }: Props = $props();
+  let { view, refused, ondismiss }: Props = $props();
 
   const uid = $props.id();
   const formId = `${uid}-form`;
@@ -17,24 +21,19 @@
   let open = $state(true);
   let password = $state('');
 
-  function requestOpen(next: boolean): void {
-    if (view.unlocking) return;
-    open = next;
-  }
-
   function submit(event: SubmitEvent): void {
     event.preventDefault();
     if (password === '') return;
-    void view.unlock(password);
+    view.unlock(password);
   }
 </script>
 
 <Modal
-  bind:open={() => open, requestOpen}
+  bind:open
   title="Password for {view.catalog.title}"
   size="sm"
   sheetNarrow
-  onclose={() => view.dismissPrompt()}
+  onclose={ondismiss}
 >
   <form id={formId} class="stack-md" onsubmit={submit}>
     {#if refused}
@@ -47,7 +46,6 @@
           name="password"
           type="password"
           autocomplete="off"
-          disabled={view.unlocking}
           bind:value={password}
         />
       {/snippet}
@@ -55,15 +53,7 @@
   </form>
 
   {#snippet footer(close)}
-    <Button disabled={view.unlocking} onclick={close}>Cancel</Button>
-    <Button
-      variant="primary"
-      type="submit"
-      form={formId}
-      loading={view.unlocking}
-      disabled={view.unlocking || password === ''}
-    >
-      Unlock
-    </Button>
+    <Button onclick={close}>Cancel</Button>
+    <Button variant="primary" type="submit" form={formId} disabled={password === ''}>Unlock</Button>
   {/snippet}
 </Modal>

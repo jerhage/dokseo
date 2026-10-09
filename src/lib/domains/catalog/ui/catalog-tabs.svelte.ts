@@ -7,13 +7,15 @@ import { shownTab } from '$lib/ui/components/tabs';
 import type { Catalog } from '../domain/catalog';
 import type { RemotePublication } from '../domain/remote-publication';
 import type { ListCatalogsResult } from '../use-cases/list-catalogs';
-import type { ReadCatalogCoverResult } from '../use-cases/read-catalog-cover';
+import type { CoverReads, FeedReads, HeldReads } from '../queries/catalog-feed-queries';
+import type { ForgetDanglingOriginsResult } from '../use-cases/forget-dangling-origins';
 import { CatalogBrowseView } from './catalog-browse.svelte';
 import type { BrowseUseCases } from './catalog-browse.svelte';
-import { CatalogCovers } from './catalog-covers.svelte';
-import type { ObjectUrls } from './catalog-covers.svelte';
+import { CatalogCovers } from './catalog-covers';
+import type { ObjectUrls } from './catalog-covers';
 import { CatalogDownloads } from './catalog-downloads.svelte';
 import type { DownloadsChoices, DownloadsUseCases } from './catalog-downloads.svelte';
+import { CatalogFeedBinding } from './catalog-feed-binding.svelte';
 import type { CatalogSession } from './catalog-session.svelte';
 import type { DescribeOpenFile } from './catalog-texts';
 import { listedCatalogs } from './catalog-list';
@@ -21,13 +23,12 @@ import { NO_HISTORY } from './library-history';
 import type { HistoryRecorder } from './library-history';
 import { catalogTabs } from './library-tabs';
 
-type CatalogTabsUseCases = BrowseUseCases &
-  DownloadsUseCases & {
-    readonly readCatalogCover: (
-      id: Catalog['id'],
-      url: string,
-      signal?: AbortSignal,
-    ) => Promise<ReadCatalogCoverResult>;
+type CatalogTabsUseCases = Omit<BrowseUseCases, 'forgetDanglingOrigins'> &
+  DownloadsUseCases &
+  FeedReads &
+  CoverReads &
+  HeldReads & {
+    readonly forgetDanglingOrigins: (id: Catalog['id']) => Promise<ForgetDanglingOriginsResult>;
   };
 
 type CatalogTabsDeps = DownloadsChoices & {
@@ -37,6 +38,7 @@ type CatalogTabsDeps = DownloadsChoices & {
   readonly describeOpenFile: DescribeOpenFile;
   readonly openBook: (id: BookId) => void;
   readonly refreshLibrary: () => Promise<void>;
+  readonly refreshOrigins: () => Promise<void>;
   readonly objectUrls?: ObjectUrls | undefined;
   readonly history?: HistoryRecorder | undefined;
 };
@@ -58,6 +60,10 @@ class CatalogTabsView {
 
   get catalogs(): readonly Catalog[] {
     return this.#listed;
+  }
+
+  get feeds(): FeedReads & CoverReads & HeldReads {
+    return this.#deps.cases;
   }
 
   get visible(): boolean {
@@ -89,7 +95,7 @@ class CatalogTabsView {
 
   restoreFeed(tabId: string, index: number): void {
     const catalog = this.catalogFor(tabId);
-    if (catalog !== null) void this.browsing(catalog).restoreFeed(index);
+    if (catalog !== null) this.browsing(catalog).restoreFeed(index);
   }
 
   restoreDetail(tabId: string, entryId: string | null): void {
@@ -124,6 +130,7 @@ class CatalogTabsView {
 
   #create(catalog: Catalog): CatalogBrowseView {
     const { cases } = this.#deps;
+    const feed = new CatalogFeedBinding();
     const downloads = new CatalogDownloads(
       cases,
       { matching: this.#deps.matching, defaults: this.#deps.defaults },
@@ -132,12 +139,28 @@ class CatalogTabsView {
         downloaded: (publication, bookId) => this.#announce('Added', publication, bookId),
         updated: (publication, bookId) => this.#announce('Updated', publication, bookId),
       },
+      () => feed.current.held,
     );
-    const covers = new CatalogCovers(
-      (url, signal) => cases.readCatalogCover(catalog.id, url, signal),
-      this.#deps.objectUrls,
+    const covers = new CatalogCovers(() => feed.current.covers, this.#deps.objectUrls);
+    const browse = {
+      unlockCatalog: cases.unlockCatalog,
+      forgetDanglingOrigins: async (id: Catalog['id']) => {
+        const forgotten = await cases.forgetDanglingOrigins(id);
+        if (forgotten.kind === 'success' && forgotten.forgotten > 0) {
+          await this.#deps.refreshOrigins();
+        }
+        return forgotten;
+      },
+    };
+    return new CatalogBrowseView(
+      catalog,
+      browse,
+      this.#session,
+      downloads,
+      covers,
+      feed,
+      this.#history,
     );
-    return new CatalogBrowseView(catalog, cases, this.#session, downloads, covers, this.#history);
   }
 
   #announce(verb: 'Added' | 'Updated', publication: RemotePublication, bookId: BookId): void {

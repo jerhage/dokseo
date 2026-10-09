@@ -1,6 +1,5 @@
 import type { CatalogId } from '$lib/shared/ids';
 import { sameFeedAddress } from '../domain/catalog-feed';
-import type { FeedAddress } from '../domain/catalog-feed';
 import { DEVICE_TAB } from './library-tabs';
 import { ROOT_POSITION } from './feed-address';
 import type { FeedPosition } from './feed-address';
@@ -18,7 +17,6 @@ class CatalogSession {
   originFilter = $state.raw<OriginFilter>(ALL_FILTER);
   queries = $state.raw<ReadonlyMap<CatalogId, string>>(new Map());
   #trails = new Map<CatalogId, Trail>();
-  #pages = new Map<CatalogId, readonly FeedAddress[]>();
   #selections = new Map<CatalogId, ReadonlySet<string>>();
   #scrolls = new Map<CatalogId, number>();
   #searchOrigins = new Map<CatalogId, FeedPosition>();
@@ -75,9 +73,15 @@ class CatalogSession {
     const next = [...positions];
     next[at] = position;
     this.#trails.set(id, { positions: next, at });
-    this.#pages.delete(id);
     this.#selections.delete(id);
     this.#scrolls.delete(id);
+  }
+
+  settle(id: CatalogId, position: FeedPosition): void {
+    const { positions, at } = this.#trailOf(id);
+    const next = [...positions];
+    next[at] = position;
+    this.#trails.set(id, { positions: next, at });
   }
 
   searchOriginOf(id: CatalogId): FeedPosition | null {
@@ -108,14 +112,6 @@ class CatalogSession {
     const top = this.#scrolls.get(id) ?? 0;
     this.#scrolls.delete(id);
     return top;
-  }
-
-  pagesOf(id: CatalogId): readonly FeedAddress[] {
-    return this.#pages.get(id) ?? [];
-  }
-
-  appendPage(id: CatalogId, address: FeedAddress): void {
-    this.#pages.set(id, [...this.pagesOf(id), address]);
   }
 
   #trailOf(id: CatalogId): Trail {

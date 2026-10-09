@@ -3,20 +3,13 @@ import { bookId } from '$lib/shared/ids';
 import { readReady } from '$lib/shared/read-state';
 import { DEFAULT_BOOK_MATCHING } from '$lib/domains/library/domain/book/book-matching';
 import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/reading-defaults';
-import {
-  HOME_ROOT_FEED,
-  HOME_SEARCH,
-  feedAddress,
-  identifiedAs,
-  placed,
-  withoutSearch,
-} from '../domain/catalog-feed-fixtures';
-import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
+import { HOME_ROOT_FEED, HOME_SEARCH, withoutSearch } from '../domain/catalog-feed-fixtures';
+import type { Catalog } from '../domain/catalog';
 import { CatalogHeaderSearch, SEARCH_DEBOUNCE_MS } from './catalog-header-search.svelte';
 import type { SearchClock } from './catalog-header-search.svelte';
 import { CatalogSession } from './catalog-session.svelte';
 import { CatalogTabsView } from './catalog-tabs.svelte';
-import { ARCHIVE, HOME } from './catalog-ui-fixtures';
+import { ARCHIVE, HOME, readyRead } from './catalog-ui-fixtures';
 import { DEVICE_TAB } from './library-tabs';
 import { searchAvailability, searchFieldKey, searchPlaceholder } from './catalog-search';
 
@@ -43,32 +36,15 @@ class ManualClock implements SearchClock {
 
 function setup() {
   const clock = new ManualClock();
-  const urls: Array<string | null> = [];
-  const searches: Array<{ handle: string; query: string }> = [];
+  const pushes: string[] = [];
   const session = new CatalogSession();
   const tabs = new CatalogTabsView(session, {
     catalogs: () => readReady({ kind: 'success', catalogs: [HOME, ARCHIVE], unreadable: [] }),
     cases: {
-      browseCatalog: (id, address, path) => {
-        const url = address?.handle ?? null;
-        urls.push(url);
-        const root = id === HOME.id ? HOME_ROOT_FEED : withoutSearch(HOME_ROOT_FEED);
-        const own = url === null ? root : identifiedAs(root, 'urn:calibre:results');
-        const reading = placed(own, feedAddress(url ?? 'https://home.test/opds'), path, id);
-        const answer: BrowseCatalogResult = { kind: 'success', reading, held: new Map() };
-        return Promise.resolve(answer);
-      },
-      searchCatalog: (id, search, query, path) => {
-        searches.push({ handle: search.handle, query });
-        const reading = placed(
-          identifiedAs(HOME_ROOT_FEED, 'urn:calibre:results'),
-          feedAddress('https://home.test/opds/search'),
-          path,
-          id,
-        );
-        const answer: BrowseCatalogResult = { kind: 'success', reading, held: new Map() };
-        return Promise.resolve(answer);
-      },
+      browseCatalog: () => Promise.resolve({ kind: 'offline' }),
+      searchCatalog: () => Promise.resolve({ kind: 'offline' }),
+      heldOrigins: () => Promise.resolve({ kind: 'success', held: new Map() }),
+      forgetDanglingOrigins: () => Promise.resolve({ kind: 'success', forgotten: 0 }),
       unlockCatalog: () => ({ kind: 'success' }),
       readCatalogCover: () => Promise.resolve({ kind: 'not-found' }),
       updatePublication: () => Promise.resolve({ kind: 'aborted' }),
@@ -80,9 +56,31 @@ function setup() {
     describeOpenFile: () => '',
     openBook: () => undefined,
     refreshLibrary: () => Promise.resolve(),
+    refreshOrigins: () => Promise.resolve(),
+    history: {
+      moved: (_tab, mode) => {
+        if (mode === 'push') pushes.push(mode);
+      },
+      detailOpened: () => undefined,
+      detailClosed: () => undefined,
+      walkedBack: () => false,
+    },
   });
-  return { search: new CatalogHeaderSearch(tabs, session, clock), tabs, urls, searches, clock };
+  return { search: new CatalogHeaderSearch(tabs, session, clock), tabs, pushes, clock };
 }
+
+function loaded(tabs: CatalogTabsView, catalog: Catalog): void {
+  const page = catalog.id === HOME.id ? HOME_ROOT_FEED : withoutSearch(HOME_ROOT_FEED);
+  const view = tabs.browsing(catalog);
+  view.bindFeed(() => readyRead(page));
+  view.headLoaded(page);
+}
+
+function readingOf(tabs: CatalogTabsView, catalog: Catalog) {
+  return tabs.browsing(catalog).reading;
+}
+
+const MOON = { kind: 'search', search: HOME_SEARCH, query: 'moon' } as const;
 
 describe('searchPlaceholder', () => {
   it('names the catalog, and says when it has no search', () => {
@@ -125,19 +123,18 @@ describe('CatalogHeaderSearch', () => {
   });
 
   it('searches the selected catalog on submit', async () => {
-    const { search, tabs, searches } = setup();
+    const { search, tabs } = setup();
     tabs.select(HOME.id);
-    await tabs.browsing(HOME).start();
+    loaded(tabs, HOME);
     search.field?.onsubmit('moon');
-    await Promise.resolve();
-    expect(searches.at(-1)).toEqual({ handle: HOME_SEARCH.handle, query: 'moon' });
+    expect(readingOf(tabs, HOME)).toEqual(MOON);
     expect(tabs.browsing(HOME).crumbs.at(-1)?.label).toBe('Search: moon');
   });
 
   it('disables the field for a catalog whose feeds offer no search', async () => {
     const { search, tabs } = setup();
     tabs.select(ARCHIVE.id);
-    await tabs.browsing(ARCHIVE).start();
+    loaded(tabs, ARCHIVE);
     expect(search.field).toMatchObject({ placeholder: 'Archive has no search', disabled: true });
   });
 
@@ -167,19 +164,18 @@ describe('CatalogHeaderSearch.fieldFor', () => {
   });
 
   it('searches the catalog it was asked for, on submit', async () => {
-    const { search, tabs, searches } = setup();
+    const { search, tabs } = setup();
     tabs.select(HOME.id);
-    tabs.browsing(HOME);
-    await tabs.browsing(HOME).start();
+    loaded(tabs, HOME);
 
     search.fieldFor(HOME).onsubmit('lantern');
 
-    expect(searches.at(-1)?.query).toBe('lantern');
+    expect(readingOf(tabs, HOME)).toMatchObject({ kind: 'search', query: 'lantern' });
   });
 
   it('disables the field of a catalog whose feed offers no search once it is read', async () => {
     const { search, tabs } = setup();
-    await tabs.browsing(ARCHIVE).start();
+    loaded(tabs, ARCHIVE);
 
     expect(search.fieldFor(ARCHIVE)).toMatchObject({
       disabled: true,
@@ -189,68 +185,66 @@ describe('CatalogHeaderSearch.fieldFor', () => {
 });
 
 describe('CatalogHeaderSearch typing', () => {
-  async function ready() {
+  function ready() {
     const made = setup();
     made.tabs.select(HOME.id);
-    await made.tabs.browsing(HOME).start();
+    loaded(made.tabs, HOME);
     return made;
   }
 
-  it('sends one search after rapid typing pauses', async () => {
-    const { search, searches, clock } = await ready();
+  it('sends one search after rapid typing pauses', () => {
+    const { search, tabs, pushes, clock } = ready();
     for (const typed of ['m', 'mo', 'moo', 'moon']) {
       search.field?.oninput(typed);
       clock.advance(SEARCH_DEBOUNCE_MS - 100);
     }
-    expect(searches).toEqual([]);
+    expect(readingOf(tabs, HOME)).toEqual({ kind: 'root' });
     clock.advance(100);
-    expect(searches).toEqual([{ handle: HOME_SEARCH.handle, query: 'moon' }]);
+    expect(readingOf(tabs, HOME)).toEqual(MOON);
+    expect(pushes).toHaveLength(1);
   });
 
-  it('searches at once on Enter and drops the pending timer', async () => {
-    const { search, searches, clock } = await ready();
+  it('searches at once on Enter and drops the pending timer', () => {
+    const { search, tabs, pushes, clock } = ready();
     search.field?.oninput('moon');
     search.field?.onsubmit('moon');
-    expect(searches).toHaveLength(1);
+    expect(readingOf(tabs, HOME)).toEqual(MOON);
     clock.advance(SEARCH_DEBOUNCE_MS);
-    expect(searches).toHaveLength(1);
+    expect(pushes).toHaveLength(1);
   });
 
-  it('sends no search when the tab changed before the pause ended', async () => {
-    const { search, tabs, searches, clock } = await ready();
+  it('sends no search when the tab changed before the pause ended', () => {
+    const { search, tabs, clock } = ready();
     search.field?.oninput('moon');
     tabs.select(ARCHIVE.id);
     clock.advance(SEARCH_DEBOUNCE_MS);
-    expect(searches).toEqual([]);
+    expect(readingOf(tabs, HOME)).toEqual({ kind: 'root' });
   });
 
-  it('sends no search once disposed', async () => {
-    const { search, searches, clock } = await ready();
+  it('sends no search once disposed', () => {
+    const { search, tabs, clock } = ready();
     search.field?.oninput('moon');
     search.dispose();
     clock.advance(SEARCH_DEBOUNCE_MS);
-    expect(searches).toEqual([]);
+    expect(readingOf(tabs, HOME)).toEqual({ kind: 'root' });
   });
 
-  it('returns to the feed the search began on when the field empties', async () => {
-    const { search, urls, clock } = await ready();
+  it('returns to the feed the search began on when the field empties', () => {
+    const { search, tabs, clock } = ready();
     search.field?.oninput('moon');
     clock.advance(SEARCH_DEBOUNCE_MS);
-    await Promise.resolve();
+    expect(readingOf(tabs, HOME)).toEqual(MOON);
     search.field?.oninput('');
-    const before = urls.length;
     clock.advance(SEARCH_DEBOUNCE_MS);
-    expect(urls).toHaveLength(before + 1);
-    expect(urls.at(-1)).toBeNull();
+    expect(readingOf(tabs, HOME)).toEqual({ kind: 'root' });
   });
 
-  it('sends nothing when the field empties and no search is shown', async () => {
-    const { search, searches, urls, clock } = await ready();
-    const before = urls.length;
+  it('changes nothing when the field empties and no search is shown', () => {
+    const { search, tabs, pushes, clock } = ready();
     search.field?.oninput('');
     clock.advance(SEARCH_DEBOUNCE_MS);
-    expect(searches).toEqual([]);
-    expect(urls).toHaveLength(before);
+    expect(readingOf(tabs, HOME)).toEqual({ kind: 'root' });
+    expect(pushes).toEqual([]);
   });
 });
 

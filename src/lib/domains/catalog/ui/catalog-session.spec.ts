@@ -69,4 +69,35 @@ describe('CatalogSession feed trail', () => {
     expect(session.seek(ID, -1)).toBeNull();
     expect(session.positionOf(ID)).toBe(DEEP);
   });
+  it('forgets the selection and the scroll position when another feed opens', () => {
+    const session = new CatalogSession();
+    session.keepSelection(ID, new Set(['a']));
+    session.keepScroll(ID, 640);
+
+    session.move(ID, DEEP);
+
+    expect(session.selectionOf(ID).size).toBe(0);
+    expect(session.takeScroll(ID)).toBe(0);
+  });
+
+  it('keeps the selection and the scroll position when a loaded feed settles its position', () => {
+    const session = new CatalogSession();
+    session.keepSelection(ID, new Set(['a']));
+    session.keepScroll(ID, 640);
+
+    session.settle(ID, DEEP);
+
+    expect(session.positionOf(ID)).toBe(DEEP);
+    expect(session.trailIndexOf(ID)).toBe(0);
+    expect(session.selectionOf(ID).has('a')).toBe(true);
+    expect(session.takeScroll(ID)).toBe(640);
+  });
+
+  it('gives the scroll position once', () => {
+    const session = new CatalogSession();
+    session.keepScroll(ID, 640);
+
+    expect(session.takeScroll(ID)).toBe(640);
+    expect(session.takeScroll(ID)).toBe(0);
+  });
 });

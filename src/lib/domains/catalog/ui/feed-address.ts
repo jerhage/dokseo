@@ -1,4 +1,11 @@
-import type { FeedAddress, FeedSearch, TrailStep } from '../domain/catalog-feed';
+import { ROOT_LOCATION, sameFeedAddress } from '../domain/catalog-feed';
+import type {
+  FeedAddress,
+  FeedHead,
+  FeedLocation,
+  FeedSearch,
+  TrailStep,
+} from '../domain/catalog-feed';
 
 type SearchLookup = { readonly search: FeedSearch; readonly query: string };
 
@@ -70,10 +77,54 @@ function atDepth(position: FeedPosition, depth: number): FeedPosition {
   };
 }
 
+function settled(position: FeedPosition, head: Pick<FeedHead, 'address' | 'id'>): FeedPosition {
+  const placed = position.lookup === null ? position : addressed(position, head.address);
+  return identified(placed, head.id);
+}
+
+function locationOf(position: FeedPosition): FeedLocation {
+  const { lookup, address } = position;
+  if (lookup !== null) return { kind: 'search', search: lookup.search, query: lookup.query };
+  if (address === null) return ROOT_LOCATION;
+  return { kind: 'address', address };
+}
+
+function readingKey(location: FeedLocation): string {
+  return JSON.stringify(location);
+}
+
+function samePosition(left: FeedPosition, right: FeedPosition): boolean {
+  return (
+    sameFeedAddress(left.address, right.address) &&
+    left.lookup === right.lookup &&
+    left.ids.length === right.ids.length &&
+    left.ids.every((id, index) => id === right.ids[index]) &&
+    left.path.length === right.path.length &&
+    left.path.every(
+      (step, index) =>
+        step.title === right.path[index]?.title &&
+        sameFeedAddress(step.address, right.path[index]?.address ?? null),
+    )
+  );
+}
+
 function crumbs(rootName: string, path: readonly TrailStep[]): readonly Crumb[] {
   const steps = path.map((step, index) => ({ label: step.title, depth: index + 1 }));
   return [{ label: rootName, depth: 0 }, ...steps];
 }
 
-export { ROOT_POSITION, addressed, atDepth, crumbs, identified, opened, searchStep, searched };
+export {
+  ROOT_POSITION,
+  addressed,
+  atDepth,
+  crumbs,
+  identified,
+  locationOf,
+  opened,
+  readingKey,
+  samePosition,
+  searchStep,
+  searched,
+  settled,
+};
 export type { Crumb, FeedPosition, SearchLookup };

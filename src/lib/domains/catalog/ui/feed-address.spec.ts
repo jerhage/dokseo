@@ -5,9 +5,13 @@ import {
   atDepth,
   crumbs,
   identified,
+  locationOf,
   opened,
+  readingKey,
+  samePosition,
   searched,
   searchStep,
+  settled,
 } from './feed-address';
 import { feedAddress } from '../domain/catalog-feed-fixtures';
 import type { FeedPosition } from './feed-address';
@@ -143,5 +147,77 @@ describe('crumbs', () => {
 
   it('gives each crumb the depth it returns to', () => {
     expect(crumbs('Home', [SERIES, ONE]).map((crumb) => crumb.depth)).toEqual([0, 1, 2]);
+  });
+});
+
+describe('settled', () => {
+  const LOOKUP = { search: { handle: 'h' }, query: 'moon' };
+
+  it('records the id of a plain feed it has not seen', () => {
+    const position: FeedPosition = {
+      path: [SERIES],
+      address: SERIES.address,
+      ids: ['root', ''],
+      lookup: null,
+    };
+
+    expect(settled(position, { address: SERIES.address, id: 'series' }).ids).toEqual([
+      'root',
+      'series',
+    ]);
+  });
+
+  it('points a search at the address its result was read from', () => {
+    const result = feedAddress('https://x.test/s/moon');
+
+    expect(settled(searched(DEEP, LOOKUP), { address: result, id: 'results' })).toEqual({
+      path: [{ title: 'Search: moon', address: result }],
+      address: result,
+      ids: ['root', 'results'],
+      lookup: null,
+    });
+  });
+});
+
+describe('locationOf', () => {
+  it('names the root when no feed address and no search is held', () => {
+    expect(locationOf(ROOT_POSITION)).toEqual({ kind: 'root' });
+  });
+
+  it('names a feed by its address', () => {
+    expect(locationOf(DEEP)).toEqual({ kind: 'address', address: DEEP.address });
+  });
+
+  it('names a search by its lookup before the result settles', () => {
+    const lookup = { search: { handle: 'h' }, query: 'moon' };
+
+    expect(locationOf(searched(DEEP, lookup))).toEqual({ kind: 'search', ...lookup });
+  });
+});
+
+describe('readingKey', () => {
+  it('differs for two locations and repeats for the same one', () => {
+    const root = readingKey({ kind: 'root' });
+    const series = readingKey({ kind: 'address', address: SERIES.address });
+
+    expect(root).not.toBe(series);
+    expect(series).toBe(
+      readingKey({ kind: 'address', address: feedAddress(SERIES.address.handle) }),
+    );
+  });
+});
+
+describe('samePosition', () => {
+  it('holds for a position and a copy that differs only in identity', () => {
+    expect(samePosition(DEEP, { ...DEEP, path: [...DEEP.path], ids: [...DEEP.ids] })).toBe(true);
+  });
+
+  it('differs when an address, an id or a step differs', () => {
+    expect(samePosition(DEEP, { ...DEEP, address: SERIES.address })).toBe(false);
+    expect(samePosition(DEEP, { ...DEEP, ids: ['root', 'series', ''] })).toBe(false);
+    expect(samePosition(DEEP, { ...DEEP, path: [SERIES] })).toBe(false);
+    expect(
+      samePosition(DEEP, { ...DEEP, path: [SERIES, { title: 'other', address: ONE.address }] }),
+    ).toBe(false);
   });
 });

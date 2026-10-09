@@ -52,8 +52,8 @@ describe('Opds1CatalogSource', () => {
 
     const read = await source.readFeed({ handle: 'https://home.test/opds' }, PLACEMENT, NONE);
 
-    expect(read.kind === 'success' && read.reading.kind).toBe('navigation');
-    expect(read.kind === 'success' && read.reading.feed.address).toEqual({
+    expect(read.kind === 'success' && read.page.kind).toBe('navigation');
+    expect(read.kind === 'success' && read.page.address).toEqual({
       handle: 'https://home.test/opds',
     });
     expect(requests).toEqual(['https://home.test/opds']);
@@ -70,7 +70,7 @@ describe('Opds1CatalogSource', () => {
   it('offers the search a feed declares and reads the address it builds', async () => {
     const { source, requests } = sourceAnswering(CALIBRE_ROOT);
     const root = await source.readFeed({ handle: 'https://home.test/opds' }, PLACEMENT, NONE);
-    const search = root.kind === 'success' ? root.reading.feed.search : null;
+    const search = root.kind === 'success' ? root.page.search : null;
     expect(search).not.toBeNull();
     if (search === null) return;
 

@@ -3,18 +3,11 @@ import { bookId } from '$lib/shared/ids';
 import { readReady } from '$lib/shared/read-state';
 import { DEFAULT_BOOK_MATCHING } from '$lib/domains/library/domain/book/book-matching';
 import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/reading-defaults';
-import {
-  HOME_ROOT_FEED,
-  HOME_SERIES_FEED,
-  feedAddress,
-  placed,
-} from '../domain/catalog-feed-fixtures';
-import type { CatalogFeed } from '../domain/catalog-feed';
-import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
+import { HOME_ROOT_FEED, HOME_SERIES_FEED, feedAddress } from '../domain/catalog-feed-fixtures';
 import { CatalogSession } from './catalog-session.svelte';
 import { CatalogTabsView } from './catalog-tabs.svelte';
 import type { CatalogTabsUseCases } from './catalog-tabs.svelte';
-import { ARCHIVE, HOME } from './catalog-ui-fixtures';
+import { ARCHIVE, HOME, readyRead } from './catalog-ui-fixtures';
 import { LibraryHistory } from './library-history';
 import type { HistoryPort, HistoryTargets, LibraryHistoryState } from './library-history';
 import { DEVICE_TAB } from './library-tabs';
@@ -175,29 +168,10 @@ describe('the library history across the tabs and the feeds', () => {
     const browser = new FakeBrowser();
     const session = new CatalogSession();
     const cases: CatalogTabsUseCases = {
-      browseCatalog: (_id, address, path): Promise<BrowseCatalogResult> => {
-        const middle: CatalogFeed =
-          HOME_ROOT_FEED.kind === 'navigation'
-            ? { kind: 'navigation', feed: { ...HOME_ROOT_FEED.feed, id: 'middle' } }
-            : HOME_ROOT_FEED;
-        const reading =
-          address === null
-            ? placed(HOME_ROOT_FEED, feedAddress('https://home.test/opds'), path)
-            : address.handle === MIDDLE_LINK.address.handle
-              ? placed(middle, address, path)
-              : placed(HOME_SERIES_FEED, address, path);
-        return Promise.resolve({ kind: 'success', reading, held: new Map() });
-      },
-      searchCatalog: (_id, _search, _query, path) =>
-        Promise.resolve({
-          kind: 'success',
-          reading: placed(
-            HOME_SERIES_FEED,
-            feedAddress('https://home.test/opds/search/moon'),
-            path,
-          ),
-          held: new Map(),
-        }),
+      browseCatalog: () => Promise.resolve({ kind: 'offline' }),
+      searchCatalog: () => Promise.resolve({ kind: 'offline' }),
+      heldOrigins: () => Promise.resolve({ kind: 'success', held: new Map() }),
+      forgetDanglingOrigins: () => Promise.resolve({ kind: 'success', forgotten: 0 }),
       unlockCatalog: () => ({ kind: 'success' }),
       readCatalogCover: () => Promise.resolve({ kind: 'not-found' }),
       updatePublication: () => Promise.resolve({ kind: 'aborted' }),
@@ -213,6 +187,7 @@ describe('the library history across the tabs and the feeds', () => {
       describeOpenFile: () => '',
       openBook: () => undefined,
       refreshLibrary: () => Promise.resolve(),
+      refreshOrigins: () => Promise.resolve(),
       history: {
         moved: (tab, mode) => history.moved(tab, mode),
         detailOpened: (tab, detail) => history.detailOpened(tab, detail),
@@ -239,7 +214,9 @@ describe('the library history across the tabs and the feeds', () => {
     setup.history.arrive();
     setup.tabs.select(HOME.id);
     const home = setup.tabs.browsing(HOME);
-    await home.start();
+    home.start();
+    home.bindFeed(() => readyRead(HOME_ROOT_FEED));
+    home.headLoaded(HOME_ROOT_FEED);
     return { ...setup, home };
   }
 
@@ -250,60 +227,60 @@ describe('the library history across the tabs and the feeds', () => {
 
   it('pushes one entry for each feed opened', async () => {
     const { browser, home } = await atHome();
-    await home.openLink(SERIES_LINK);
+    home.openLink(SERIES_LINK);
     expect(shapes(browser.entries)).toEqual([plain(HOME.id), plain(HOME.id, 1)]);
   });
 
   it('shows the earlier feed again when the browser goes back, as a crumb would', async () => {
     const { browser, home } = await atHome();
-    await home.openLink(SERIES_LINK);
+    home.openLink(SERIES_LINK);
     browser.go(-1);
     await settle();
     expect(home.crumbs.map((crumb) => crumb.label)).toEqual(['Home']);
-    expect(home.state.kind).toBe('navigation');
+    expect(home.reading).toEqual({ kind: 'root' });
   });
 
   it('shows the deeper feed again when the browser goes forward', async () => {
     const { browser, home } = await atHome();
-    await home.openLink(SERIES_LINK);
+    home.openLink(SERIES_LINK);
     browser.go(-1);
     await settle();
     browser.go(1);
     await settle();
     expect(home.crumbs.map((crumb) => crumb.label)).toEqual(['Home', 'By Series']);
-    expect(home.state.kind).toBe('acquisition');
+    expect(home.reading).toEqual({ kind: 'address', address: SERIES_LINK.address });
   });
 
   it('walks back one entry when a crumb goes up one level', async () => {
     const { browser, home } = await atHome();
-    await home.openLink(SERIES_LINK);
-    await home.goToDepth(0);
+    home.openLink(SERIES_LINK);
+    home.goToDepth(0);
     await settle();
     expect(browser.at).toBe(0);
     expect(home.crumbs).toHaveLength(1);
-    expect(home.state.kind).toBe('navigation');
+    expect(home.reading).toEqual({ kind: 'root' });
   });
 
   async function deepHome() {
     const setup = await atHome();
-    await setup.home.openLink(MIDDLE_LINK);
-    await setup.home.openLink(SERIES_LINK);
+    setup.home.openLink(MIDDLE_LINK);
+    setup.home.openLink(SERIES_LINK);
     return setup;
   }
 
   it('walks back two entries at once when a crumb goes up two levels', async () => {
     const { browser, home } = await deepHome();
     expect(browser.at).toBe(2);
-    await home.goToDepth(0);
+    home.goToDepth(0);
     await settle();
     expect(browser.at).toBe(0);
     expect(home.crumbs).toHaveLength(1);
-    expect(home.state.kind).toBe('navigation');
+    expect(home.reading).toEqual({ kind: 'root' });
   });
 
   it('goes back past the feed a crumb returned to, with no repeated feed', async () => {
     const { browser, home } = await deepHome();
-    await home.goToDepth(1);
+    home.goToDepth(1);
     await settle();
     expect(browser.at).toBe(1);
     expect(home.crumbs).toHaveLength(2);
@@ -315,18 +292,18 @@ describe('the library history across the tabs and the feeds', () => {
 
   it('shows the deeper feed again when the browser goes forward after a crumb', async () => {
     const { browser, home } = await deepHome();
-    await home.goToDepth(0);
+    home.goToDepth(0);
     await settle();
     browser.go(2);
     await settle();
     expect(home.crumbs).toHaveLength(3);
-    expect(home.state.kind).toBe('acquisition');
+    expect(home.reading).toEqual({ kind: 'address', address: SERIES_LINK.address });
   });
 
   it('replaces the entry when a crumb goes up after the page was reloaded', async () => {
     const { browser, home, history } = await deepHome();
     history.arrive();
-    await home.goToDepth(0);
+    home.goToDepth(0);
     expect(shapes(browser.entries).at(-1)).toEqual(plain(HOME.id, 2));
     expect(browser.at).toBe(2);
     expect(home.crumbs).toHaveLength(1);
@@ -335,27 +312,28 @@ describe('the library history across the tabs and the feeds', () => {
   it('goes back when the search it began is left by an empty query', async () => {
     const { browser, home, session } = await atHome();
     session.type(HOME.id, 'moon');
-    await home.search('moon');
+    home.search('moon');
     expect(browser.at).toBe(1);
-    await home.search('');
+    home.search('');
     await settle();
     expect(browser.at).toBe(0);
-    expect(home.state.kind).toBe('navigation');
+    expect(home.reading).toEqual({ kind: 'root' });
     expect(session.queryOf(HOME.id)).toBe('');
   });
 
   it('replaces the search entry when the page was reloaded before the search was left', async () => {
     const { browser, home, history } = await atHome();
-    await home.search('moon');
+    home.search('moon');
     history.arrive();
-    await home.search('');
+    home.search('');
     expect(browser.at).toBe(1);
     expect(shapes(browser.entries).at(-1)).toEqual(plain(HOME.id, 1));
   });
 
   it('pushes details and closes them when the browser goes back', async () => {
     const { browser, home } = await atHome();
-    await home.openLink(SERIES_LINK);
+    home.openLink(SERIES_LINK);
+    home.bindFeed(() => readyRead(HOME_SERIES_FEED));
     home.openDetails(FIRST);
     expect(shapes(browser.entries).at(-1)).toEqual(plain(HOME.id, 1, FIRST));
     expect(home.opened).not.toBeNull();
@@ -366,7 +344,8 @@ describe('the library history across the tabs and the feeds', () => {
 
   it('goes back once when the details close, and stays on the feed', async () => {
     const { browser, home } = await atHome();
-    await home.openLink(SERIES_LINK);
+    home.openLink(SERIES_LINK);
+    home.bindFeed(() => readyRead(HOME_SERIES_FEED));
     home.openDetails(FIRST);
     home.closeDetails();
     expect(browser.at).toBe(1);
@@ -376,7 +355,8 @@ describe('the library history across the tabs and the feeds', () => {
 
   it('opens the details again when the browser goes forward', async () => {
     const { browser, home } = await atHome();
-    await home.openLink(SERIES_LINK);
+    home.openLink(SERIES_LINK);
+    home.bindFeed(() => readyRead(HOME_SERIES_FEED));
     home.openDetails(FIRST);
     home.closeDetails();
     browser.go(1);
@@ -385,18 +365,18 @@ describe('the library history across the tabs and the feeds', () => {
 
   it('pushes the first search and replaces the refinements', async () => {
     const { browser, home } = await atHome();
-    await home.search('mo');
-    await home.search('moon');
+    home.search('mo');
+    home.search('moon');
     expect(shapes(browser.entries)).toEqual([plain(HOME.id), plain(HOME.id, 1)]);
   });
 
   it('goes back from search results to the feed the search began on, with no query', async () => {
     const { browser, home, session } = await atHome();
     session.type(HOME.id, 'moon');
-    await home.search('moon');
+    home.search('moon');
     browser.go(-1);
     await settle();
-    expect(home.state.kind).toBe('navigation');
+    expect(home.reading).toEqual({ kind: 'root' });
     expect(session.queryOf(HOME.id)).toBe('');
   });
 
@@ -406,7 +386,7 @@ describe('the library history across the tabs and the feeds', () => {
     browser.go(1);
     await settle();
     expect(home.crumbs).toHaveLength(1);
-    expect(home.state.kind).toBe('navigation');
+    expect(home.reading).toEqual({ kind: 'root' });
   });
 
   it('returns to the tab an earlier entry names', async () => {

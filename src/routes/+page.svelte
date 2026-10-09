@@ -87,6 +87,7 @@
     refreshLibrary: async () => {
       await Promise.all([refreshOrigins(queryClient), refreshLibrary(queryClient)]);
     },
+    refreshOrigins: () => refreshOrigins(queryClient),
     history: libraryHistory,
   });
   const catalogSearch = new CatalogHeaderSearch(catalogs, catalogSession);

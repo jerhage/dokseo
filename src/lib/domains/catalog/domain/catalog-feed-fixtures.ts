@@ -1,17 +1,16 @@
 import { catalogId } from '$lib/shared/ids';
+import { unknownTotal } from '$lib/shared/read-paged-state';
 import type {
-  AcquisitionFeed,
-  CatalogFeed,
   FeedAddress,
+  FeedEntry,
+  FeedPage,
   FeedSearch,
-  NavigationFeed,
+  NavigationLink,
   TrailStep,
 } from './catalog-feed';
 import type { RemotePublication } from './remote-publication';
 
 const HOME_SEARCH: FeedSearch = { handle: 'search:home' };
-
-const NO_PAGING = { next: null } as const;
 
 function feedAddress(url: string): FeedAddress {
   return { handle: url };
@@ -19,140 +18,136 @@ function feedAddress(url: string): FeedAddress {
 
 const HOME_ID = catalogId('home');
 
-const HOME_ROOT_FEED: CatalogFeed = {
+function linkEntry(link: NavigationLink): FeedEntry {
+  return { kind: 'link', link };
+}
+
+function publicationEntry(publication: RemotePublication): FeedEntry {
+  return { kind: 'publication', publication };
+}
+
+const HOME_ROOT_FEED: FeedPage = {
   kind: 'navigation',
-  feed: {
-    id: 'urn:calibre:main',
-    title: 'Sample Library',
-    address: feedAddress('https://home.test/opds'),
-    paging: NO_PAGING,
-    search: HOME_SEARCH,
-    links: [
-      {
-        title: 'By Newest',
-        address: feedAddress('https://home.test/opds/navcatalog/6f6c64657374?library_id=calibre'),
-        summary: 'Books sorted by date added',
-      },
-      {
-        title: 'By Series',
-        address: feedAddress('https://home.test/opds/navcatalog/4e736572696573?library_id=calibre'),
-        summary: 'Books by series',
-      },
-    ],
-  },
+  id: 'urn:calibre:main',
+  title: 'Sample Library',
+  address: feedAddress('https://home.test/opds'),
+  next: null,
+  search: HOME_SEARCH,
+  total: unknownTotal(),
+  items: [
+    linkEntry({
+      title: 'By Newest',
+      address: feedAddress('https://home.test/opds/navcatalog/6f6c64657374?library_id=calibre'),
+      summary: 'Books sorted by date added',
+    }),
+    linkEntry({
+      title: 'By Series',
+      address: feedAddress('https://home.test/opds/navcatalog/4e736572696573?library_id=calibre'),
+      summary: 'Books by series',
+    }),
+  ],
 };
 
 const SERIES_ADDRESS = 'https://home.test/opds/navcatalog/4e736572696573?library_id=calibre';
 
-const HOME_SERIES_FEED: CatalogFeed = {
+const HOME_SERIES_FEED: FeedPage = {
   kind: 'acquisition',
-  feed: {
-    id: 'calibre-series:星の旅',
-    title: 'Sample Library: Series: 星の旅',
-    address: feedAddress(SERIES_ADDRESS),
-    paging: { next: feedAddress(`${SERIES_ADDRESS}&offset=30`) },
-    search: HOME_SEARCH,
-    publications: [
-      {
-        catalogId: HOME_ID,
-        entryId: 'urn:uuid:11111111-2222-3333-4444-555555555555',
-        title: '星の旅 2',
-        authors: ['山田 太郎'],
-        language: 'ja',
-        summary: 'SERIES: 星の旅 [2]The second voyage begins.',
-        updated: '2026-08-15T12:30:00+00:00',
-        cover: { href: 'https://home.test/get/cover/720/calibre', mediaType: 'image/jpeg' },
-        acquisition: {
-          href: 'https://home.test/get/epub/720/calibre',
-          format: 'epub',
-          mediaType: 'application/epub+zip',
-          length: 1071903,
-        },
-        feedPath: [],
+  id: 'calibre-series:星の旅',
+  title: 'Sample Library: Series: 星の旅',
+  address: feedAddress(SERIES_ADDRESS),
+  next: feedAddress(`${SERIES_ADDRESS}&offset=30`),
+  search: HOME_SEARCH,
+  total: unknownTotal(),
+  items: [
+    publicationEntry({
+      catalogId: HOME_ID,
+      entryId: 'urn:uuid:11111111-2222-3333-4444-555555555555',
+      title: '星の旅 2',
+      authors: ['山田 太郎'],
+      language: 'ja',
+      summary: 'SERIES: 星の旅 [2]The second voyage begins.',
+      updated: '2026-08-15T12:30:00+00:00',
+      cover: { href: 'https://home.test/get/cover/720/calibre', mediaType: 'image/jpeg' },
+      acquisition: {
+        href: 'https://home.test/get/epub/720/calibre',
+        format: 'epub',
+        mediaType: 'application/epub+zip',
+        length: 1071903,
       },
-      {
-        catalogId: HOME_ID,
-        entryId: 'urn:uuid:66666666-7777-8888-9999-000000000000',
-        title: 'Star Voyage 3',
-        authors: ['Jane Roe'],
-        language: 'en',
-        summary: 'SERIES: Star Voyage [3]Plain tale.',
-        updated: '2026-08-16T08:00:00+00:00',
-        cover: { href: 'https://home.test/get/cover/721/calibre', mediaType: 'image/jpeg' },
-        acquisition: {
-          href: 'https://home.test/get/pdf/721/calibre',
-          format: 'pdf',
-          mediaType: 'application/pdf',
-          length: null,
-        },
-        feedPath: [],
+      feedPath: [],
+    }),
+    publicationEntry({
+      catalogId: HOME_ID,
+      entryId: 'urn:uuid:66666666-7777-8888-9999-000000000000',
+      title: 'Star Voyage 3',
+      authors: ['Jane Roe'],
+      language: 'en',
+      summary: 'SERIES: Star Voyage [3]Plain tale.',
+      updated: '2026-08-16T08:00:00+00:00',
+      cover: { href: 'https://home.test/get/cover/721/calibre', mediaType: 'image/jpeg' },
+      acquisition: {
+        href: 'https://home.test/get/pdf/721/calibre',
+        format: 'pdf',
+        mediaType: 'application/pdf',
+        length: null,
       },
-    ],
-  },
+      feedPath: [],
+    }),
+  ],
 };
 
-const SHELF_FICTION_FEED: CatalogFeed = {
+const SHELF_FICTION_FEED: FeedPage = {
   kind: 'acquisition',
-  feed: {
-    id: 'https://example.org/opds/fiction',
-    title: 'Fiction',
-    address: feedAddress('https://example.org/opds'),
-    paging: NO_PAGING,
-    search: null,
-    publications: [
-      {
-        catalogId: HOME_ID,
-        entryId: 'https://example.org/book/42',
-        title: 'The Lantern Maker',
-        authors: ['Ann Poe'],
-        language: null,
-        summary: 'A short summary.',
-        updated: '2026-07-01T00:00:00Z',
-        cover: { href: 'https://example.org/covers/42.png', mediaType: 'image/png' },
-        acquisition: {
-          href: 'https://example.org/files/42.cbz',
-          format: 'cbz',
-          mediaType: 'application/vnd.comicbook+zip',
-          length: 2048,
-        },
-        feedPath: [],
+  id: 'https://example.org/opds/fiction',
+  title: 'Fiction',
+  address: feedAddress('https://example.org/opds'),
+  next: null,
+  search: null,
+  total: unknownTotal(),
+  items: [
+    publicationEntry({
+      catalogId: HOME_ID,
+      entryId: 'https://example.org/book/42',
+      title: 'The Lantern Maker',
+      authors: ['Ann Poe'],
+      language: null,
+      summary: 'A short summary.',
+      updated: '2026-07-01T00:00:00Z',
+      cover: { href: 'https://example.org/covers/42.png', mediaType: 'image/png' },
+      acquisition: {
+        href: 'https://example.org/files/42.cbz',
+        format: 'cbz',
+        mediaType: 'application/vnd.comicbook+zip',
+        length: 2048,
       },
-    ],
-  },
+      feedPath: [],
+    }),
+  ],
 };
 
-type FeedChange = <Feed extends NavigationFeed | AcquisitionFeed>(feed: Feed) => Feed;
-
-function changed(reading: CatalogFeed, change: FeedChange): CatalogFeed {
-  if (reading.kind === 'navigation') return { kind: 'navigation', feed: change(reading.feed) };
-  return { kind: 'acquisition', feed: change(reading.feed) };
+function withoutSearch(page: FeedPage): FeedPage {
+  return { ...page, search: null };
 }
 
-function withoutSearch(reading: CatalogFeed): CatalogFeed {
-  return changed(reading, (feed) => ({ ...feed, search: null }));
-}
-
-function identifiedAs(reading: CatalogFeed, id: string): CatalogFeed {
-  return changed(reading, (feed) => ({ ...feed, id }));
+function identifiedAs(page: FeedPage, id: string): FeedPage {
+  return { ...page, id };
 }
 
 function placed(
-  reading: CatalogFeed,
+  page: FeedPage,
   address: FeedAddress,
   path: readonly TrailStep[],
   catalog = HOME_ID,
-): CatalogFeed {
-  if (reading.kind === 'navigation') {
-    return { kind: 'navigation', feed: { ...reading.feed, address } };
-  }
-  const publications: readonly RemotePublication[] = reading.feed.publications.map(
-    (publication) => ({
-      ...publication,
+): FeedPage {
+  const items = page.items.map((entry): FeedEntry => {
+    if (entry.kind === 'link') return entry;
+    return publicationEntry({
+      ...entry.publication,
       catalogId: catalog,
       feedPath: path.map((step) => ({ title: step.title, href: step.address?.handle ?? '' })),
-    }),
-  );
-  return { kind: 'acquisition', feed: { ...reading.feed, address, publications } };
+    });
+  });
+  return { ...page, address, items };
 }
 
 export {
@@ -162,6 +157,8 @@ export {
   SHELF_FICTION_FEED,
   feedAddress,
   identifiedAs,
+  linkEntry,
   placed,
+  publicationEntry,
   withoutSearch,
 };

@@ -4,6 +4,7 @@ import type { BookId } from '$lib/shared/ids';
 import { DEFAULT_BOOK_MATCHING } from '$lib/domains/library/domain/book/book-matching';
 import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/reading-defaults';
 import type { DownloadProgress } from '../domain/catalog-source';
+import type { BookOriginLink } from '../domain/remote-item';
 import type { RemotePublication } from '../domain/remote-publication';
 import type { DownloadPublicationResult } from '../use-cases/download-publication';
 import type { UpdatePublicationResult } from '../use-cases/update-publication';
@@ -24,6 +25,7 @@ type PendingUpdate = {
 };
 
 function setup() {
+  let held: ReadonlyMap<string, BookOriginLink> = new Map();
   const pending: Pending[] = [];
   const updating: PendingUpdate[] = [];
   const updated: { entryId: string; bookId: BookId }[] = [];
@@ -49,13 +51,17 @@ function setup() {
       downloaded: (item, id) => downloaded.push({ entryId: item.entryId, bookId: id }),
       updated: (item, id) => updated.push({ entryId: item.entryId, bookId: id }),
     },
+    () => held,
   );
+  const setHeld = (next: ReadonlyMap<string, BookOriginLink>): void => {
+    held = next;
+  };
   const next = (): Pending => {
     const first = pending.shift();
     if (first === undefined) throw new Error('no download is waiting');
     return first;
   };
-  return { downloads, pending, calls, downloaded, updating, updated, next };
+  return { downloads, pending, calls, downloaded, updating, updated, next, setHeld };
 }
 
 function queued(...ids: string[]) {
@@ -147,8 +153,8 @@ describe('CatalogDownloads', () => {
   });
 
   it('keeps the entry held-older when the server has a later update', () => {
-    const { downloads } = setup();
-    downloads.setHeld(new Map([['a', { bookId: bookId('b'), updated: '2026-01-01T00:00:00Z' }]]));
+    const { downloads, setHeld } = setup();
+    setHeld(new Map([['a', { bookId: bookId('b'), updated: '2026-01-01T00:00:00Z' }]]));
     expect(stateOf(downloads, publication('a'))).toBe('held-older');
   });
 });
@@ -181,8 +187,8 @@ describe('CatalogDownloads queue', () => {
   });
 
   it('leaves out entries that are held or unsupported', async () => {
-    const { downloads, calls, next } = setup();
-    downloads.setHeld(new Map([['a', { bookId: bookId('x'), updated: '2026-08-01T00:00:00Z' }]]));
+    const { downloads, calls, next, setHeld } = setup();
+    setHeld(new Map([['a', { bookId: bookId('x'), updated: '2026-08-01T00:00:00Z' }]]));
     const entries = [
       ...queued('a', 'b'),
       { publication: publication('c', { acquisition: null }), feedPosition: 2 },
@@ -250,7 +256,7 @@ const STALE_LINK = { bookId: bookId('held-1'), updated: '2026-07-01T00:00:00Z' }
 
 function setupStale() {
   const world = setup();
-  world.downloads.setHeld(new Map([['a', STALE_LINK]]));
+  world.setHeld(new Map([['a', STALE_LINK]]));
   return world;
 }
 
@@ -261,10 +267,8 @@ describe('CatalogDownloads replacing a held book', () => {
   });
 
   it('reports an entry as held while its origin is as new', () => {
-    const { downloads } = setup();
-    downloads.setHeld(
-      new Map([['a', { bookId: bookId('held-1'), updated: '2026-08-01T00:00:00Z' }]]),
-    );
+    const { downloads, setHeld } = setup();
+    setHeld(new Map([['a', { bookId: bookId('held-1'), updated: '2026-08-01T00:00:00Z' }]]));
     expect(downloads.itemFor(publication('a')).kind).toBe('held');
   });
 

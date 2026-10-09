@@ -34,7 +34,7 @@ function setup(answer: ReadFeedResult) {
 
 describe('testCatalogConnection', () => {
   it('reports the title of a navigation root feed without needing a name', async () => {
-    const { deps, requests } = setup({ kind: 'success', reading: HOME_ROOT_FEED });
+    const { deps, requests } = setup({ kind: 'success', page: HOME_ROOT_FEED });
     const result = await testCatalogConnection(deps, OPEN, null);
     expect(result).toEqual({
       kind: 'success',
@@ -45,20 +45,20 @@ describe('testCatalogConnection', () => {
   });
 
   it('reports the title of an acquisition root feed', async () => {
-    const { deps } = setup({ kind: 'success', reading: SHELF_FICTION_FEED });
+    const { deps } = setup({ kind: 'success', page: SHELF_FICTION_FEED });
     const result = await testCatalogConnection(deps, OPEN, null);
     expect(result.kind).toBe('success');
     if (result.kind === 'success') expect(result.feedKind).toBe('acquisition');
   });
 
   it('sends the typed password with the username', async () => {
-    const { deps, requests } = setup({ kind: 'success', reading: HOME_ROOT_FEED });
+    const { deps, requests } = setup({ kind: 'success', page: HOME_ROOT_FEED });
     await testCatalogConnection(deps, PRIVATE, 'secret');
     expect(requests[0]?.credentials).toEqual({ kind: 'basic', username: 'jo', password: 'secret' });
   });
 
   it('answers locked and sends nothing when basic has no password', async () => {
-    const { deps, requests } = setup({ kind: 'success', reading: HOME_ROOT_FEED });
+    const { deps, requests } = setup({ kind: 'success', page: HOME_ROOT_FEED });
     expect(await testCatalogConnection(deps, PRIVATE, null)).toEqual({ kind: 'locked' });
     expect(requests).toEqual([]);
   });
@@ -84,7 +84,7 @@ describe('testCatalogConnection', () => {
   });
 
   it('refuses a draft with an unusable address without a request', async () => {
-    const { deps, requests } = setup({ kind: 'success', reading: HOME_ROOT_FEED });
+    const { deps, requests } = setup({ kind: 'success', page: HOME_ROOT_FEED });
     const draft: CatalogDraft = { ...OPEN, rootUrl: 'http://example.org/opds' };
     expect(await testCatalogConnection(deps, draft, null)).toEqual({
       kind: 'invalid-url',
@@ -94,7 +94,7 @@ describe('testCatalogConnection', () => {
   });
 
   it('refuses basic without a username', async () => {
-    const { deps } = setup({ kind: 'success', reading: HOME_ROOT_FEED });
+    const { deps } = setup({ kind: 'success', page: HOME_ROOT_FEED });
     const draft: CatalogDraft = { ...PRIVATE, auth: { kind: 'basic', username: ' ' } };
     expect(await testCatalogConnection(deps, draft, 'x')).toEqual({ kind: 'missing-username' });
   });

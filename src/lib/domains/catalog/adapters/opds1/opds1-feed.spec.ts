@@ -11,7 +11,8 @@ import {
   UNKNOWN_MEDIA_TYPE,
 } from './opds1-fixtures';
 import { MAX_FEED_CHARACTERS, readOpdsFeed } from './opds1-feed';
-import type { AcquisitionFeed, NavigationFeed, TrailStep } from '../../domain/catalog-feed';
+import { linksOf, publicationsOf } from '../../domain/catalog-feed';
+import type { FeedPage, TrailStep } from '../../domain/catalog-feed';
 
 const ID = catalogId('c1');
 const SERVER = 'http://calibre.local:8080';
@@ -19,16 +20,20 @@ const PATH: readonly TrailStep[] = [
   { title: 'By Series', address: { handle: `${SERVER}/opds/navcatalog/4e736572696573` } },
 ];
 
-function navigation(xml: string, url = `${SERVER}/opds`): NavigationFeed {
+function page(xml: string, url: string, kind: FeedPage['kind']): FeedPage {
   const reading = readOpdsFeed(xml, url, ID, PATH);
-  if (reading.kind !== 'navigation') throw new Error(`expected navigation, got ${reading.kind}`);
-  return reading.feed;
+  if (reading.kind !== kind) throw new Error(`expected ${kind}, got ${reading.kind}`);
+  return reading;
 }
 
-function acquisition(xml: string, url = `${SERVER}/opds/navcatalog/x`): AcquisitionFeed {
-  const reading = readOpdsFeed(xml, url, ID, PATH);
-  if (reading.kind !== 'acquisition') throw new Error(`expected acquisition, got ${reading.kind}`);
-  return reading.feed;
+function navigation(xml: string, url = `${SERVER}/opds`) {
+  const read = page(xml, url, 'navigation');
+  return { ...read, links: linksOf(read.items), paging: { next: read.next } };
+}
+
+function acquisition(xml: string, url = `${SERVER}/opds/navcatalog/x`) {
+  const read = page(xml, url, 'acquisition');
+  return { ...read, publications: publicationsOf(read.items), paging: { next: read.next } };
 }
 
 describe('readOpdsFeed feed id', () => {

@@ -1,37 +1,29 @@
 import { tick } from 'svelte';
-import { match } from 'ts-pattern';
 import { returnFocus } from '$lib/shared/focus-return';
 import type { FocusReturn } from '$lib/shared/focus-return';
 import type { CatalogId } from '$lib/shared/ids';
 import type { Catalog } from '../domain/catalog';
-import { addressKey } from '../domain/catalog-feed';
-import type {
-  AcquisitionFeed,
-  CatalogFeed,
-  FeedAddress,
-  FeedSearch,
-  NavigationFeed,
-  NavigationLink,
-  TrailStep,
-} from '../domain/catalog-feed';
-import type { BookOriginLink, RemoteItem } from '../domain/remote-item';
+import { ROOT_LOCATION } from '../domain/catalog-feed';
+import type { FeedHead, FeedLocation, FeedSearch, NavigationLink } from '../domain/catalog-feed';
+import type { RemoteItem } from '../domain/remote-item';
 import type { RemotePublication } from '../domain/remote-publication';
-import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
-import type { SearchCatalogResult } from '../use-cases/search-catalog';
 import type { UnlockCatalogResult } from '../use-cases/unlock-catalog';
-import type { CatalogCovers } from './catalog-covers.svelte';
+import type { CatalogCovers } from './catalog-covers';
 import type { CatalogDownloads, QueuedDownload } from './catalog-downloads.svelte';
+import type { CatalogFeedBinding, ReadFeed } from './catalog-feed-binding.svelte';
+import { NO_LISTING, listingOf } from './catalog-feed-read';
 import type { Sought } from './catalog-session.svelte';
 import { CatalogSelection } from './catalog-selection.svelte';
-import type { BrowseFailure } from './catalog-texts';
 import {
   ROOT_POSITION,
-  addressed,
   atDepth,
   crumbs,
-  identified,
+  locationOf,
   opened,
+  readingKey,
+  samePosition,
   searched,
+  settled,
 } from './feed-address';
 import type { FeedPosition } from './feed-address';
 import { NO_HISTORY } from './library-history';
@@ -41,31 +33,18 @@ import type { PublicationFact } from './publication-facts';
 import type { Scroller } from './scroll-memory';
 
 type BrowseUseCases = {
-  readonly browseCatalog: (
-    id: CatalogId,
-    address: FeedAddress | null,
-    path: readonly TrailStep[],
-    signal?: AbortSignal,
-  ) => Promise<BrowseCatalogResult>;
-  readonly searchCatalog: (
-    id: CatalogId,
-    search: FeedSearch,
-    query: string,
-    path: readonly TrailStep[],
-    signal?: AbortSignal,
-  ) => Promise<SearchCatalogResult>;
   readonly unlockCatalog: (id: CatalogId, password: string) => UnlockCatalogResult;
+  readonly forgetDanglingOrigins: (id: CatalogId) => Promise<unknown>;
 };
 
 type PositionStore = {
   readonly positionOf: (id: CatalogId) => FeedPosition;
   readonly move: (id: CatalogId, position: FeedPosition) => void;
+  readonly settle: (id: CatalogId, position: FeedPosition) => void;
   readonly advance: (id: CatalogId) => void;
   readonly ancestorIndexOf: (id: CatalogId, ancestor: FeedPosition) => number | null;
   readonly seek: (id: CatalogId, index: number) => Sought | null;
   readonly type: (id: CatalogId, query: string) => void;
-  readonly pagesOf: (id: CatalogId) => readonly FeedAddress[];
-  readonly appendPage: (id: CatalogId, address: FeedAddress) => void;
   readonly selectionOf: (id: CatalogId) => ReadonlySet<string>;
   readonly keepSelection: (id: CatalogId, entryIds: ReadonlySet<string>) => void;
   readonly searchOriginOf: (id: CatalogId) => FeedPosition | null;
@@ -75,33 +54,9 @@ type PositionStore = {
   readonly takeScroll: (id: CatalogId) => number;
 };
 
-type BrowseState =
-  | { readonly kind: 'loading' }
-  | { readonly kind: 'navigation'; readonly feed: NavigationFeed }
-  | { readonly kind: 'acquisition'; readonly feed: AcquisitionFeed }
-  | { readonly kind: 'unlock'; readonly refused: boolean }
-  | { readonly kind: 'failed'; readonly failure: BrowseFailure };
-
 type ShowMode = HistoryMode | 'none';
 
 type BrowseCrumb = { readonly label: string; readonly onselect: () => void };
-
-type Paging = { readonly next: FeedAddress | null };
-
-type MoreState =
-  | { readonly kind: 'idle' }
-  | { readonly kind: 'loading' }
-  | { readonly kind: 'failed'; readonly failure: BrowseFailure };
-
-type MoreOutcome =
-  | {
-      readonly kind: 'appended';
-      readonly reading: CatalogFeed;
-      readonly held: ReadonlyMap<string, BookOriginLink>;
-    }
-  | { readonly kind: 'unlock'; readonly refused: boolean }
-  | { readonly kind: 'idle' }
-  | { readonly kind: 'failed'; readonly failure: BrowseFailure };
 
 type OpenedPublication = {
   readonly publication: RemotePublication;
@@ -111,24 +66,9 @@ type OpenedPublication = {
   readonly summary: readonly string[];
 };
 
-const NO_PAGING: Paging = { next: null };
-
-function firstOfEach<T>(items: readonly T[], keyOf: (item: T) => string): readonly T[] {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    const key = keyOf(item);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
 class CatalogBrowseView {
-  state = $state.raw<BrowseState>({ kind: 'loading' });
   position = $state.raw<FeedPosition>(ROOT_POSITION);
-  prompting = $state(true);
-  unlocking = $state(false);
-  more = $state.raw<MoreState>({ kind: 'idle' });
+  reading = $state.raw<FeedLocation>(ROOT_LOCATION);
 
   readonly catalog: Catalog;
   readonly downloads: CatalogDownloads;
@@ -137,14 +77,14 @@ class CatalogBrowseView {
 
   #cases: BrowseUseCases;
   #store: PositionStore;
+  #feed: CatalogFeedBinding;
+  #listing = $derived(this.#listingNow());
   #rootSearch = $state<FeedSearch | null>(null);
-  #appended = $state.raw<readonly CatalogFeed[]>([]);
-  #pending: AbortController | null = null;
-  #loadingMore: AbortController | null = null;
   #started = false;
   #openedId = $state<string | null>(null);
   #openedFrom: FocusReturn | null = null;
   #scroller: Scroller | null = null;
+  #scrollTop: number;
   #searchedQuery: string | null = null;
   #history: HistoryRecorder;
 
@@ -154,12 +94,14 @@ class CatalogBrowseView {
     store: PositionStore,
     downloads: CatalogDownloads,
     covers: CatalogCovers,
+    feed: CatalogFeedBinding,
     history: HistoryRecorder = NO_HISTORY,
   ) {
     this.#history = history;
     this.catalog = catalog;
     this.downloads = downloads;
     this.covers = covers;
+    this.#feed = feed;
     this.selection = new CatalogSelection(
       downloads,
       () => this.entries,
@@ -168,50 +110,36 @@ class CatalogBrowseView {
     this.#cases = cases;
     this.#store = store;
     this.position = store.positionOf(catalog.id);
+    this.reading = locationOf(this.position);
+    this.selection.restore(store.selectionOf(catalog.id));
+    this.#scrollTop = store.takeScroll(catalog.id);
   }
 
   get crumbs(): readonly BrowseCrumb[] {
     return crumbs(this.catalog.title, this.position.path).map(({ label, depth }) => ({
       label,
-      onselect: () => void this.goToDepth(depth),
+      onselect: () => this.goToDepth(depth),
     }));
   }
 
-  get paging(): Paging {
-    const last = this.#appended.at(-1);
-    if (last !== undefined) return last.feed.paging;
-    return match(this.state)
-      .returnType<Paging>()
-      .with({ kind: 'navigation' }, ({ feed }) => feed.paging)
-      .with({ kind: 'acquisition' }, ({ feed }) => feed.paging)
-      .with({ kind: 'loading' }, { kind: 'unlock' }, { kind: 'failed' }, () => NO_PAGING)
-      .exhaustive();
+  get readingKey(): string {
+    return readingKey(this.reading);
+  }
+
+  get feedSettled(): boolean {
+    return this.#feed.current.state.kind !== 'loading';
   }
 
   get feedSearch(): FeedSearch | null {
-    const own = match(this.state)
-      .returnType<FeedSearch | null>()
-      .with({ kind: 'navigation' }, ({ feed }) => feed.search)
-      .with({ kind: 'acquisition' }, ({ feed }) => feed.search)
-      .with({ kind: 'loading' }, { kind: 'unlock' }, { kind: 'failed' }, () => null)
-      .exhaustive();
-    return own ?? this.#rootSearch;
+    return this.#feed.current.head?.search ?? this.#rootSearch;
   }
 
   get links(): readonly NavigationLink[] {
-    const links = [this.state, ...this.#appended].flatMap((page) =>
-      page.kind === 'navigation' ? page.feed.links : [],
-    );
-    return firstOfEach(links, (link) => addressKey(link.address));
+    return this.#listing.links;
   }
 
   get entries(): readonly QueuedDownload[] {
-    const publications = [this.state, ...this.#appended].flatMap((page) =>
-      page.kind === 'acquisition' ? page.feed.publications : [],
-    );
-    return firstOfEach(publications, (publication) => publication.entryId).map(
-      (publication, index) => ({ publication, feedPosition: index }),
-    );
+    return this.#listing.publications;
   }
 
   get opened(): OpenedPublication | null {
@@ -260,24 +188,25 @@ class CatalogBrowseView {
     if (entry !== undefined) this.downloads.askToReplace(entry.publication, entry.feedPosition);
   }
 
-  start(): Promise<void> {
-    if (this.#started) return Promise.resolve();
+  start(): void {
+    if (this.#started) return;
     this.#started = true;
-    return this.load();
+    void this.#cases.forgetDanglingOrigins(this.catalog.id);
   }
 
-  async load(): Promise<void> {
-    const saved = this.#store.pagesOf(this.catalog.id);
-    const chosen = this.#store.selectionOf(this.catalog.id);
-    const top = this.#store.takeScroll(this.catalog.id);
-    await this.#show(this.position, 'none');
-    this.selection.restore(chosen);
-    const shown = this.#pending;
-    for (const address of saved) {
-      if (this.#pending !== shown) return;
-      if (!(await this.#appendPage(address))) break;
+  headLoaded(head: FeedHead): void {
+    const { position } = this;
+    const placed = settled(position, head);
+    if (!samePosition(position, placed)) {
+      this.position = placed;
+      this.#store.settle(this.catalog.id, placed);
     }
-    if (this.#pending === shown) await this.#scrollBack(top);
+    if (position.address === null && position.lookup === null) this.#rootSearch = head.search;
+    void this.#restoreScroll();
+  }
+
+  bindFeed(read: ReadFeed): () => void {
+    return this.#feed.bind(read);
   }
 
   bindScroller(scroller: Scroller): () => void {
@@ -292,86 +221,70 @@ class CatalogBrowseView {
     this.#store.keepScroll(this.catalog.id, this.#scroller.read());
   }
 
-  openLink(link: NavigationLink): Promise<void> {
+  openLink(link: NavigationLink): void {
     this.#store.dropSearchOrigin(this.catalog.id);
     this.#searchedQuery = null;
-    return this.#show(opened(this.position, { title: link.title, address: link.address }), 'push');
+    this.#show(opened(this.position, { title: link.title, address: link.address }), 'push');
   }
 
-  goToDepth(depth: number): Promise<void> {
+  goToDepth(depth: number): void {
     this.#store.dropSearchOrigin(this.catalog.id);
     this.#searchedQuery = null;
     const ancestor = atDepth(this.position, depth);
-    if (this.#walkedBackTo(ancestor)) return Promise.resolve();
-    return this.#show(ancestor, 'replace');
+    if (this.#walkedBackTo(ancestor)) return;
+    this.#show(ancestor, 'replace');
   }
 
-  async loadMore(): Promise<void> {
-    const address = this.paging.next;
-    if (address === null) return;
-    await this.#appendPage(address);
-  }
-
-  search(query: string): Promise<void> {
+  search(query: string): void {
     const search = this.feedSearch;
     if (query.trim() === '') return this.#leaveSearch();
-    if (search === null) return Promise.resolve();
-    if (this.#searchedQuery === query.trim() && this.state.kind !== 'failed') {
-      return Promise.resolve();
-    }
+    if (search === null) return;
+    if (this.#searchedQuery === query.trim() && this.#feed.current.state.kind !== 'failed') return;
     this.#searchedQuery = query.trim();
     const entering = this.#store.searchOriginOf(this.catalog.id) === null;
     if (entering) this.#store.keepSearchOrigin(this.catalog.id, this.position);
-    return this.#show(searched(this.position, { search, query }), entering ? 'push' : 'replace');
+    this.#show(searched(this.position, { search, query }), entering ? 'push' : 'replace');
   }
 
-  async unlock(password: string): Promise<void> {
-    this.unlocking = true;
+  unlock(password: string): void {
     this.#cases.unlockCatalog(this.catalog.id, password);
-    this.prompting = false;
-    await this.load();
-    this.unlocking = false;
-  }
-
-  dismissPrompt(): void {
-    this.prompting = false;
-  }
-
-  askPassword(): void {
-    this.prompting = true;
+    this.#feed.current.reload();
   }
 
   dispose(): void {
-    this.#pending?.abort();
-    this.#loadingMore?.abort();
-    this.covers.clear();
+    this.covers.dispose();
     this.downloads.dispose();
   }
 
-  #leaveSearch(): Promise<void> {
-    const origin = this.#store.searchOriginOf(this.catalog.id);
-    if (origin === null) return Promise.resolve();
-    this.#store.dropSearchOrigin(this.catalog.id);
-    this.#searchedQuery = null;
-    if (this.#walkedBackTo(origin)) return Promise.resolve();
-    return this.#show(origin, 'replace');
-  }
-
-  #walkedBackTo(ancestor: FeedPosition): boolean {
-    const index = this.#store.ancestorIndexOf(this.catalog.id, ancestor);
-    return index !== null && this.#history.walkedBack(this.catalog.id, index);
-  }
-
-  restoreFeed(index: number): Promise<void> {
+  restoreFeed(index: number): void {
     const sought = this.#store.seek(this.catalog.id, index);
-    if (sought === null) return Promise.resolve();
+    if (sought === null) return;
     const { position, before } = sought;
     const { lookup } = position;
     this.#searchedQuery = lookup === null ? null : lookup.query.trim();
     if (lookup === null) this.#store.dropSearchOrigin(this.catalog.id);
     else this.#store.keepSearchOrigin(this.catalog.id, before ?? ROOT_POSITION);
     this.#store.type(this.catalog.id, lookup === null ? '' : lookup.query);
-    return this.#show(position, 'none');
+    this.#show(position, 'none');
+  }
+
+  #listingNow() {
+    const state = this.#feed.current.state;
+    return state.kind === 'ready' ? listingOf(state.items) : NO_LISTING;
+  }
+
+  #leaveSearch(): void {
+    const origin = this.#store.searchOriginOf(this.catalog.id);
+    if (origin === null) return;
+    this.#store.dropSearchOrigin(this.catalog.id);
+    this.#searchedQuery = null;
+    if (this.#walkedBackTo(origin)) return;
+    this.#show(origin, 'replace');
+  }
+
+  #walkedBackTo(ancestor: FeedPosition): boolean {
+    const index = this.#store.ancestorIndexOf(this.catalog.id, ancestor);
+    return index !== null && this.#history.walkedBack(this.catalog.id, index);
   }
 
   #hideDetails(): void {
@@ -384,157 +297,26 @@ class CatalogBrowseView {
     return this.entries.find(({ publication }) => publication.entryId === this.#openedId);
   }
 
-  async #scrollBack(top: number): Promise<void> {
+  async #restoreScroll(): Promise<void> {
+    const top = this.#scrollTop;
     if (top <= 0) return;
+    this.#scrollTop = 0;
     await tick();
     this.#scroller?.scrollTo(top);
   }
 
-  async #show(position: FeedPosition, mode: ShowMode): Promise<void> {
-    this.#pending?.abort();
-    this.#loadingMore?.abort();
-    this.#loadingMore = null;
-    const pending = new AbortController();
-    this.#pending = pending;
-    this.#appended = [];
+  #show(position: FeedPosition, mode: ShowMode): void {
     this.selection.reset();
     this.#openedId = null;
-    this.more = { kind: 'idle' };
+    this.#scrollTop = 0;
     this.position = position;
+    this.reading = locationOf(position);
     if (mode === 'push') this.#store.advance(this.catalog.id);
     this.#store.move(this.catalog.id, position);
     if (mode !== 'none') this.#history.moved(this.catalog.id, mode);
     this.covers.clear();
-    this.state = { kind: 'loading' };
-
-    const { lookup } = position;
-    const result =
-      lookup === null
-        ? await this.#cases.browseCatalog(
-            this.catalog.id,
-            position.address,
-            position.path,
-            pending.signal,
-          )
-        : await this.#cases.searchCatalog(
-            this.catalog.id,
-            lookup.search,
-            lookup.query,
-            position.path,
-            pending.signal,
-          );
-    if (this.#pending !== pending) return;
-
-    this.state = match(result)
-      .returnType<BrowseState>()
-      .with({ kind: 'success' }, ({ reading }) => reading)
-      .with({ kind: 'locked' }, () => ({ kind: 'unlock', refused: false }))
-      .with({ kind: 'unauthorized' }, () => ({ kind: 'unlock', refused: true }))
-      .with({ kind: 'aborted' }, () => ({ kind: 'loading' }))
-      .with(
-        { kind: 'not-a-catalog' },
-        { kind: 'not-found' },
-        { kind: 'server-error' },
-        { kind: 'blocked' },
-        { kind: 'offline' },
-        { kind: 'unknown-catalog' },
-        { kind: 'unreadable-catalog' },
-        { kind: 'storage-unavailable' },
-        (failure) => ({ kind: 'failed', failure }),
-      )
-      .exhaustive();
-
-    if (this.state.kind === 'unlock') this.prompting = true;
-    if (result.kind !== 'success') return;
-    const settled = lookup === null ? position : addressed(position, result.reading.feed.address);
-    const identity = identified(settled, result.reading.feed.id);
-    this.position = identity;
-    this.#store.move(this.catalog.id, identity);
-    if (position.address === null && lookup === null) this.#rootSearch = result.reading.feed.search;
-    this.#shown(result.held);
-  }
-
-  async #appendPage(address: FeedAddress): Promise<boolean> {
-    const first = this.state.kind;
-    if (first !== 'navigation' && first !== 'acquisition') return false;
-    if (this.more.kind === 'loading') return false;
-    this.more = { kind: 'loading' };
-    const loading = new AbortController();
-    this.#loadingMore = loading;
-
-    const result = await this.#cases.browseCatalog(
-      this.catalog.id,
-      address,
-      this.position.path,
-      loading.signal,
-    );
-    if (this.#loadingMore !== loading) return false;
-    this.#loadingMore = null;
-
-    const outcome = match(result)
-      .returnType<MoreOutcome>()
-      .with({ kind: 'success' }, ({ reading, held }) =>
-        reading.kind === first
-          ? { kind: 'appended', reading, held }
-          : { kind: 'failed', failure: { kind: 'not-a-catalog' } },
-      )
-      .with({ kind: 'locked' }, () => ({ kind: 'unlock', refused: false }))
-      .with({ kind: 'unauthorized' }, () => ({ kind: 'unlock', refused: true }))
-      .with({ kind: 'aborted' }, () => ({ kind: 'idle' }))
-      .with(
-        { kind: 'not-a-catalog' },
-        { kind: 'not-found' },
-        { kind: 'server-error' },
-        { kind: 'blocked' },
-        { kind: 'offline' },
-        { kind: 'unknown-catalog' },
-        { kind: 'unreadable-catalog' },
-        { kind: 'storage-unavailable' },
-        (failure) => ({ kind: 'failed', failure }),
-      )
-      .exhaustive();
-
-    return match(outcome)
-      .returnType<boolean>()
-      .with({ kind: 'appended' }, ({ reading, held }) => {
-        this.#appended = [...this.#appended, reading];
-        this.more = { kind: 'idle' };
-        this.#store.appendPage(this.catalog.id, address);
-        this.downloads.addHeld(held);
-        if (reading.kind === 'acquisition') void this.covers.add(reading.feed.publications);
-        return true;
-      })
-      .with({ kind: 'unlock' }, ({ refused }) => {
-        this.more = { kind: 'idle' };
-        this.state = { kind: 'unlock', refused };
-        this.prompting = true;
-        return false;
-      })
-      .with({ kind: 'idle' }, () => {
-        this.more = { kind: 'idle' };
-        return false;
-      })
-      .with({ kind: 'failed' }, ({ failure }) => {
-        this.more = { kind: 'failed', failure };
-        return false;
-      })
-      .exhaustive();
-  }
-
-  #shown(held: ReadonlyMap<string, BookOriginLink>): void {
-    this.downloads.setHeld(held);
-    if (this.state.kind !== 'acquisition') return;
-    void this.covers.show(this.state.feed.publications);
   }
 }
 
 export { CatalogBrowseView };
-export type {
-  BrowseCrumb,
-  BrowseState,
-  BrowseUseCases,
-  MoreState,
-  OpenedPublication,
-  Paging,
-  PositionStore,
-};
+export type { BrowseCrumb, BrowseUseCases, OpenedPublication, PositionStore };

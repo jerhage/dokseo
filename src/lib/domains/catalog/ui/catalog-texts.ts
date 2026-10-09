@@ -1,9 +1,11 @@
 import { match } from 'ts-pattern';
+import type { PagedProblem } from '$lib/shared/read-paged-state';
 import type { StatusVariant } from '$lib/ui/components/classes';
 import type { Catalog } from '../domain/catalog';
 import type { DraftRefusal, RootUrlProblem } from '../domain/catalog-draft';
 import type { CatalogProtocol } from '../domain/catalog-protocol';
 import type { OpenFileFailure } from '$lib/domains/library/use-cases/open-file';
+import type { FeedProblem } from '../queries/catalog-feed-queries';
 import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
 import type { DownloadPublicationResult } from '../use-cases/download-publication';
 import type { TestCatalogConnectionResult } from '../use-cases/test-catalog-connection';
@@ -139,6 +141,28 @@ function browseFailureText(failure: BrowseFailure, protocol: CatalogProtocol): s
     .exhaustive();
 }
 
+const PASSWORD_NEEDED_TEXT = 'This catalog needs its password.';
+
+function feedProblemText(problem: PagedProblem<FeedProblem>, protocol: CatalogProtocol): string {
+  return match(problem)
+    .returnType<string>()
+    .with({ kind: 'locked' }, () => PASSWORD_NEEDED_TEXT)
+    .with({ kind: 'unauthorized' }, () => UNAUTHORIZED_TEXT)
+    .with({ kind: 'unexpected' }, ({ message }) => message)
+    .with(
+      { kind: 'not-a-catalog' },
+      { kind: 'not-found' },
+      { kind: 'server-error' },
+      { kind: 'blocked' },
+      { kind: 'offline' },
+      { kind: 'unknown-catalog' },
+      { kind: 'unreadable-catalog' },
+      { kind: 'storage-unavailable' },
+      (failure) => browseFailureText(failure, protocol),
+    )
+    .exhaustive();
+}
+
 function downloadFailureText(failure: DownloadFailure, describeOpenFile: DescribeOpenFile): string {
   return match(failure)
     .returnType<string>()
@@ -186,10 +210,12 @@ export {
   BLOCKED_TEXT,
   NOT_FOUND_TEXT,
   OFFLINE_CATALOG_TEXT,
+  PASSWORD_NEEDED_TEXT,
   UNAUTHORIZED_TEXT,
   UNSUPPORTED_TEXT,
   browseFailureText,
   downloadFailureText,
+  feedProblemText,
   updateFailureText,
   FIX_FIELDS_TEXT,
   PASSWORD_ASKED_EACH_SESSION,

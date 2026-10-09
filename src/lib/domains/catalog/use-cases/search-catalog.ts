@@ -1,6 +1,5 @@
 import type { CatalogId } from '$lib/shared/ids';
 import type { FeedSearch, TrailStep } from '../domain/catalog-feed';
-import { heldReading } from './browse-catalog';
 import type { BrowseCatalogDeps, BrowseCatalogResult } from './browse-catalog';
 import { catalogAccess } from './catalog-access';
 
@@ -17,16 +16,7 @@ async function searchCatalog(
   const access = await catalogAccess(deps, catalogId);
   if (access.kind !== 'success') return access;
 
-  const fetched = await access.source.search(
-    search,
-    query,
-    { catalogId, path },
-    access.credentials,
-    signal,
-  );
-  if (fetched.kind !== 'success') return fetched;
-
-  return heldReading(deps, catalogId, fetched.reading);
+  return access.source.search(search, query, { catalogId, path }, access.credentials, signal);
 }
 
 export { searchCatalog };

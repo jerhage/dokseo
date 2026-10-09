@@ -31,6 +31,7 @@
       {:else if catalog !== null && view.hasBeenShown(tab.id)}
         <CatalogBrowse
           view={view.browsing(catalog)}
+          feeds={view.feeds}
           search={search.fieldFor(catalog)}
           {readerHref}
         />

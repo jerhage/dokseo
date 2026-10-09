@@ -42,8 +42,8 @@ async function testCatalogConnection(
   );
   if (fetched.kind !== 'success') return fetched;
 
-  const reading = fetched.reading;
-  return { kind: 'success', feedTitle: reading.feed.title, feedKind: reading.kind };
+  const page = fetched.page;
+  return { kind: 'success', feedTitle: page.title, feedKind: page.kind };
 }
 
 export { testCatalogConnection };

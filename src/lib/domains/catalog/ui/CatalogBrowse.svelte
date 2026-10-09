@@ -1,31 +1,33 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import Alert from '$lib/ui/components/Alert.svelte';
   import Breadcrumb from '$lib/ui/components/Breadcrumb.svelte';
-  import Button from '$lib/ui/components/Button.svelte';
-  import EmptyState from '$lib/ui/components/EmptyState.svelte';
-  import { unreachable } from '$lib/shared/unreachable';
   import type { BookId } from '$lib/shared/ids';
+  import type { CoverReads, FeedReads, HeldReads } from '../queries/catalog-feed-queries';
   import type { HeaderField } from './catalog-search';
   import type { CatalogBrowseView } from './catalog-browse.svelte';
-  import { browseFailureText } from './catalog-texts';
+  import { LOADING_FEED } from './catalog-feed-read';
+  import CatalogFeedData from './CatalogFeedData.svelte';
   import CatalogFeedLinks from './CatalogFeedLinks.svelte';
   import CatalogMore from './CatalogMore.svelte';
-  import CatalogPasswordModal from './CatalogPasswordModal.svelte';
   import CatalogPublications from './CatalogPublications.svelte';
   import CatalogSearchField from './CatalogSearchField.svelte';
+  import CatalogUnlock from './CatalogUnlock.svelte';
   import { scrollMemory } from './scroll-memory';
 
   type Props = {
     readonly view: CatalogBrowseView;
+    readonly feeds: FeedReads & CoverReads & HeldReads;
     readonly search: HeaderField;
     readonly readerHref: (id: BookId) => string;
   };
 
-  let { view, search, readerHref }: Props = $props();
+  let { view, feeds, search, readerHref }: Props = $props();
+
+  let feedData = $state<ReturnType<typeof CatalogFeedData> | null>(null);
 
   onMount(() => {
-    void view.start();
+    view.start();
+    return view.bindFeed(() => feedData?.read() ?? LOADING_FEED);
   });
 </script>
 
@@ -33,37 +35,30 @@
   <CatalogSearchField field={search} />
   <Breadcrumb items={view.crumbs} label="Catalog path" />
 
-  {#if view.state.kind === 'loading'}
-    <EmptyState live message="Reading the catalog…" />
-  {:else if view.state.kind === 'navigation'}
-    <CatalogFeedLinks
-      label={view.state.feed.title}
-      links={view.links}
-      onopen={(link) => void view.openLink(link)}
-    />
-  {:else if view.state.kind === 'acquisition'}
-    <CatalogPublications {view} publications={view.entries} {readerHref} />
-  {:else if view.state.kind === 'unlock'}
-    <EmptyState message="This catalog needs its password.">
-      {#snippet action()}
-        <Button variant="primary" onclick={() => view.askPassword()}>Enter password</Button>
+  {#key view.readingKey}
+    <CatalogFeedData
+      bind:this={feedData}
+      catalog={view.catalog}
+      cases={feeds}
+      location={view.reading}
+      path={view.position.path}
+      onhead={(head) => view.headLoaded(head)}
+    >
+      {#snippet locked(lock)}
+        <CatalogUnlock {view} refused={lock.refused} />
       {/snippet}
-    </EmptyState>
-    {#if view.prompting}
-      <CatalogPasswordModal {view} refused={view.state.refused} />
-    {/if}
-  {:else if view.state.kind === 'failed'}
-    <Alert variant="warning" title="This catalog could not be read.">
-      {browseFailureText(view.state.failure, view.catalog.protocol)}
-      {#snippet actions()}
-        <Button size="sm" onclick={() => void view.load()}>Try again</Button>
+      {#snippet children(feed)}
+        {#if feed.head.kind === 'navigation'}
+          <CatalogFeedLinks
+            label={feed.head.title}
+            links={view.links}
+            onopen={(link) => view.openLink(link)}
+          />
+        {:else}
+          <CatalogPublications {view} publications={view.entries} {readerHref} />
+        {/if}
+        <CatalogMore more={feed.more} protocol={view.catalog.protocol} onmore={feed.loadMore} />
       {/snippet}
-    </Alert>
-  {:else}
-    {unreachable(view.state)}
-  {/if}
-
-  {#if view.state.kind === 'navigation' || view.state.kind === 'acquisition'}
-    <CatalogMore {view} />
-  {/if}
+    </CatalogFeedData>
+  {/key}
 </div>

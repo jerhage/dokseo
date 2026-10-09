@@ -14,7 +14,7 @@ import type { RemotePublication } from '../domains/catalog/domain/remote-publica
 import { addCatalog } from '../domains/catalog/use-cases/add-catalog';
 import type { AddCatalogResult } from '../domains/catalog/use-cases/add-catalog';
 import { browseCatalog } from '../domains/catalog/use-cases/browse-catalog';
-import type { BrowseCatalogResult, ReadBook } from '../domains/catalog/use-cases/browse-catalog';
+import type { BrowseCatalogResult } from '../domains/catalog/use-cases/browse-catalog';
 import { downloadPublication } from '../domains/catalog/use-cases/download-publication';
 import { updatePublication } from '../domains/catalog/use-cases/update-publication';
 import type {
@@ -29,8 +29,12 @@ import { editCatalog } from '../domains/catalog/use-cases/edit-catalog';
 import type { EditCatalogResult } from '../domains/catalog/use-cases/edit-catalog';
 import { findOrigin } from '../domains/catalog/use-cases/find-origin';
 import type { FindOriginResult } from '../domains/catalog/use-cases/find-origin';
+import { forgetDanglingOrigins } from '../domains/catalog/use-cases/forget-dangling-origins';
+import type { ForgetDanglingOriginsResult } from '../domains/catalog/use-cases/forget-dangling-origins';
 import { forgetOrigin } from '../domains/catalog/use-cases/forget-origin';
 import type { ForgetOriginResult } from '../domains/catalog/use-cases/forget-origin';
+import { heldOrigins } from '../domains/catalog/use-cases/held-origins';
+import type { HeldOriginsResult, ReadBook } from '../domains/catalog/use-cases/held-origins';
 import { listCatalogOrigins } from '../domains/catalog/use-cases/list-catalog-origins';
 import type { ListCatalogOriginsResult } from '../domains/catalog/use-cases/list-catalog-origins';
 import { listOrigins } from '../domains/catalog/use-cases/list-origins';
@@ -99,6 +103,8 @@ type CatalogUseCases = {
     signal?: AbortSignal,
   ) => Promise<UpdatePublicationResult>;
   readonly forgetOrigin: (bookId: BookId) => Promise<ForgetOriginResult>;
+  readonly heldOrigins: (id: CatalogId) => Promise<HeldOriginsResult>;
+  readonly forgetDanglingOrigins: (id: CatalogId) => Promise<ForgetDanglingOriginsResult>;
 };
 
 type CatalogLibrary = {
@@ -127,17 +133,9 @@ function buildCatalog(library: CatalogLibrary): CatalogUseCases {
     testCatalogConnection: (draft, password, signal) =>
       testCatalogConnection({ sourceFor }, draft, password, signal),
     unlockCatalog: (id: CatalogId, password: string) => unlockCatalog({ passwords }, id, password),
-    browseCatalog: (id, address, path, signal) =>
-      browseCatalog({ ...access, origins, readBook: library.readBook }, id, address, path, signal),
+    browseCatalog: (id, address, path, signal) => browseCatalog(access, id, address, path, signal),
     searchCatalog: (id, search, query, path, signal) =>
-      searchCatalog(
-        { ...access, origins, readBook: library.readBook },
-        id,
-        search,
-        query,
-        path,
-        signal,
-      ),
+      searchCatalog(access, id, search, query, path, signal),
     readCatalogCover: (id, url, signal) => readCatalogCover(access, id, url, signal),
     downloadPublication: (publication, feedPosition, matching, defaults, onProgress, signal) =>
       downloadPublication(
@@ -159,6 +157,9 @@ function buildCatalog(library: CatalogLibrary): CatalogUseCases {
         signal,
       ),
     forgetOrigin: (bookId: BookId) => forgetOrigin({ origins }, bookId),
+    heldOrigins: (id: CatalogId) => heldOrigins({ origins, readBook: library.readBook }, id),
+    forgetDanglingOrigins: (id: CatalogId) =>
+      forgetDanglingOrigins({ origins, readBook: library.readBook }, id),
   };
 }
 

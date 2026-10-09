@@ -40,7 +40,7 @@ class CatalogHeaderSearch {
 
   fieldFor(catalog: Catalog): HeaderField {
     const browse = this.#tabs.browsing(catalog);
-    const availability = searchAvailability(browse.state.kind !== 'loading', browse.feedSearch);
+    const availability = searchAvailability(browse.feedSettled, browse.feedSearch);
     return {
       placeholder: searchPlaceholder(catalog.title, availability),
       disabled: availability === 'absent',
@@ -51,7 +51,7 @@ class CatalogHeaderSearch {
       },
       onsubmit: (value) => {
         this.#cancel(catalog.id);
-        void browse.search(value);
+        browse.search(value);
       },
     };
   }
@@ -61,7 +61,7 @@ class CatalogHeaderSearch {
     const cancel = this.#clock.after(SEARCH_DEBOUNCE_MS, () => {
       this.#pending.delete(catalog.id);
       if (this.#tabs.selected !== catalog.id) return;
-      void this.#tabs.browsing(catalog).search(value);
+      this.#tabs.browsing(catalog).search(value);
     });
     this.#pending.set(catalog.id, cancel);
   }

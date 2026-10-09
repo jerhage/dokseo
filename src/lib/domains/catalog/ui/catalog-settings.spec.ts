@@ -30,6 +30,9 @@ vi.mock('@tanstack/svelte-query', async (original) => ({
       log.calls.push(`invalidate ${queryKey.join('/')}`);
       return Promise.resolve();
     },
+    removeQueries: ({ queryKey }: { queryKey: readonly string[] }) => {
+      log.calls.push(`remove ${queryKey.join('/')}`);
+    },
   }),
 }));
 
@@ -252,14 +255,18 @@ describe('CatalogSettingsView save', () => {
     expect(view.saving).toBe(false);
   });
 
-  it('edits the catalog it was opened on', async () => {
+  it('edits the catalog it was opened on and invalidates the feeds read from it', async () => {
     const { view, calls } = setup();
     view.startEdit(PRIVATE_CATALOG);
     expect(view.authChoice).toBe('basic');
     expect(view.username).toBe('jo');
     view.title = 'Renamed';
     await view.save();
-    expect(calls).toEqual(['edit', 'invalidate catalog/catalogs']);
+    expect(calls).toEqual([
+      'edit',
+      'invalidate catalog/catalogs',
+      'invalidate catalog/feed/private',
+    ]);
     expect(view.target).toBeNull();
   });
 
@@ -269,7 +276,7 @@ describe('CatalogSettingsView save', () => {
     await view.save();
     expect(notices).toEqual([{ tone: 'warning', title: SAVE_FAILED, message: GONE }]);
     expect(view.target).toBeNull();
-    expect(calls).toEqual(['edit', 'invalidate catalog/catalogs']);
+    expect(calls).toEqual(['edit', 'invalidate catalog/catalogs', 'invalidate catalog/feed/open']);
   });
 
   it('tells the reader to remove an unreadable catalog', async () => {
@@ -294,12 +301,18 @@ describe('CatalogSettingsView save', () => {
 });
 
 describe('CatalogSettingsView remove', () => {
-  it('removes after confirmation and invalidates the list', async () => {
+  it('removes after confirmation, drops the feeds and covers read from it and invalidates the list', async () => {
     const { view, calls } = setup();
     view.askRemove(OPEN_CATALOG);
     expect(view.removing).toEqual({ id: OPEN, name: 'Home' });
     await view.confirmRemove();
-    expect(calls).toEqual(['remove', 'invalidate catalog/catalogs', 'invalidate catalog/origins']);
+    expect(calls).toEqual([
+      'remove',
+      'remove catalog/feed/open',
+      'remove catalog/cover/open',
+      'invalidate catalog/catalogs',
+      'invalidate catalog/origins',
+    ]);
     expect(view.removing).toBeNull();
   });
 
@@ -315,7 +328,13 @@ describe('CatalogSettingsView remove', () => {
     const { view, calls } = setup();
     view.askRemoveUnreadable(PRIVATE);
     await view.confirmRemove();
-    expect(calls).toEqual(['remove', 'invalidate catalog/catalogs', 'invalidate catalog/origins']);
+    expect(calls).toEqual([
+      'remove',
+      'remove catalog/feed/private',
+      'remove catalog/cover/private',
+      'invalidate catalog/catalogs',
+      'invalidate catalog/origins',
+    ]);
   });
 
   it('notifies and keeps the confirmation when storage is unavailable', async () => {

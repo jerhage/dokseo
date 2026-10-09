@@ -1,32 +1,34 @@
 <script lang="ts">
   import Alert from '$lib/ui/components/Alert.svelte';
   import Button from '$lib/ui/components/Button.svelte';
-  import type { CatalogBrowseView } from './catalog-browse.svelte';
-  import { browseFailureText } from './catalog-texts';
+  import type { MoreState } from '$lib/shared/read-paged-state';
+  import type { CatalogProtocol } from '../domain/catalog-protocol';
+  import type { FeedProblem } from '../queries/catalog-feed-queries';
+  import { feedProblemText } from './catalog-texts';
   import { reachEnd } from './reach-end';
 
-  type Props = { readonly view: CatalogBrowseView };
+  type Props = {
+    readonly more: MoreState<FeedProblem>;
+    readonly protocol: CatalogProtocol;
+    readonly onmore: () => void;
+  };
 
-  let { view }: Props = $props();
-
-  const more = $derived(view.more);
+  let { more, protocol, onmore }: Props = $props();
 </script>
 
-{#if view.paging.next !== null}
-  {#if more.kind === 'failed'}
-    <Alert variant="warning" title="More books could not be loaded.">
-      {browseFailureText(more.failure, view.catalog.protocol)}
-      {#snippet actions()}
-        <Button size="sm" onclick={() => void view.loadMore()}>Try again</Button>
-      {/snippet}
-    </Alert>
-  {:else if more.kind === 'loading'}
-    <div class="row justify-center">
-      <span class="text-sm text-muted" aria-live="polite">Loading more…</span>
-    </div>
-  {:else}
-    <div class="row justify-center" {@attach reachEnd(() => void view.loadMore())}>
-      <Button size="sm" onclick={() => void view.loadMore()}>Load more</Button>
-    </div>
-  {/if}
+{#if more.kind === 'failed'}
+  <Alert variant="warning" title="More books could not be loaded.">
+    {feedProblemText(more.failure, protocol)}
+    {#snippet actions()}
+      <Button size="sm" onclick={onmore}>Try again</Button>
+    {/snippet}
+  </Alert>
+{:else if more.kind === 'loading'}
+  <div class="row justify-center">
+    <span class="text-sm text-muted" aria-live="polite">Loading more…</span>
+  </div>
+{:else if more.kind === 'more'}
+  <div class="row justify-center" {@attach reachEnd(onmore)}>
+    <Button size="sm" onclick={onmore}>Load more</Button>
+  </div>
 {/if}

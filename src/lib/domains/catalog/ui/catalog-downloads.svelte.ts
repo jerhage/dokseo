@@ -76,37 +76,36 @@ function endsQueue(failure: DownloadFailure | UpdateFailure): boolean {
 
 class CatalogDownloads {
   #states = $state.raw<ReadonlyMap<string, DownloadState>>(new Map());
-  #held = $state.raw<ReadonlyMap<string, BookOriginLink>>(NO_HELD);
+  #downloaded = $state.raw<ReadonlyMap<string, BookOriginLink>>(NO_HELD);
   #queue = $state.raw<QueueProgress | null>(null);
   #replacement = $state.raw<ReplaceRequest | null>(null);
   #controllers = new Map<string, AbortController>();
   #cases: DownloadsUseCases;
   #choices: DownloadsChoices;
   #hooks: DownloadsHooks;
+  #held: () => ReadonlyMap<string, BookOriginLink>;
   #queueStopped = false;
 
-  constructor(cases: DownloadsUseCases, choices: DownloadsChoices, hooks: DownloadsHooks) {
+  constructor(
+    cases: DownloadsUseCases,
+    choices: DownloadsChoices,
+    hooks: DownloadsHooks,
+    held: () => ReadonlyMap<string, BookOriginLink> = () => NO_HELD,
+  ) {
     this.#cases = cases;
     this.#choices = choices;
     this.#hooks = hooks;
+    this.#held = held;
   }
 
   get queue(): QueueProgress | null {
     return this.#queue;
   }
 
-  setHeld(held: ReadonlyMap<string, BookOriginLink>): void {
-    this.#held = held;
-  }
-
-  addHeld(held: ReadonlyMap<string, BookOriginLink>): void {
-    this.#held = new Map([...this.#held, ...held]);
-  }
-
   itemFor(publication: RemotePublication): RemoteItem {
     return remoteItem(
       publication,
-      this.#held.get(publication.entryId) ?? null,
+      this.#linkOf(publication.entryId),
       this.#states.get(publication.entryId) ?? IDLE,
     );
   }
@@ -199,7 +198,7 @@ class CatalogDownloads {
       return 'stop';
     }
     if (settled.kind === 'success') {
-      this.#held = new Map(this.#held).set(entryId, {
+      this.#downloaded = new Map(this.#downloaded).set(entryId, {
         bookId: settled.bookId,
         updated: publication.updated,
       });
@@ -259,9 +258,13 @@ class CatalogDownloads {
   }
 
   #staleBook(publication: RemotePublication): BookId | null {
-    const link = this.#held.get(publication.entryId);
-    if (link === undefined) return null;
+    const link = this.#linkOf(publication.entryId);
+    if (link === null) return null;
     return isLater(publication.updated, link.updated) ? link.bookId : null;
+  }
+
+  #linkOf(entryId: string): BookOriginLink | null {
+    return this.#downloaded.get(entryId) ?? this.#held().get(entryId) ?? null;
   }
 
   #queueable(publication: RemotePublication): boolean {

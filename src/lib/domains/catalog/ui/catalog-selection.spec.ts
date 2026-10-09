@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { bookId } from '$lib/shared/ids';
 import { DEFAULT_BOOK_MATCHING } from '$lib/domains/library/domain/book/book-matching';
 import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/reading-defaults';
+import type { BookOriginLink } from '../domain/remote-item';
 import type { DownloadPublicationResult } from '../use-cases/download-publication';
 import { CatalogDownloads } from './catalog-downloads.svelte';
 import type { QueuedDownload } from './catalog-downloads.svelte';
@@ -9,6 +10,7 @@ import { CatalogSelection } from './catalog-selection.svelte';
 import { publication } from './catalog-ui-fixtures';
 
 function setup(ids: readonly string[], unsupported: readonly string[] = []) {
+  let held: ReadonlyMap<string, BookOriginLink> = new Map();
   const started: string[] = [];
   const finishers: ((result: DownloadPublicationResult) => void)[] = [];
   const downloads = new CatalogDownloads(
@@ -21,7 +23,11 @@ function setup(ids: readonly string[], unsupported: readonly string[] = []) {
     },
     { matching: () => DEFAULT_BOOK_MATCHING, defaults: () => INITIAL_READING_DEFAULTS },
     { describeOpenFile: () => '', downloaded: () => undefined, updated: () => undefined },
+    () => held,
   );
+  const setHeld = (next: ReadonlyMap<string, BookOriginLink>): void => {
+    held = next;
+  };
   const entries: QueuedDownload[] = ids.map((id, index) => ({
     publication: publication(id, unsupported.includes(id) ? { acquisition: null } : {}),
     feedPosition: index,
@@ -32,7 +38,7 @@ function setup(ids: readonly string[], unsupported: readonly string[] = []) {
     () => entries,
     (entryIds) => kept.push(entryIds),
   );
-  return { selection, downloads, started, finishers, kept, entries };
+  return { selection, downloads, started, finishers, kept, entries, setHeld };
 }
 
 const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -51,10 +57,8 @@ describe('CatalogSelection', () => {
   });
 
   it('offers only entries that can still be downloaded', async () => {
-    const { selection, downloads, entries } = setup(['a', 'b', 'c'], ['c']);
-    downloads.setHeld(
-      new Map([['b', { bookId: bookId('held'), updated: '2026-08-01T00:00:00Z' }]]),
-    );
+    const { selection, downloads, entries, setHeld } = setup(['a', 'b', 'c'], ['c']);
+    setHeld(new Map([['b', { bookId: bookId('held'), updated: '2026-08-01T00:00:00Z' }]]));
     expect(selection.selectable.map(({ publication: item }) => item.entryId)).toEqual(['a']);
     void downloads.start(entries[0]!.publication, 0);
     await settle();
