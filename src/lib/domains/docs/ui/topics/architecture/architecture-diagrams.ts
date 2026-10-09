@@ -159,7 +159,7 @@ const DOMAIN_GRAPH: DiagramSpec = {
 
 const PATH_STEPS = [
   ['Save', 'ManageTagsScreen.svelte'],
-  ['ManageTagsView.rename', 'view model'],
+  ['ManageTags.rename', 'view model'],
   ['renameTagMutation', 'through writeQuery'],
   ['recognition.renameTag', 'the container'],
   ['renameTag', 'use case'],
@@ -174,7 +174,7 @@ const pathBoxes = PATH_STEPS.map(([label, detail], index) =>
 
 const REQUEST_PATH: DiagramSpec = {
   label:
-    'A press on Save in ManageTagsScreen calls ManageTagsView.rename, which runs the rename mutation through writeQuery. The mutation calls recognition.renameTag on the container, which runs the renameTag use case with the TagRepository port, implemented by createTagRepository over the recognition database in IndexedDB.',
+    'A press on Save in ManageTagsScreen calls ManageTags.rename, which runs the rename mutation through writeQuery. The mutation calls recognition.renameTag on the container, which runs the renameTag use case with the TagRepository port, implemented by createTagRepository over the recognition database in IndexedDB.',
   width: 360,
   height: (PATH_STEPS.length - 1) * 62 + 44,
   nodes: pathBoxes,

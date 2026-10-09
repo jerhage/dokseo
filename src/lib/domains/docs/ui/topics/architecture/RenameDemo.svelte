@@ -87,7 +87,7 @@
         {/if}
       {/if}
       <div class="stack-sm">
-        <h3 class="m-0 text-base">The code in ManageTagsView that runs next</h3>
+        <h3 class="m-0 text-base">The code in ManageTags that runs next</h3>
         <CodeBlock code={arm.code} label={arm.label} />
       </div>
     </div>

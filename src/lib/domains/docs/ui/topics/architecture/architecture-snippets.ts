@@ -136,7 +136,7 @@ const RENAME_MUTATION: SourceSnippet = {
 };
 
 const RENAME_METHOD: SourceSnippet = {
-  label: 'ManageTagsView.rename',
+  label: 'ManageTags.rename',
   file: 'src/lib/domains/recognition/ui/tag/manage-tags.svelte.ts',
   code: `async rename(tag: Tag, name: string): Promise<RenameOutcome> {
   if (tagName(name).length === 0) return { kind: 'nameless' };

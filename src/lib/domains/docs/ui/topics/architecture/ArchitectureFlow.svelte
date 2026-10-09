@@ -77,14 +77,15 @@ adapters/opds2/opds2-catalog-source.ts
       <p>
         Save submits the rename form, and <code>ManageTagsScreen.svelte</code>'s submit handler
         calls
-        <code>manage.rename(tag)</code>. The route built <code>manage</code> as a
-        <code>ManageTagsView</code> with <code>container.recognition</code>.
+        <code>manage.rename(tag, editing.draft)</code>, where <code>editing</code> holds the draft
+        text. The route built <code>manage</code> as a
+        <code>ManageTags</code> with <code>container.recognition</code>.
       </p>
     </StepItem>
     <StepItem title="The view model runs a mutation">
       <p>
-        <code>rename</code> checks the draft first. A blank name stops here, with "A tag needs a
-        name." Otherwise it runs the rename mutation, built from the factory in
+        <code>rename</code> checks the name it is given first. A blank name stops here, with "A tag
+        needs a name." Otherwise it runs the rename mutation, built from the factory in
         <code>queries/</code>:
       </p>
       <DocsCode label={RENAME_MUTATION.label} code={RENAME_MUTATION.code} />
@@ -151,9 +152,8 @@ adapters/opds2/opds2-catalog-source.ts
   <DocsCode label={STORAGE_DATA.label} code={STORAGE_DATA.code} />
   <p>
     A write goes through <code>writeQuery</code>, the matching door to <code>createMutation</code>,
-    owned by a view model like <code>ManageTagsView</code> above. No view model holds a read: the cache
-    holds the data, and a view model holds only what the cache must not, such as an open book or a worker
-    session.
+    owned by a view model like <code>ManageTags</code> above. No view model holds a read: the cache holds
+    the data, and a view model holds only what the cache must not, such as an open book or a worker session.
   </p>
 </DocsSection>
 
