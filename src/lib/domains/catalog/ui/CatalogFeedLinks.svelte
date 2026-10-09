@@ -3,6 +3,7 @@
   import EmptyState from '$lib/ui/components/EmptyState.svelte';
   import ListGroup from '$lib/ui/components/ListGroup.svelte';
   import ListRow from '$lib/ui/components/ListRow.svelte';
+  import { addressKey } from '../domain/catalog-feed';
   import type { NavigationLink } from '../domain/catalog-feed';
 
   type Props = {
@@ -18,7 +19,7 @@
   <EmptyState message="Nothing to browse here." />
 {:else}
   <ListGroup aria-label={label}>
-    {#each links as link (link.href)}
+    {#each links as link (addressKey(link.address))}
       <ListRow title={link.title} description={link.summary === '' ? undefined : link.summary}>
         {#snippet actions()}
           <Button size="sm" variant="ghost" onclick={() => onopen(link)}>Open</Button>

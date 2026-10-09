@@ -346,8 +346,9 @@ const CATALOG_SOURCE_PORT: SourceSnippet = {
   label: 'The catalog source port',
   file: 'src/lib/domains/catalog/domain/catalog-source.ts',
   code: `interface CatalogSource {
+  rootAddress(rootUrl: string): FeedAddress;
   readFeed(
-    address: string,
+    address: FeedAddress,
     placement: FeedPlacement,
     credentials: CatalogCredentials,
     signal?: AbortSignal,
@@ -383,8 +384,8 @@ const FEED_SEARCH: SourceSnippet = {
 const SEARCH_ADDRESS: SourceSnippet = {
   label: 'Filling the template, in the opds1 adapter',
   file: 'src/lib/domains/catalog/adapters/opds1/opds1-catalog-source.ts',
-  code: `function searchAddress(search: FeedSearch, query: string): string {
-  return search.handle.replaceAll(SEARCH_PLACEHOLDER, encodeURIComponent(query.trim()));
+  code: `function searchAddress(search: FeedSearch, query: string): FeedAddress {
+  return { handle: search.handle.replaceAll(SEARCH_PLACEHOLDER, encodeURIComponent(query.trim())) };
 }`,
 };
 

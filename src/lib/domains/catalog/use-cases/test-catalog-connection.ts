@@ -35,7 +35,7 @@ async function testCatalogConnection(
 
   const source = await deps.sourceFor(checked.draft.protocol);
   const fetched = await source.readFeed(
-    checked.draft.rootUrl,
+    source.rootAddress(checked.draft.rootUrl),
     { catalogId: TESTED_CATALOG, path: [] },
     credentials,
     signal,

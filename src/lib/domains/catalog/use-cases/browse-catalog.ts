@@ -3,11 +3,10 @@ import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { ReadBookResult } from '$lib/domains/library/use-cases/read-book';
 import { originLink } from '../domain/book-origin';
 import type { BookOrigin } from '../domain/book-origin';
-import type { CatalogFeed } from '../domain/catalog-feed';
+import type { CatalogFeed, FeedAddress, TrailStep } from '../domain/catalog-feed';
 import type { ClientFailure } from '../domain/catalog-source';
 import type { OriginRepository } from '../domain/origin-repository';
 import type { BookOriginLink } from '../domain/remote-item';
-import type { FeedPath } from '../domain/remote-publication';
 import { catalogAccess } from './catalog-access';
 import type { CatalogAccessDeps, CatalogAccessFailure } from './catalog-access';
 
@@ -79,16 +78,16 @@ async function heldReading(
 async function browseCatalog(
   deps: BrowseCatalogDeps,
   catalogId: CatalogId,
-  url: string | null,
-  path: FeedPath,
+  address: FeedAddress | null,
+  path: readonly TrailStep[],
   signal?: AbortSignal,
 ): Promise<BrowseCatalogResult> {
   const access = await catalogAccess(deps, catalogId);
   if (access.kind !== 'success') return access;
 
-  const address = url ?? access.catalog.rootUrl;
+  const target = address ?? access.source.rootAddress(access.catalog.rootUrl);
   const fetched = await access.source.readFeed(
-    address,
+    target,
     { catalogId, path },
     access.credentials,
     signal,

@@ -3,7 +3,13 @@ import { LANGUAGES } from '$lib/shared/language';
 import type { Language } from '$lib/shared/language';
 import { LINE_BREAK, attributeOf, parseXml } from '$lib/shared/xml-document';
 import type { XmlElement } from '$lib/shared/xml-document';
-import type { CatalogFeed, FeedPaging, NavigationLink } from '../../domain/catalog-feed';
+import type {
+  CatalogFeed,
+  FeedAddress,
+  FeedPaging,
+  NavigationLink,
+  TrailStep,
+} from '../../domain/catalog-feed';
 import { formatOfMediaType } from '../../domain/remote-publication';
 import type {
   Acquisition,
@@ -77,14 +83,13 @@ function resolvedLink(link: XmlElement | undefined, base: string): string | null
   return href === null ? null : resolved(href, base);
 }
 
+function addressOf(href: string): FeedAddress {
+  return { handle: href };
+}
+
 function pagingOf(feed: XmlElement, base: string): FeedPaging {
-  const target = (rel: string): string | null => resolvedLink(linksWithRel(feed, rel)[0], base);
-  return {
-    next: target('next'),
-    previous: target('previous'),
-    first: target('first'),
-    last: target('last'),
-  };
+  const next = resolvedLink(linksWithRel(feed, 'next')[0], base);
+  return { next: next === null ? null : addressOf(next) };
 }
 
 function searchTemplateOf(feed: XmlElement, base: string): string | null {
@@ -116,7 +121,7 @@ function navigationLinkOf(entry: XmlElement, base: string): NavigationLink | nul
   );
   const href = resolvedLink(link, base);
   if (href === null) return null;
-  return { title: childText(entry, 'title'), href, summary: summaryOf(entry) };
+  return { title: childText(entry, 'title'), address: addressOf(href), summary: summaryOf(entry) };
 }
 
 function declaredLanguage(tag: string): Language | null {
@@ -178,12 +183,17 @@ function publicationOf(
   };
 }
 
+function storedPathOf(path: readonly TrailStep[]): FeedPath {
+  return path.map((step) => ({ title: step.title, href: step.address?.handle ?? '' }));
+}
+
 function readOpdsFeed(
   xml: string,
   feedUrl: string,
   catalogId: CatalogId,
-  path: FeedPath,
+  trail: readonly TrailStep[],
 ): OpdsFeedReading {
+  const path = storedPathOf(trail);
   const root = parseXml(xml, MAX_FEED_CHARACTERS, { lineBreaks: true });
   if (root === null || root.localName !== 'feed') return { kind: 'not-a-feed' };
   const entries = childrenNamed(root, 'entry');
@@ -196,11 +206,14 @@ function readOpdsFeed(
     const publications = entries.map((entry) => publicationOf(entry, feedUrl, catalogId, path));
     return {
       kind: 'acquisition',
-      feed: { id, title, address: feedUrl, paging, search, publications },
+      feed: { id, title, address: addressOf(feedUrl), paging, search, publications },
     };
   }
   const links = entries.flatMap((entry) => navigationLinkOf(entry, feedUrl) ?? []);
-  return { kind: 'navigation', feed: { id, title, address: feedUrl, paging, search, links } };
+  return {
+    kind: 'navigation',
+    feed: { id, title, address: addressOf(feedUrl), paging, search, links },
+  };
 }
 
 export { MAX_FEED_CHARACTERS, SEARCH_PLACEHOLDER, readOpdsFeed };

@@ -1,4 +1,6 @@
 import type { CatalogId } from '$lib/shared/ids';
+import { sameFeedAddress } from '../domain/catalog-feed';
+import type { FeedAddress } from '../domain/catalog-feed';
 import { DEVICE_TAB } from './library-tabs';
 import { ROOT_POSITION } from './feed-address';
 import type { FeedPosition } from './feed-address';
@@ -16,7 +18,7 @@ class CatalogSession {
   originFilter = $state.raw<OriginFilter>(ALL_FILTER);
   queries = $state.raw<ReadonlyMap<CatalogId, string>>(new Map());
   #trails = new Map<CatalogId, Trail>();
-  #pages = new Map<CatalogId, readonly string[]>();
+  #pages = new Map<CatalogId, readonly FeedAddress[]>();
   #selections = new Map<CatalogId, ReadonlySet<string>>();
   #scrolls = new Map<CatalogId, number>();
   #searchOrigins = new Map<CatalogId, FeedPosition>();
@@ -52,7 +54,7 @@ class CatalogSession {
         position !== undefined &&
         position.lookup === null &&
         position.path.length === ancestor.path.length &&
-        position.url === ancestor.url
+        sameFeedAddress(position.address, ancestor.address)
       ) {
         return index;
       }
@@ -108,12 +110,12 @@ class CatalogSession {
     return top;
   }
 
-  pagesOf(id: CatalogId): readonly string[] {
+  pagesOf(id: CatalogId): readonly FeedAddress[] {
     return this.#pages.get(id) ?? [];
   }
 
-  appendPage(id: CatalogId, url: string): void {
-    this.#pages.set(id, [...this.pagesOf(id), url]);
+  appendPage(id: CatalogId, address: FeedAddress): void {
+    this.#pages.set(id, [...this.pagesOf(id), address]);
   }
 
   #trailOf(id: CatalogId): Trail {

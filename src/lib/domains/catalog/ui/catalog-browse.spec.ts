@@ -7,12 +7,12 @@ import {
   HOME_ROOT_FEED,
   HOME_SEARCH,
   HOME_SERIES_FEED,
+  feedAddress,
   placed,
   withoutSearch,
 } from '../domain/catalog-feed-fixtures';
-import type { CatalogFeed, FeedSearch } from '../domain/catalog-feed';
+import type { CatalogFeed, FeedAddress, FeedSearch, TrailStep } from '../domain/catalog-feed';
 import type { BookOriginLink } from '../domain/remote-item';
-import type { FeedPath } from '../domain/remote-publication';
 import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
 import { CatalogBrowseView } from './catalog-browse.svelte';
 import { CatalogCovers } from './catalog-covers.svelte';
@@ -25,16 +25,25 @@ const ROOT_URL = 'https://home.test/opds';
 function feedAnswer(
   feed: CatalogFeed,
   url: string,
-  path: FeedPath,
+  path: readonly TrailStep[],
   held = new Map<string, BookOriginLink>(),
 ) {
-  const answer: BrowseCatalogResult = { kind: 'success', reading: placed(feed, url, path), held };
+  const answer: BrowseCatalogResult = {
+    kind: 'success',
+    reading: placed(feed, feedAddress(url), path),
+    held,
+  };
   return answer;
 }
 
-type Call = { id: CatalogId; url: string | null; path: FeedPath; signal: AbortSignal | undefined };
+type Call = {
+  id: CatalogId;
+  url: FeedAddress | null;
+  path: readonly TrailStep[];
+  signal: AbortSignal | undefined;
+};
 
-type SearchCall = { search: FeedSearch; query: string; path: FeedPath };
+type SearchCall = { search: FeedSearch; query: string; path: readonly TrailStep[] };
 
 const SEARCH_ADDRESS = 'https://home.test/opds/search/star%20voyage';
 
@@ -87,12 +96,12 @@ function setup(
 
 function byUrl(call: Call): Promise<BrowseCatalogResult> {
   if (call.url === null) return Promise.resolve(feedAnswer(HOME_ROOT_FEED, ROOT_URL, call.path));
-  return Promise.resolve(feedAnswer(HOME_SERIES_FEED, call.url, call.path));
+  return Promise.resolve(feedAnswer(HOME_SERIES_FEED, call.url.handle, call.path));
 }
 
 const SERIES_LINK = {
   title: 'By Series',
-  href: 'https://home.test/opds/navcatalog/4e736572696573?library_id=calibre',
+  address: feedAddress('https://home.test/opds/navcatalog/4e736572696573?library_id=calibre'),
   summary: '',
 };
 
@@ -115,20 +124,20 @@ describe('CatalogBrowseView', () => {
     const { view, calls } = setup(byUrl);
     await view.start();
     await view.openLink(SERIES_LINK);
-    expect(calls[1]?.url).toBe(SERIES_LINK.href);
-    expect(calls[1]?.path).toEqual([{ title: 'By Series', href: SERIES_LINK.href }]);
+    expect(calls[1]?.url).toEqual(SERIES_LINK.address);
+    expect(calls[1]?.path).toEqual([{ title: 'By Series', address: SERIES_LINK.address }]);
     expect(view.state.kind).toBe('acquisition');
     expect(view.crumbs.map((crumb) => crumb.label)).toEqual(['Home', 'By Series']);
   });
 
   it('returns to the root instead of adding a step when a link loads the root feed again', async () => {
     const { view } = setup((call) =>
-      Promise.resolve(feedAnswer(HOME_ROOT_FEED, call.url ?? ROOT_URL, call.path)),
+      Promise.resolve(feedAnswer(HOME_ROOT_FEED, call.url?.handle ?? ROOT_URL, call.path)),
     );
     await view.start();
     await view.openLink({ ...SERIES_LINK, title: 'Library: calibre' });
     expect(view.crumbs.map((crumb) => crumb.label)).toEqual(['Home']);
-    expect(view.position.url).toBe(SERIES_LINK.href);
+    expect(view.position.address).toEqual(SERIES_LINK.address);
   });
 
   it('appends a step when the loaded feed has an id the path lacks', async () => {
@@ -156,12 +165,14 @@ describe('CatalogBrowseView', () => {
       {
         search: HOME_SEARCH,
         query: 'star voyage',
-        path: [{ title: 'Search: star voyage', href: '' }],
+        path: [{ title: 'Search: star voyage', address: null }],
       },
     ]);
     expect(view.crumbs.at(-1)?.label).toBe('Search: star voyage');
-    expect(view.position.url).toBe(SEARCH_ADDRESS);
-    expect(view.position.path).toEqual([{ title: 'Search: star voyage', href: SEARCH_ADDRESS }]);
+    expect(view.position.address).toEqual(feedAddress(SEARCH_ADDRESS));
+    expect(view.position.path).toEqual([
+      { title: 'Search: star voyage', address: feedAddress(SEARCH_ADDRESS) },
+    ]);
     expect(session.positionOf(HOME.id).lookup).toBeNull();
   });
 
@@ -170,7 +181,7 @@ describe('CatalogBrowseView', () => {
       Promise.resolve(
         call.url === null
           ? feedAnswer(HOME_ROOT_FEED, ROOT_URL, call.path)
-          : feedAnswer(withoutSearch(HOME_SERIES_FEED), call.url, call.path),
+          : feedAnswer(withoutSearch(HOME_SERIES_FEED), call.url.handle, call.path),
       ),
     );
     await view.start();
@@ -196,8 +207,8 @@ describe('CatalogBrowseView', () => {
     await view.search('moon');
     await view.search('  ');
     expect(calls.at(-1)).toMatchObject({
-      url: SERIES_LINK.href,
-      path: [{ title: 'By Series', href: SERIES_LINK.href }],
+      url: SERIES_LINK.address,
+      path: [{ title: 'By Series', address: SERIES_LINK.address }],
     });
     expect(view.crumbs.map((crumb) => crumb.label)).toEqual(['Home', 'By Series']);
     expect(session.searchOriginOf(HOME.id)).toBeNull();
@@ -210,7 +221,7 @@ describe('CatalogBrowseView', () => {
     await view.search('moon');
     await view.search('sun');
     await view.search('');
-    expect(calls.at(-1)?.url).toBe(SERIES_LINK.href);
+    expect(calls.at(-1)?.url).toEqual(SERIES_LINK.address);
   });
 
   it('returns to the root when the search began there', async () => {
@@ -251,7 +262,7 @@ describe('CatalogBrowseView', () => {
     resolvers[1]?.(feedAnswer(HOME_SERIES_FEED, SEARCH_ADDRESS, []));
     await second;
     expect(view.state.kind).toBe('acquisition');
-    expect(view.position.url).toBe(SEARCH_ADDRESS);
+    expect(view.position.address).toEqual(feedAddress(SEARCH_ADDRESS));
   });
 
   it('forgets the search origin once the reader leaves the result by a crumb', async () => {
@@ -308,7 +319,7 @@ describe('CatalogBrowseView', () => {
       new CatalogCovers(() => Promise.resolve({ kind: 'not-found' })),
     );
     await resumed.start();
-    expect(calls[0]?.url).toBe(SERIES_LINK.href);
+    expect(calls[0]?.url).toEqual(SERIES_LINK.address);
     expect(resumed.crumbs.map((crumb) => crumb.label)).toEqual(['Home', 'By Series']);
   });
 
@@ -323,7 +334,7 @@ describe('CatalogBrowseView', () => {
       Promise.resolve(
         call.url === null
           ? feedAnswer(HOME_ROOT_FEED, ROOT_URL, call.path)
-          : feedAnswer(HOME_SERIES_FEED, call.url, call.path, held),
+          : feedAnswer(HOME_SERIES_FEED, call.url.handle, call.path, held),
       ),
     );
     await view.start();
@@ -354,7 +365,7 @@ describe('CatalogBrowseView', () => {
     const slow = view.openLink(SERIES_LINK);
     const fast = view.goToDepth(0);
     await fast;
-    waiting[0]?.(feedAnswer(HOME_SERIES_FEED, SERIES_LINK.href, []));
+    waiting[0]?.(feedAnswer(HOME_SERIES_FEED, SERIES_LINK.address.handle, []));
     await slow;
     expect(view.state.kind).toBe('navigation');
   });

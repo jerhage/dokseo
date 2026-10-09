@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_BOOK_MATCHING } from '$lib/domains/library/domain/book/book-matching';
 import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/reading-defaults';
 import type { CatalogFeed } from '../domain/catalog-feed';
+import { feedAddress } from '../domain/catalog-feed-fixtures';
 import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
 import { CatalogBrowseView } from './catalog-browse.svelte';
 import { CatalogCovers } from './catalog-covers.svelte';
@@ -20,7 +21,7 @@ function pageUrl(page: number): string | null {
 
 function pagingOf(page: number) {
   const next = page + 1 < PAGE_COUNT ? pageUrl(page + 1) : null;
-  return { next, previous: null, first: null, last: null };
+  return { next: next === null ? null : feedAddress(next) };
 }
 
 function entryIds(page: number): string[] {
@@ -32,7 +33,7 @@ function acquisitionPage(page: number): CatalogFeed {
   const feed = {
     id: 'books',
     title: 'Books',
-    address: pageUrl(page) ?? ROOT_URL,
+    address: feedAddress(pageUrl(page) ?? ROOT_URL),
     paging: pagingOf(page),
     search: null,
     publications,
@@ -43,13 +44,13 @@ function acquisitionPage(page: number): CatalogFeed {
 function navigationPage(page: number): CatalogFeed {
   const links = entryIds(page).map((id) => ({
     title: `Author ${id}`,
-    href: `https://home.test/opds/author/${id}`,
+    address: feedAddress(`https://home.test/opds/author/${id}`),
     summary: '',
   }));
   const feed = {
     id: 'authors',
     title: 'Authors',
-    address: pageUrl(page) ?? ROOT_URL,
+    address: feedAddress(pageUrl(page) ?? ROOT_URL),
     paging: pagingOf(page),
     search: null,
     links,
@@ -88,7 +89,8 @@ function setup(answer: Answer, session = new CatalogSession()) {
   const view = new CatalogBrowseView(
     HOME,
     {
-      browseCatalog: (_id, url) => {
+      browseCatalog: (_id, address) => {
+        const url = address?.handle ?? null;
         calls.push(url);
         return answer(url);
       },
@@ -205,7 +207,10 @@ describe('CatalogBrowseView endless paging', () => {
     await view.start();
     await view.loadMore();
     await view.loadMore();
-    expect(session.pagesOf(HOME.id)).toEqual([pageUrl(1), pageUrl(2)]);
+    expect(session.pagesOf(HOME.id)).toEqual([
+      feedAddress(pageUrl(1) ?? ''),
+      feedAddress(pageUrl(2) ?? ''),
+    ]);
   });
 
   it('restores every loaded page from the session', async () => {
@@ -217,7 +222,10 @@ describe('CatalogBrowseView endless paging', () => {
     await resumed.view.start();
     expect(resumed.calls).toEqual([null, pageUrl(1), pageUrl(2)]);
     expect(resumed.view.entries).toHaveLength(PAGE_SIZE * PAGE_COUNT);
-    expect(first.session.pagesOf(HOME.id)).toEqual([pageUrl(1), pageUrl(2)]);
+    expect(first.session.pagesOf(HOME.id)).toEqual([
+      feedAddress(pageUrl(1) ?? ''),
+      feedAddress(pageUrl(2) ?? ''),
+    ]);
   });
 
   it('stops restoring at a page that fails and offers it again', async () => {
@@ -235,7 +243,7 @@ describe('CatalogBrowseView endless paging', () => {
     await resumed.view.start();
     expect(resumed.view.entries).toHaveLength(PAGE_SIZE * 2);
     expect(resumed.view.more.kind).toBe('failed');
-    expect(resumed.view.paging.next).toBe(pageUrl(2));
+    expect(resumed.view.paging.next).toEqual(feedAddress(pageUrl(2) ?? ''));
   });
 
   it('appends the links of a navigation feed', async () => {
@@ -251,7 +259,7 @@ describe('CatalogBrowseView endless paging', () => {
       'Author p1-1',
       'Author p1-2',
     ]);
-    expect(view.paging.next).toBe(pageUrl(2));
+    expect(view.paging.next).toEqual(feedAddress(pageUrl(2) ?? ''));
   });
 
   it('restores the selection with the pages after a return', async () => {
@@ -296,8 +304,8 @@ describe('CatalogBrowseView scroll memory', () => {
 
   function resumed(top: number) {
     const session = new CatalogSession();
-    session.appendPage(HOME.id, pageUrl(1) ?? '');
-    session.appendPage(HOME.id, pageUrl(2) ?? '');
+    session.appendPage(HOME.id, feedAddress(pageUrl(1) ?? ''));
+    session.appendPage(HOME.id, feedAddress(pageUrl(2) ?? ''));
     session.keepScroll(HOME.id, top);
     const world = setup(answer, session);
     const scrolled: [number, number][] = [];
@@ -326,7 +334,7 @@ describe('CatalogBrowseView scroll memory', () => {
 
   it('scrolls to the saved position after a saved page fails, over the pages that loaded', async () => {
     const session = new CatalogSession();
-    session.appendPage(HOME.id, pageUrl(1) ?? '');
+    session.appendPage(HOME.id, feedAddress(pageUrl(1) ?? ''));
     session.keepScroll(HOME.id, 900);
     const scrolled: [number, number][] = [];
     const { view } = setup(

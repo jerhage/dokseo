@@ -11,12 +11,13 @@ import {
   UNKNOWN_MEDIA_TYPE,
 } from './opds1-fixtures';
 import { MAX_FEED_CHARACTERS, readOpdsFeed } from './opds1-feed';
-import type { AcquisitionFeed, NavigationFeed } from '../../domain/catalog-feed';
-import type { FeedPath } from '../../domain/remote-publication';
+import type { AcquisitionFeed, NavigationFeed, TrailStep } from '../../domain/catalog-feed';
 
 const ID = catalogId('c1');
 const SERVER = 'http://calibre.local:8080';
-const PATH: FeedPath = [{ title: 'By Series', href: `${SERVER}/opds/navcatalog/4e736572696573` }];
+const PATH: readonly TrailStep[] = [
+  { title: 'By Series', address: { handle: `${SERVER}/opds/navcatalog/4e736572696573` } },
+];
 
 function navigation(xml: string, url = `${SERVER}/opds`): NavigationFeed {
   const reading = readOpdsFeed(xml, url, ID, PATH);
@@ -43,10 +44,12 @@ describe('readOpdsFeed feed id', () => {
 
 describe('readOpdsFeed feed address', () => {
   it('reports the address the feed was read from', () => {
-    expect(navigation(CALIBRE_ROOT, `${SERVER}/opds?page=2`).address).toBe(`${SERVER}/opds?page=2`);
-    expect(acquisition(CALIBRE_SERIES, `${SERVER}/opds/series`).address).toBe(
-      `${SERVER}/opds/series`,
-    );
+    expect(navigation(CALIBRE_ROOT, `${SERVER}/opds?page=2`).address).toEqual({
+      handle: `${SERVER}/opds?page=2`,
+    });
+    expect(acquisition(CALIBRE_SERIES, `${SERVER}/opds/series`).address).toEqual({
+      handle: `${SERVER}/opds/series`,
+    });
   });
 });
 
@@ -59,12 +62,12 @@ describe('readOpdsFeed on a Calibre root', () => {
     expect(feed.links).toEqual([
       {
         title: 'By Newest',
-        href: `${SERVER}/opds/navcatalog/6f6c64657374?library_id=calibre`,
+        address: { handle: `${SERVER}/opds/navcatalog/6f6c64657374?library_id=calibre` },
         summary: 'Books sorted by date added',
       },
       {
         title: 'By Series',
-        href: `${SERVER}/opds/navcatalog/4e736572696573?library_id=calibre`,
+        address: { handle: `${SERVER}/opds/navcatalog/4e736572696573?library_id=calibre` },
         summary: 'Books by series',
       },
     ]);
@@ -77,22 +80,14 @@ describe('readOpdsFeed on a Calibre root', () => {
   });
 
   it('reports no paging when the feed has none', () => {
-    expect(navigation(CALIBRE_ROOT).paging).toEqual({
-      next: null,
-      previous: null,
-      first: null,
-      last: null,
-    });
+    expect(navigation(CALIBRE_ROOT).paging).toEqual({ next: null });
   });
 });
 
 describe('readOpdsFeed on a Calibre series feed', () => {
   it('reads paging links with their query strings', () => {
     expect(acquisition(CALIBRE_SERIES).paging).toEqual({
-      next: `${SERVER}/opds/navcatalog/4e736572696573?library_id=calibre&offset=30`,
-      previous: `${SERVER}/opds/navcatalog/4e736572696573?library_id=calibre&offset=0`,
-      first: `${SERVER}/opds/navcatalog/4e736572696573?library_id=calibre`,
-      last: `${SERVER}/opds/navcatalog/4e736572696573?library_id=calibre&offset=60`,
+      next: { handle: `${SERVER}/opds/navcatalog/4e736572696573?library_id=calibre&offset=30` },
     });
   });
 
@@ -114,7 +109,7 @@ describe('readOpdsFeed on a Calibre series feed', () => {
         mediaType: 'application/epub+zip',
         length: 1_071_903,
       },
-      feedPath: PATH,
+      feedPath: [{ title: 'By Series', href: `${SERVER}/opds/navcatalog/4e736572696573` }],
     });
   });
 
@@ -143,7 +138,11 @@ describe('readOpdsFeed on spec-conforming feeds', () => {
     const feed = navigation(SPEC_CONFORMING_NAVIGATION, 'https://example.org/opds');
 
     expect(feed.links).toEqual([
-      { title: 'Fiction', href: 'https://example.org/opds/fiction', summary: 'Novels and stories' },
+      {
+        title: 'Fiction',
+        address: { handle: 'https://example.org/opds/fiction' },
+        summary: 'Novels and stories',
+      },
     ]);
   });
 

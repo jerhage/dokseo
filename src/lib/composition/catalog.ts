@@ -5,12 +5,12 @@ import { SessionCatalogPasswords } from '../domains/catalog/adapters/session-cat
 import { createCatalogOriginsRepository } from '../domains/catalog/adapters/indexeddb-catalog-origins.repo';
 import { catalogSourceFor } from './catalog-sources';
 import type { BookOrigin } from '../domains/catalog/domain/book-origin';
-import type { FeedSearch } from '../domains/catalog/domain/catalog-feed';
+import type { FeedAddress, FeedSearch, TrailStep } from '../domains/catalog/domain/catalog-feed';
 import type { CatalogDraft } from '../domains/catalog/domain/catalog-draft';
 import type { BookMatching } from '../domains/library/domain/book/book-matching';
 import type { ReadingDefaults } from '../domains/library/domain/book/reading-defaults';
 import type { DownloadProgress } from '../domains/catalog/domain/catalog-source';
-import type { FeedPath, RemotePublication } from '../domains/catalog/domain/remote-publication';
+import type { RemotePublication } from '../domains/catalog/domain/remote-publication';
 import { addCatalog } from '../domains/catalog/use-cases/add-catalog';
 import type { AddCatalogResult } from '../domains/catalog/use-cases/add-catalog';
 import { browseCatalog } from '../domains/catalog/use-cases/browse-catalog';
@@ -67,15 +67,15 @@ type CatalogUseCases = {
   readonly unlockCatalog: (id: CatalogId, password: string) => UnlockCatalogResult;
   readonly browseCatalog: (
     id: CatalogId,
-    url: string | null,
-    path: FeedPath,
+    address: FeedAddress | null,
+    path: readonly TrailStep[],
     signal?: AbortSignal,
   ) => Promise<BrowseCatalogResult>;
   readonly searchCatalog: (
     id: CatalogId,
     search: FeedSearch,
     query: string,
-    path: FeedPath,
+    path: readonly TrailStep[],
     signal?: AbortSignal,
   ) => Promise<SearchCatalogResult>;
   readonly readCatalogCover: (
@@ -127,8 +127,8 @@ function buildCatalog(library: CatalogLibrary): CatalogUseCases {
     testCatalogConnection: (draft, password, signal) =>
       testCatalogConnection({ sourceFor }, draft, password, signal),
     unlockCatalog: (id: CatalogId, password: string) => unlockCatalog({ passwords }, id, password),
-    browseCatalog: (id, url, path, signal) =>
-      browseCatalog({ ...access, origins, readBook: library.readBook }, id, url, path, signal),
+    browseCatalog: (id, address, path, signal) =>
+      browseCatalog({ ...access, origins, readBook: library.readBook }, id, address, path, signal),
     searchCatalog: (id, search, query, path, signal) =>
       searchCatalog(
         { ...access, origins, readBook: library.readBook },

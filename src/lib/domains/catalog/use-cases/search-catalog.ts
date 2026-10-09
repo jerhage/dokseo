@@ -1,6 +1,5 @@
 import type { CatalogId } from '$lib/shared/ids';
-import type { FeedSearch } from '../domain/catalog-feed';
-import type { FeedPath } from '../domain/remote-publication';
+import type { FeedSearch, TrailStep } from '../domain/catalog-feed';
 import { heldReading } from './browse-catalog';
 import type { BrowseCatalogDeps, BrowseCatalogResult } from './browse-catalog';
 import { catalogAccess } from './catalog-access';
@@ -12,7 +11,7 @@ async function searchCatalog(
   catalogId: CatalogId,
   search: FeedSearch,
   query: string,
-  path: FeedPath,
+  path: readonly TrailStep[],
   signal?: AbortSignal,
 ): Promise<SearchCatalogResult> {
   const access = await catalogAccess(deps, catalogId);

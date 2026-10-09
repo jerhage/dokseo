@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { catalogId } from '$lib/shared/ids';
+import { feedAddress } from '../domain/catalog-feed-fixtures';
 import { CatalogSession } from './catalog-session.svelte';
 import { ROOT_POSITION, opened } from './feed-address';
 
 const ID = catalogId('home');
-const DEEP = opened(ROOT_POSITION, { title: 'By Series', href: 'https://home.test/series' });
-const DEEPER = opened(DEEP, { title: 'Star', href: 'https://home.test/star' });
+const DEEP = opened(ROOT_POSITION, {
+  title: 'By Series',
+  address: feedAddress('https://home.test/series'),
+});
+const DEEPER = opened(DEEP, { title: 'Star', address: feedAddress('https://home.test/star') });
 
 describe('CatalogSession feed trail', () => {
   it('starts at the root with the first trail index', () => {

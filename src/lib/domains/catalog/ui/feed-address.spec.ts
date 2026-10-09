@@ -6,25 +6,25 @@ import {
   crumbs,
   identified,
   opened,
-  paged,
   searched,
   searchStep,
 } from './feed-address';
+import { feedAddress } from '../domain/catalog-feed-fixtures';
 import type { FeedPosition } from './feed-address';
 
-const SERIES = { title: 'By Series', href: 'https://x.test/series' };
-const ONE = { title: '星の旅', href: 'https://x.test/series/one' };
+const SERIES = { title: 'By Series', address: feedAddress('https://x.test/series') };
+const ONE = { title: '星の旅', address: feedAddress('https://x.test/series/one') };
 
 const DEEP: FeedPosition = {
   path: [SERIES, ONE],
-  url: 'https://x.test/series/one?offset=30',
+  address: feedAddress('https://x.test/series/one?offset=30'),
   ids: ['root', 'series', 'one'],
   lookup: null,
 };
 
 describe('searchStep', () => {
   it('names the step by the trimmed query and leaves its address for the result', () => {
-    expect(searchStep('  moon ')).toEqual({ title: 'Search: moon', href: '' });
+    expect(searchStep('  moon ')).toEqual({ title: 'Search: moon', address: null });
   });
 });
 
@@ -32,8 +32,8 @@ describe('searched', () => {
   it('replaces the path with the search step alone and keeps the lookup', () => {
     const lookup = { search: { handle: 'h' }, query: 'moon' };
     expect(searched(DEEP, lookup)).toEqual({
-      path: [{ title: 'Search: moon', href: '' }],
-      url: null,
+      path: [{ title: 'Search: moon', address: null }],
+      address: null,
       ids: ['root', ''],
       lookup,
     });
@@ -43,9 +43,9 @@ describe('searched', () => {
 describe('addressed', () => {
   it('points the last step and the position at the address a search was read from', () => {
     const lookup = { search: { handle: 'h' }, query: 'moon' };
-    expect(addressed(searched(DEEP, lookup), 'https://x.test/s/moon')).toEqual({
-      path: [{ title: 'Search: moon', href: 'https://x.test/s/moon' }],
-      url: 'https://x.test/s/moon',
+    expect(addressed(searched(DEEP, lookup), feedAddress('https://x.test/s/moon'))).toEqual({
+      path: [{ title: 'Search: moon', address: feedAddress('https://x.test/s/moon') }],
+      address: feedAddress('https://x.test/s/moon'),
       ids: ['root', ''],
       lookup: null,
     });
@@ -56,17 +56,8 @@ describe('positions', () => {
   it('opens a step by appending it and showing its feed', () => {
     expect(opened(ROOT_POSITION, SERIES)).toEqual({
       path: [SERIES],
-      url: SERIES.href,
+      address: SERIES.address,
       ids: ['', ''],
-      lookup: null,
-    });
-  });
-
-  it('pages without changing the path', () => {
-    expect(paged(DEEP, 'https://x.test/p3')).toEqual({
-      path: [SERIES, ONE],
-      url: 'https://x.test/p3',
-      ids: ['root', 'series', 'one'],
       lookup: null,
     });
   });
@@ -74,20 +65,20 @@ describe('positions', () => {
   it('goes back to the feed of an earlier step', () => {
     expect(atDepth(DEEP, 1)).toEqual({
       path: [SERIES],
-      url: SERIES.href,
+      address: SERIES.address,
       ids: ['root', 'series'],
       lookup: null,
     });
   });
 
   it('goes back to the root at depth 0', () => {
-    expect(atDepth(DEEP, 0)).toEqual({ path: [], url: null, ids: ['root'], lookup: null });
+    expect(atDepth(DEEP, 0)).toEqual({ path: [], address: null, ids: ['root'], lookup: null });
   });
 
   it('keeps the whole path at its own depth, on its first page', () => {
     expect(atDepth(DEEP, 2)).toEqual({
       path: [SERIES, ONE],
-      url: ONE.href,
+      address: ONE.address,
       ids: ['root', 'series', 'one'],
       lookup: null,
     });
@@ -97,7 +88,7 @@ describe('positions', () => {
 describe('identified', () => {
   const OPENED: FeedPosition = {
     path: [SERIES],
-    url: 'https://x.test/opds?library_id=calibre',
+    address: feedAddress('https://x.test/opds?library_id=calibre'),
     ids: ['root', ''],
     lookup: null,
   };
@@ -109,7 +100,7 @@ describe('identified', () => {
   it('truncates to the root when the loaded feed is the root again', () => {
     expect(identified(OPENED, 'root')).toEqual({
       path: [],
-      url: 'https://x.test/opds?library_id=calibre',
+      address: feedAddress('https://x.test/opds?library_id=calibre'),
       ids: ['root'],
       lookup: null,
     });
@@ -118,13 +109,13 @@ describe('identified', () => {
   it('truncates to an earlier step and points it at the new address', () => {
     const position: FeedPosition = {
       path: [SERIES, ONE],
-      url: 'https://x.test/series?again',
+      address: feedAddress('https://x.test/series?again'),
       ids: ['root', 'series', ''],
       lookup: null,
     };
     expect(identified(position, 'series')).toEqual({
-      path: [{ title: SERIES.title, href: 'https://x.test/series?again' }],
-      url: 'https://x.test/series?again',
+      path: [{ title: SERIES.title, address: feedAddress('https://x.test/series?again') }],
+      address: feedAddress('https://x.test/series?again'),
       ids: ['root', 'series'],
       lookup: null,
     });
@@ -133,7 +124,7 @@ describe('identified', () => {
   it('never matches an empty id', () => {
     const position: FeedPosition = {
       path: [SERIES],
-      url: SERIES.href,
+      address: SERIES.address,
       ids: ['', ''],
       lookup: null,
     };

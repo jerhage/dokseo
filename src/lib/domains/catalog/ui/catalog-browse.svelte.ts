@@ -4,15 +4,18 @@ import { returnFocus } from '$lib/shared/focus-return';
 import type { FocusReturn } from '$lib/shared/focus-return';
 import type { CatalogId } from '$lib/shared/ids';
 import type { Catalog } from '../domain/catalog';
+import { addressKey } from '../domain/catalog-feed';
 import type {
   AcquisitionFeed,
   CatalogFeed,
+  FeedAddress,
   FeedSearch,
   NavigationFeed,
   NavigationLink,
+  TrailStep,
 } from '../domain/catalog-feed';
 import type { BookOriginLink, RemoteItem } from '../domain/remote-item';
-import type { FeedPath, RemotePublication } from '../domain/remote-publication';
+import type { RemotePublication } from '../domain/remote-publication';
 import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
 import type { SearchCatalogResult } from '../use-cases/search-catalog';
 import type { UnlockCatalogResult } from '../use-cases/unlock-catalog';
@@ -40,15 +43,15 @@ import type { Scroller } from './scroll-memory';
 type BrowseUseCases = {
   readonly browseCatalog: (
     id: CatalogId,
-    url: string | null,
-    path: FeedPath,
+    address: FeedAddress | null,
+    path: readonly TrailStep[],
     signal?: AbortSignal,
   ) => Promise<BrowseCatalogResult>;
   readonly searchCatalog: (
     id: CatalogId,
     search: FeedSearch,
     query: string,
-    path: FeedPath,
+    path: readonly TrailStep[],
     signal?: AbortSignal,
   ) => Promise<SearchCatalogResult>;
   readonly unlockCatalog: (id: CatalogId, password: string) => UnlockCatalogResult;
@@ -61,8 +64,8 @@ type PositionStore = {
   readonly ancestorIndexOf: (id: CatalogId, ancestor: FeedPosition) => number | null;
   readonly seek: (id: CatalogId, index: number) => Sought | null;
   readonly type: (id: CatalogId, query: string) => void;
-  readonly pagesOf: (id: CatalogId) => readonly string[];
-  readonly appendPage: (id: CatalogId, url: string) => void;
+  readonly pagesOf: (id: CatalogId) => readonly FeedAddress[];
+  readonly appendPage: (id: CatalogId, address: FeedAddress) => void;
   readonly selectionOf: (id: CatalogId) => ReadonlySet<string>;
   readonly keepSelection: (id: CatalogId, entryIds: ReadonlySet<string>) => void;
   readonly searchOriginOf: (id: CatalogId) => FeedPosition | null;
@@ -83,7 +86,7 @@ type ShowMode = HistoryMode | 'none';
 
 type BrowseCrumb = { readonly label: string; readonly onselect: () => void };
 
-type Paging = { readonly previous: string | null; readonly next: string | null };
+type Paging = { readonly next: FeedAddress | null };
 
 type MoreState =
   | { readonly kind: 'idle' }
@@ -108,7 +111,7 @@ type OpenedPublication = {
   readonly summary: readonly string[];
 };
 
-const NO_PAGING: Paging = { previous: null, next: null };
+const NO_PAGING: Paging = { next: null };
 
 function firstOfEach<T>(items: readonly T[], keyOf: (item: T) => string): readonly T[] {
   const seen = new Set<string>();
@@ -199,7 +202,7 @@ class CatalogBrowseView {
     const links = [this.state, ...this.#appended].flatMap((page) =>
       page.kind === 'navigation' ? page.feed.links : [],
     );
-    return firstOfEach(links, (link) => link.href);
+    return firstOfEach(links, (link) => addressKey(link.address));
   }
 
   get entries(): readonly QueuedDownload[] {
@@ -270,9 +273,9 @@ class CatalogBrowseView {
     await this.#show(this.position, 'none');
     this.selection.restore(chosen);
     const shown = this.#pending;
-    for (const url of saved) {
+    for (const address of saved) {
       if (this.#pending !== shown) return;
-      if (!(await this.#appendPage(url))) break;
+      if (!(await this.#appendPage(address))) break;
     }
     if (this.#pending === shown) await this.#scrollBack(top);
   }
@@ -292,7 +295,7 @@ class CatalogBrowseView {
   openLink(link: NavigationLink): Promise<void> {
     this.#store.dropSearchOrigin(this.catalog.id);
     this.#searchedQuery = null;
-    return this.#show(opened(this.position, { title: link.title, href: link.href }), 'push');
+    return this.#show(opened(this.position, { title: link.title, address: link.address }), 'push');
   }
 
   goToDepth(depth: number): Promise<void> {
@@ -304,9 +307,9 @@ class CatalogBrowseView {
   }
 
   async loadMore(): Promise<void> {
-    const url = this.paging.next;
-    if (url === null) return;
-    await this.#appendPage(url);
+    const address = this.paging.next;
+    if (address === null) return;
+    await this.#appendPage(address);
   }
 
   search(query: string): Promise<void> {
@@ -409,7 +412,7 @@ class CatalogBrowseView {
       lookup === null
         ? await this.#cases.browseCatalog(
             this.catalog.id,
-            position.url,
+            position.address,
             position.path,
             pending.signal,
           )
@@ -447,11 +450,11 @@ class CatalogBrowseView {
     const identity = identified(settled, result.reading.feed.id);
     this.position = identity;
     this.#store.move(this.catalog.id, identity);
-    if (position.url === null && lookup === null) this.#rootSearch = result.reading.feed.search;
+    if (position.address === null && lookup === null) this.#rootSearch = result.reading.feed.search;
     this.#shown(result.held);
   }
 
-  async #appendPage(url: string): Promise<boolean> {
+  async #appendPage(address: FeedAddress): Promise<boolean> {
     const first = this.state.kind;
     if (first !== 'navigation' && first !== 'acquisition') return false;
     if (this.more.kind === 'loading') return false;
@@ -461,7 +464,7 @@ class CatalogBrowseView {
 
     const result = await this.#cases.browseCatalog(
       this.catalog.id,
-      url,
+      address,
       this.position.path,
       loading.signal,
     );
@@ -496,7 +499,7 @@ class CatalogBrowseView {
       .with({ kind: 'appended' }, ({ reading, held }) => {
         this.#appended = [...this.#appended, reading];
         this.more = { kind: 'idle' };
-        this.#store.appendPage(this.catalog.id, url);
+        this.#store.appendPage(this.catalog.id, address);
         this.downloads.addHeld(held);
         if (reading.kind === 'acquisition') void this.covers.add(reading.feed.publications);
         return true;

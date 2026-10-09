@@ -1,10 +1,21 @@
 import { catalogId } from '$lib/shared/ids';
-import type { AcquisitionFeed, CatalogFeed, FeedSearch, NavigationFeed } from './catalog-feed';
-import type { FeedPath, RemotePublication } from './remote-publication';
+import type {
+  AcquisitionFeed,
+  CatalogFeed,
+  FeedAddress,
+  FeedSearch,
+  NavigationFeed,
+  TrailStep,
+} from './catalog-feed';
+import type { RemotePublication } from './remote-publication';
 
 const HOME_SEARCH: FeedSearch = { handle: 'search:home' };
 
-const NO_PAGING = { next: null, previous: null, first: null, last: null } as const;
+const NO_PAGING = { next: null } as const;
+
+function feedAddress(url: string): FeedAddress {
+  return { handle: url };
+}
 
 const HOME_ID = catalogId('home');
 
@@ -13,18 +24,18 @@ const HOME_ROOT_FEED: CatalogFeed = {
   feed: {
     id: 'urn:calibre:main',
     title: 'Sample Library',
-    address: 'https://home.test/opds',
+    address: feedAddress('https://home.test/opds'),
     paging: NO_PAGING,
     search: HOME_SEARCH,
     links: [
       {
         title: 'By Newest',
-        href: 'https://home.test/opds/navcatalog/6f6c64657374?library_id=calibre',
+        address: feedAddress('https://home.test/opds/navcatalog/6f6c64657374?library_id=calibre'),
         summary: 'Books sorted by date added',
       },
       {
         title: 'By Series',
-        href: 'https://home.test/opds/navcatalog/4e736572696573?library_id=calibre',
+        address: feedAddress('https://home.test/opds/navcatalog/4e736572696573?library_id=calibre'),
         summary: 'Books by series',
       },
     ],
@@ -38,13 +49,8 @@ const HOME_SERIES_FEED: CatalogFeed = {
   feed: {
     id: 'calibre-series:星の旅',
     title: 'Sample Library: Series: 星の旅',
-    address: SERIES_ADDRESS,
-    paging: {
-      next: `${SERIES_ADDRESS}&offset=30`,
-      previous: `${SERIES_ADDRESS}&offset=0`,
-      first: SERIES_ADDRESS,
-      last: `${SERIES_ADDRESS}&offset=60`,
-    },
+    address: feedAddress(SERIES_ADDRESS),
+    paging: { next: feedAddress(`${SERIES_ADDRESS}&offset=30`) },
     search: HOME_SEARCH,
     publications: [
       {
@@ -90,7 +96,7 @@ const SHELF_FICTION_FEED: CatalogFeed = {
   feed: {
     id: 'https://example.org/opds/fiction',
     title: 'Fiction',
-    address: 'https://example.org/opds',
+    address: feedAddress('https://example.org/opds'),
     paging: NO_PAGING,
     search: null,
     publications: [
@@ -132,15 +138,19 @@ function identifiedAs(reading: CatalogFeed, id: string): CatalogFeed {
 
 function placed(
   reading: CatalogFeed,
-  address: string,
-  path: FeedPath,
+  address: FeedAddress,
+  path: readonly TrailStep[],
   catalog = HOME_ID,
 ): CatalogFeed {
   if (reading.kind === 'navigation') {
     return { kind: 'navigation', feed: { ...reading.feed, address } };
   }
   const publications: readonly RemotePublication[] = reading.feed.publications.map(
-    (publication) => ({ ...publication, catalogId: catalog, feedPath: path }),
+    (publication) => ({
+      ...publication,
+      catalogId: catalog,
+      feedPath: path.map((step) => ({ title: step.title, href: step.address?.handle ?? '' })),
+    }),
   );
   return { kind: 'acquisition', feed: { ...reading.feed, address, publications } };
 }
@@ -150,6 +160,7 @@ export {
   HOME_SEARCH,
   HOME_SERIES_FEED,
   SHELF_FICTION_FEED,
+  feedAddress,
   identifiedAs,
   placed,
   withoutSearch,

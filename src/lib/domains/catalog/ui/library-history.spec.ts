@@ -3,7 +3,12 @@ import { bookId } from '$lib/shared/ids';
 import { readReady } from '$lib/shared/read-state';
 import { DEFAULT_BOOK_MATCHING } from '$lib/domains/library/domain/book/book-matching';
 import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/reading-defaults';
-import { HOME_ROOT_FEED, HOME_SERIES_FEED, placed } from '../domain/catalog-feed-fixtures';
+import {
+  HOME_ROOT_FEED,
+  HOME_SERIES_FEED,
+  feedAddress,
+  placed,
+} from '../domain/catalog-feed-fixtures';
 import type { CatalogFeed } from '../domain/catalog-feed';
 import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
 import { CatalogSession } from './catalog-session.svelte';
@@ -17,11 +22,15 @@ import { DEVICE_TAB } from './library-tabs';
 const FIRST = 'urn:uuid:11111111-2222-3333-4444-555555555555';
 const SERIES_LINK = {
   title: 'By Series',
-  href: 'https://home.test/opds/navcatalog/4e736572696573?library_id=calibre',
+  address: feedAddress('https://home.test/opds/navcatalog/4e736572696573?library_id=calibre'),
   summary: '',
 };
 
-const MIDDLE_LINK = { title: 'Middle', href: 'https://home.test/opds/middle', summary: '' };
+const MIDDLE_LINK = {
+  title: 'Middle',
+  address: feedAddress('https://home.test/opds/middle'),
+  summary: '',
+};
 
 const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
@@ -166,23 +175,27 @@ describe('the library history across the tabs and the feeds', () => {
     const browser = new FakeBrowser();
     const session = new CatalogSession();
     const cases: CatalogTabsUseCases = {
-      browseCatalog: (_id, url, path): Promise<BrowseCatalogResult> => {
+      browseCatalog: (_id, address, path): Promise<BrowseCatalogResult> => {
         const middle: CatalogFeed =
           HOME_ROOT_FEED.kind === 'navigation'
             ? { kind: 'navigation', feed: { ...HOME_ROOT_FEED.feed, id: 'middle' } }
             : HOME_ROOT_FEED;
         const reading =
-          url === null
-            ? placed(HOME_ROOT_FEED, 'https://home.test/opds', path)
-            : url === MIDDLE_LINK.href
-              ? placed(middle, url, path)
-              : placed(HOME_SERIES_FEED, url, path);
+          address === null
+            ? placed(HOME_ROOT_FEED, feedAddress('https://home.test/opds'), path)
+            : address.handle === MIDDLE_LINK.address.handle
+              ? placed(middle, address, path)
+              : placed(HOME_SERIES_FEED, address, path);
         return Promise.resolve({ kind: 'success', reading, held: new Map() });
       },
       searchCatalog: (_id, _search, _query, path) =>
         Promise.resolve({
           kind: 'success',
-          reading: placed(HOME_SERIES_FEED, 'https://home.test/opds/search/moon', path),
+          reading: placed(
+            HOME_SERIES_FEED,
+            feedAddress('https://home.test/opds/search/moon'),
+            path,
+          ),
           held: new Map(),
         }),
       unlockCatalog: () => ({ kind: 'success' }),

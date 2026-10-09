@@ -95,8 +95,9 @@ function setup(feed: ReadFeedResult = { kind: 'success', reading: SHELF_FICTION_
   };
 
   const source: CatalogSource = {
+    rootAddress: (rootUrl) => ({ handle: rootUrl }),
     readFeed: (address, _placement, credentials) => {
-      requests.push(`feed ${address}`);
+      requests.push(`feed ${address.handle}`);
       credentialsSeen.push(credentials);
       return Promise.resolve(feed);
     },

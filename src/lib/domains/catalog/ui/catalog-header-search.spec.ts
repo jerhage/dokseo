@@ -6,6 +6,7 @@ import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/readi
 import {
   HOME_ROOT_FEED,
   HOME_SEARCH,
+  feedAddress,
   identifiedAs,
   placed,
   withoutSearch,
@@ -48,11 +49,12 @@ function setup() {
   const tabs = new CatalogTabsView(session, {
     catalogs: () => readReady({ kind: 'success', catalogs: [HOME, ARCHIVE], unreadable: [] }),
     cases: {
-      browseCatalog: (id, url, path) => {
+      browseCatalog: (id, address, path) => {
+        const url = address?.handle ?? null;
         urls.push(url);
         const root = id === HOME.id ? HOME_ROOT_FEED : withoutSearch(HOME_ROOT_FEED);
         const own = url === null ? root : identifiedAs(root, 'urn:calibre:results');
-        const reading = placed(own, url ?? 'https://home.test/opds', path, id);
+        const reading = placed(own, feedAddress(url ?? 'https://home.test/opds'), path, id);
         const answer: BrowseCatalogResult = { kind: 'success', reading, held: new Map() };
         return Promise.resolve(answer);
       },
@@ -60,7 +62,7 @@ function setup() {
         searches.push({ handle: search.handle, query });
         const reading = placed(
           identifiedAs(HOME_ROOT_FEED, 'urn:calibre:results'),
-          'https://home.test/opds/search',
+          feedAddress('https://home.test/opds/search'),
           path,
           id,
         );

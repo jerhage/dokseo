@@ -1,4 +1,4 @@
-import type { FeedSearch } from '../../domain/catalog-feed';
+import type { FeedAddress, FeedSearch } from '../../domain/catalog-feed';
 import type {
   CatalogCredentials,
   CatalogSource,
@@ -12,8 +12,8 @@ import { SEARCH_PLACEHOLDER, readOpdsFeed } from './opds1-feed';
 import type { Acquisition } from '../../domain/remote-publication';
 import type { HttpCatalogClient } from '../http-catalog-client';
 
-function searchAddress(search: FeedSearch, query: string): string {
-  return search.handle.replaceAll(SEARCH_PLACEHOLDER, encodeURIComponent(query.trim()));
+function searchAddress(search: FeedSearch, query: string): FeedAddress {
+  return { handle: search.handle.replaceAll(SEARCH_PLACEHOLDER, encodeURIComponent(query.trim())) };
 }
 
 class Opds1CatalogSource implements CatalogSource {
@@ -23,15 +23,19 @@ class Opds1CatalogSource implements CatalogSource {
     this.#http = http;
   }
 
+  rootAddress(rootUrl: string): FeedAddress {
+    return { handle: rootUrl };
+  }
+
   async readFeed(
-    address: string,
+    address: FeedAddress,
     placement: FeedPlacement,
     credentials: CatalogCredentials,
     signal?: AbortSignal,
   ): Promise<ReadFeedResult> {
-    const fetched = await this.#http.readText(address, credentials, signal);
+    const fetched = await this.#http.readText(address.handle, credentials, signal);
     if (fetched.kind !== 'success') return fetched;
-    const reading = readOpdsFeed(fetched.text, address, placement.catalogId, placement.path);
+    const reading = readOpdsFeed(fetched.text, address.handle, placement.catalogId, placement.path);
     if (reading.kind === 'not-a-feed') return { kind: 'not-a-catalog' };
     return { kind: 'success', reading };
   }

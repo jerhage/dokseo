@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { bookId } from '$lib/shared/ids';
 import { DEFAULT_BOOK_MATCHING } from '$lib/domains/library/domain/book/book-matching';
 import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/reading-defaults';
-import { HOME_SERIES_FEED, placed } from '../domain/catalog-feed-fixtures';
+import { HOME_SERIES_FEED, feedAddress, placed } from '../domain/catalog-feed-fixtures';
 import type { BookOriginLink } from '../domain/remote-item';
 import type { RemotePublication } from '../domain/remote-publication';
 import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
@@ -22,7 +22,7 @@ function setup(held = new Map<string, BookOriginLink>()) {
   const downloaded: string[] = [];
   const answer = (url: string | null): BrowseCatalogResult => ({
     kind: 'success',
-    reading: placed(HOME_SERIES_FEED, url ?? ROOT_URL, []),
+    reading: placed(HOME_SERIES_FEED, feedAddress(url ?? ROOT_URL), []),
     held,
   });
   const downloads = new CatalogDownloads(
@@ -43,7 +43,7 @@ function setup(held = new Map<string, BookOriginLink>()) {
   const view = new CatalogBrowseView(
     HOME,
     {
-      browseCatalog: (_id, url) => Promise.resolve(answer(url)),
+      browseCatalog: (_id, address) => Promise.resolve(answer(address?.handle ?? null)),
       searchCatalog: () => Promise.resolve(answer(null)),
       unlockCatalog: () => ({ kind: 'success' }),
     },
@@ -95,7 +95,11 @@ describe('CatalogBrowseView details', () => {
     const { view } = setup();
     await view.start();
     view.openDetails(FIRST);
-    await view.openLink({ title: 'Other', href: 'https://home.test/opds/other', summary: '' });
+    await view.openLink({
+      title: 'Other',
+      address: feedAddress('https://home.test/opds/other'),
+      summary: '',
+    });
     expect(view.opened).toBeNull();
   });
 

@@ -20,8 +20,9 @@ const PRIVATE: CatalogDraft = {
 function setup(answer: ReadFeedResult) {
   const requests: { url: string; credentials: CatalogCredentials }[] = [];
   const source: CatalogSource = {
-    readFeed: (url, _placement, credentials) => {
-      requests.push({ url, credentials });
+    rootAddress: (rootUrl) => ({ handle: rootUrl }),
+    readFeed: (address, _placement, credentials) => {
+      requests.push({ url: address.handle, credentials });
       return Promise.resolve(answer);
     },
     search: () => Promise.reject(new Error('unused')),

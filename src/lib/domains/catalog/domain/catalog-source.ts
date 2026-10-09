@@ -1,7 +1,7 @@
 import type { CatalogId } from '$lib/shared/ids';
-import type { CatalogFeed, FeedSearch } from './catalog-feed';
+import type { CatalogFeed, FeedAddress, FeedSearch, TrailStep } from './catalog-feed';
 import type { CatalogProtocol } from './catalog-protocol';
-import type { Acquisition, FeedPath } from './remote-publication';
+import type { Acquisition } from './remote-publication';
 
 type CatalogCredentials =
   | { readonly kind: 'none' }
@@ -15,7 +15,7 @@ type ClientFailure =
   | { readonly kind: 'offline' }
   | { readonly kind: 'aborted' };
 
-type FeedPlacement = { readonly catalogId: CatalogId; readonly path: FeedPath };
+type FeedPlacement = { readonly catalogId: CatalogId; readonly path: readonly TrailStep[] };
 
 type ReadFeedResult =
   | { readonly kind: 'success'; readonly reading: CatalogFeed }
@@ -29,8 +29,9 @@ type DownloadResult = { readonly kind: 'success'; readonly file: File } | Client
 type DownloadProgress = (fraction: number | null) => void;
 
 interface CatalogSource {
+  rootAddress(rootUrl: string): FeedAddress;
   readFeed(
-    address: string,
+    address: FeedAddress,
     placement: FeedPlacement,
     credentials: CatalogCredentials,
     signal?: AbortSignal,
