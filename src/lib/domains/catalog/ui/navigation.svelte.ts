@@ -1,5 +1,7 @@
 import type { FeedSearch, NavigationLink } from '../domain/catalog-feed';
-import type { CatalogSession } from './catalog-session.svelte';
+import { NOT_OPENING } from './catalog-session.svelte';
+import type { CatalogSession, Opening } from './catalog-session.svelte';
+import type { LinkReader, ResolvedLink } from './link-resolution';
 import {
   ancestorsOf,
   arrived,
@@ -13,6 +15,7 @@ import {
   pathOf,
   placeById,
   placeOfTab,
+  placeWithFeed,
   pushedDetails,
   pushedExisting,
   pushedPlace,
@@ -53,6 +56,20 @@ function createNavigation(session: CatalogSession, port: HistoryPort, newId: New
     if (current.kind === 'location' && current.place === place) return;
     if (goTo(place)) return;
     pushTo(pushedExisting(session.navigation, place, newId));
+  }
+
+  async function resolve(
+    tab: string,
+    link: NavigationLink,
+    read: LinkReader,
+  ): Promise<ResolvedLink> {
+    const place = placeOfTab(session.navigation, tab);
+    const path = place === null ? [] : pathOf(session.navigation, place.id);
+    try {
+      return await read(link, [...path, { title: link.title, address: link.address }]);
+    } catch {
+      return { kind: 'unreadable' };
+    }
   }
 
   return {
@@ -110,6 +127,23 @@ function createNavigation(session: CatalogSession, port: HistoryPort, newId: New
     },
     open(tab: string, link: NavigationLink): void {
       pushTo(pushedPlace(session.navigation, tab, locationOfLink(link), newId));
+    },
+    async follow(tab: string, link: NavigationLink, read: LinkReader): Promise<void> {
+      if (session.opening.kind === 'resolving') return;
+      const entry = session.navigation.current.id;
+      const attempt: Opening = { kind: 'resolving', tab, link };
+      session.opening = attempt;
+      const resolved = await resolve(tab, link, read);
+      if (session.opening !== attempt) return;
+      session.opening = NOT_OPENING;
+      if (session.navigation.current.id !== entry) return;
+      const here = placeOfTab(session.navigation, tab);
+      const same =
+        resolved.kind === 'feed' && here !== null
+          ? placeWithFeed(session.navigation, here.id, resolved.feedId)
+          : null;
+      if (same === null) this.open(tab, link);
+      else ascend(same);
     },
     search(tab: string, search: FeedSearch, query: string): EntryId {
       const place = placeOfTab(session.navigation, tab);

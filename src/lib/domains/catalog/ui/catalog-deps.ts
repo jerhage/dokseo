@@ -7,6 +7,7 @@ import type { DownloadsChoices, DownloadsUseCases } from './catalog-downloads.sv
 import type { CatalogSession } from './catalog-session.svelte';
 import type { DescribeOpenFile } from './catalog-texts';
 import type { createFeedSearch } from './feed-search.svelte';
+import type { LinkReader } from './link-resolution';
 import type { createNavigation } from './navigation.svelte';
 
 type CatalogUseCases = DownloadsUseCases &
@@ -22,6 +23,7 @@ type CatalogDeps = {
   readonly session: CatalogSession;
   readonly navigation: ReturnType<typeof createNavigation>;
   readonly search: ReturnType<typeof createFeedSearch>;
+  readonly linkReader: (id: CatalogId) => LinkReader;
   readonly choices: DownloadsChoices;
   readonly describeOpenFile: DescribeOpenFile;
   readonly readerHref: (id: BookId) => string;

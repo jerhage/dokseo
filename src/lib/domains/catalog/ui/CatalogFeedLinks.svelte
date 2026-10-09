@@ -9,10 +9,11 @@
   type Props = {
     readonly label: string;
     readonly links: readonly NavigationLink[];
+    readonly resolving: string | null;
     readonly onopen: (link: NavigationLink) => void;
   };
 
-  let { label, links, onopen }: Props = $props();
+  let { label, links, resolving, onopen }: Props = $props();
 </script>
 
 {#if links.length === 0}
@@ -22,7 +23,13 @@
     {#each links as link (addressKey(link.address))}
       <ListRow title={link.title} description={link.summary === '' ? undefined : link.summary}>
         {#snippet actions()}
-          <Button size="sm" variant="ghost" onclick={() => onopen(link)}>Open</Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            loading={resolving === addressKey(link.address)}
+            disabled={resolving !== null}
+            onclick={() => onopen(link)}>Open</Button
+          >
         {/snippet}
       </ListRow>
     {/each}

@@ -1,4 +1,4 @@
-import type { FeedSearch } from '../domain/catalog-feed';
+import type { FeedSearch, NavigationLink } from '../domain/catalog-feed';
 import { DEVICE_TAB } from './library-tabs';
 import { browserId, started } from './navigation';
 import type { Navigation, NewId, PlaceId } from './navigation';
@@ -9,9 +9,16 @@ type FeedReading =
   | { readonly kind: 'failed' }
   | { readonly kind: 'ready'; readonly search: FeedSearch | null };
 
+type Opening =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'resolving'; readonly tab: string; readonly link: NavigationLink };
+
+const NOT_OPENING: Opening = { kind: 'idle' };
+
 class CatalogSession {
   navigation = $state.raw<Navigation>(started(DEVICE_TAB, browserId));
   readings = $state.raw<ReadonlyMap<PlaceId, FeedReading>>(new Map());
+  opening = $state.raw<Opening>(NOT_OPENING);
   originFilter = $state.raw<OriginFilter>(ALL_FILTER);
   #selections = new Map<PlaceId, ReadonlySet<string>>();
   #scrolls = new Map<PlaceId, number>();
@@ -19,6 +26,7 @@ class CatalogSession {
   restart(tab: string, newId: NewId = browserId): void {
     this.navigation = started(tab, newId);
     this.readings = new Map();
+    this.opening = NOT_OPENING;
     this.#selections = new Map();
     this.#scrolls = new Map();
   }
@@ -54,5 +62,5 @@ class CatalogSession {
 
 const catalogSession = new CatalogSession();
 
-export { CatalogSession, catalogSession };
-export type { FeedReading };
+export { CatalogSession, NOT_OPENING, catalogSession };
+export type { FeedReading, Opening };

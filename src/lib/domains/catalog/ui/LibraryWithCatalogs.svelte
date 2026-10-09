@@ -21,6 +21,7 @@
   import type { DeviceDetailsLink } from './device-details';
   import type { DeviceDetailsView, LibraryExtras, LibraryNeeds } from './library-extras';
   import { DEVICE_TAB, effectiveTab } from './library-tabs';
+  import { linkReaderFor } from './link-resolution';
   import { createNavigation } from './navigation.svelte';
   import type { HistoryPort } from './navigation.svelte';
   import { createOriginFilter } from './origin-filter.svelte';
@@ -79,6 +80,7 @@
     session,
     navigation,
     search,
+    linkReader: (id) => linkReaderFor(queryClient, catalog, id),
     choices: { matching: () => needs.matching(), defaults: () => needs.defaults() },
     describeOpenFile: (error) => needs.describeOpenFile(error),
     readerHref: (id) => needs.readerHref(id),

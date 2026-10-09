@@ -272,6 +272,11 @@ function sameFeedAncestor(navigation: Navigation, placeId: PlaceId): PlaceId | n
   return ancestors.find((ancestor) => ancestor.feedId === self.feedId)?.id ?? null;
 }
 
+function placeWithFeed(navigation: Navigation, placeId: PlaceId, feedId: string): PlaceId | null {
+  if (feedId === '') return null;
+  return ancestorsOf(navigation, placeId).find((place) => place.feedId === feedId)?.id ?? null;
+}
+
 function searchStepTitle(query: string): string {
   return `Search: ${query.trim()}`;
 }
@@ -336,6 +341,7 @@ export {
   pathOf,
   placeById,
   placeOfTab,
+  placeWithFeed,
   pushedDetails,
   pushedExisting,
   pushedPlace,

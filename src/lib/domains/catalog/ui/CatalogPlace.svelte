@@ -10,6 +10,7 @@
   import { readingOf } from './feed-report';
   import { feedLocationOf } from './navigation';
   import type { PlaceId } from './navigation';
+  import { resolvingKeyOf } from './link-resolution';
   import { createScrollRestore, scrollMemory } from './scroll-memory';
   import { createSelection } from './selection.svelte';
   import CatalogFeedData from './CatalogFeedData.svelte';
@@ -35,6 +36,7 @@
   const selection = createSelection(session.selectionOf(here), (ids) =>
     session.keepSelection(here, ids),
   );
+  const resolving = $derived(resolvingKeyOf(session.opening, catalog.id));
   const details = createDetails();
   const restore = createScrollRestore(
     session.scrollOf(here),
@@ -80,7 +82,9 @@
             <CatalogFeedLinks
               label={feed.head.title}
               links={listing.links}
-              onopen={(link) => navigation.open(catalog.id, link)}
+              {resolving}
+              onopen={(link) =>
+                void navigation.follow(catalog.id, link, deps.linkReader(catalog.id))}
             />
           {:else}
             <CatalogPublications

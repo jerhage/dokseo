@@ -5,6 +5,7 @@ import { CatalogSession } from './catalog-session.svelte';
 import { createNavigation } from './navigation.svelte';
 import type { HistoryPort } from './navigation.svelte';
 import type { HistoryState } from './navigation';
+import type { LinkReader, ResolvedLink } from './link-resolution';
 
 const SERIES: NavigationLink = {
   title: 'By Series',
@@ -278,6 +279,128 @@ describe('createNavigation feeds', () => {
     navigation.identify(series.id, 'urn:root');
 
     expect(browser.calls).toHaveLength(calls);
+  });
+});
+
+describe('createNavigation following a link', () => {
+  function reading(resolved: ResolvedLink): LinkReader {
+    return () => Promise.resolve(resolved);
+  }
+
+  function rooted() {
+    const world = setup();
+    world.navigation.select(HOME);
+    const root = world.navigation.placeOf(HOME)!;
+    world.navigation.identify(root.id, 'urn:root');
+    world.navigation.open(HOME, SERIES);
+    world.navigation.identify(world.navigation.placeOf(HOME)!.id, 'urn:series');
+    return world;
+  }
+
+  it('pushes the feed when its id is not on the path', async () => {
+    const { browser, navigation } = rooted();
+    const entries = browser.entries.length;
+
+    await navigation.follow(HOME, VOYAGE, reading({ kind: 'feed', feedId: 'urn:voyage' }));
+
+    expect(browser.entries).toHaveLength(entries + 1);
+    expect(crumbs(navigation)).toEqual(['Home', 'By Series', 'Star Voyage']);
+  });
+
+  it('goes back to the place that has the id and pushes nothing', async () => {
+    const { browser, navigation } = rooted();
+    const entries = browser.entries.length;
+    const pushes = browser.calls.filter((call) => call === 'push').length;
+
+    await navigation.follow(HOME, VOYAGE, reading({ kind: 'feed', feedId: 'urn:root' }));
+
+    expect(browser.calls.at(-1)).toBe('go -1');
+    expect(browser.calls.filter((call) => call === 'push')).toHaveLength(pushes);
+    expect(browser.entries).toHaveLength(entries);
+    expect(crumbs(navigation)).toEqual(['Home']);
+  });
+
+  it('leaves Forward on the entry it came from instead of one that bounces back', async () => {
+    const { browser, navigation } = rooted();
+
+    await navigation.follow(HOME, VOYAGE, reading({ kind: 'feed', feedId: 'urn:root' }));
+    browser.travel(1);
+
+    expect(crumbs(navigation)).toEqual(['Home', 'By Series']);
+    expect(browser.at).toBe(browser.entries.length - 1);
+  });
+
+  it('does nothing when the link leads to the feed already shown', async () => {
+    const { browser, navigation } = rooted();
+    const calls = browser.calls.length;
+
+    await navigation.follow(HOME, VOYAGE, reading({ kind: 'feed', feedId: 'urn:series' }));
+
+    expect(browser.calls).toHaveLength(calls);
+    expect(crumbs(navigation)).toEqual(['Home', 'By Series']);
+  });
+
+  it('pushes the feed when it could not be read so that the page shows the failure', async () => {
+    const { browser, navigation } = rooted();
+    const entries = browser.entries.length;
+
+    await navigation.follow(HOME, VOYAGE, reading({ kind: 'unreadable' }));
+
+    expect(browser.entries).toHaveLength(entries + 1);
+    expect(crumbs(navigation)).toEqual(['Home', 'By Series', 'Star Voyage']);
+  });
+
+  it('pushes the feed when the reader throws', async () => {
+    const { navigation } = rooted();
+
+    await navigation.follow(HOME, VOYAGE, () => Promise.reject(new Error('down')));
+
+    expect(crumbs(navigation)).toEqual(['Home', 'By Series', 'Star Voyage']);
+  });
+
+  it('marks the link as resolving until the feed is read', async () => {
+    const { session, navigation } = rooted();
+    let release: (resolved: ResolvedLink) => void = () => undefined;
+    const pending = new Promise<ResolvedLink>((resolve) => {
+      release = resolve;
+    });
+
+    const following = navigation.follow(HOME, VOYAGE, () => pending);
+    expect(session.opening).toEqual({ kind: 'resolving', tab: HOME, link: VOYAGE });
+    release({ kind: 'feed', feedId: 'urn:voyage' });
+    await following;
+
+    expect(session.opening.kind).toBe('idle');
+  });
+
+  it('opens nothing when the reader moved on while the feed was read', async () => {
+    const { browser, navigation } = rooted();
+    let release: (resolved: ResolvedLink) => void = () => undefined;
+    const pending = new Promise<ResolvedLink>((resolve) => {
+      release = resolve;
+    });
+
+    const following = navigation.follow(HOME, VOYAGE, () => pending);
+    browser.travel(-1);
+    release({ kind: 'feed', feedId: 'urn:voyage' });
+    await following;
+
+    expect(crumbs(navigation)).toEqual(['Home']);
+  });
+
+  it('ignores a second link while one is being read', async () => {
+    const { session, navigation } = rooted();
+    const pending = new Promise<ResolvedLink>(() => undefined);
+    void navigation.follow(HOME, VOYAGE, () => pending);
+    const reads: string[] = [];
+
+    await navigation.follow(HOME, SERIES, (link) => {
+      reads.push(link.title);
+      return Promise.resolve({ kind: 'unreadable' });
+    });
+
+    expect(reads).toEqual([]);
+    expect(session.opening.kind).toBe('resolving');
   });
 });
 
