@@ -5,20 +5,13 @@ import { refreshLibrary } from '$lib/domains/library/ui/library-refresh';
 import { editInLanguage } from '$lib/domains/library/ui/reading-defaults.svelte';
 import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
 import {
-  arrivalFrom,
-  passageArrivalFrom,
-  passageFrom,
-} from '$lib/domains/recognition/ui/capture/capture-arrivals';
-import {
   anchorsOf,
   listingOf,
   panelCapturesOf,
   readOf,
 } from '$lib/domains/recognition/ui/capture/capture-list-rules';
 import type { CaptureListing } from '$lib/domains/recognition/ui/capture/capture-read';
-import { arrivalGlow, everyOtherGlow } from '$lib/domains/recognition/ui/capture/capture-glow';
 import type { EngineGateRead } from '$lib/domains/recognition/ui/engine/engine-gate';
-import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
 import { FlowView } from '$lib/domains/flowing/ui/flow-view.svelte';
 import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
 import { parsedBookId } from '$lib/shared/ids';
@@ -27,17 +20,17 @@ import type { GlowRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { Notify } from '$lib/shared/notice';
 import {
-  IMAGE_ARRIVAL_SHOWING,
   IMAGE_PARAMETER,
   LIBRARY_AFTER_MISSING_BOOK,
   arrivalQuery,
-  imageArrivalShows,
-  mirroredPlace,
   readArrival,
   readImageIndex,
   readerNavigation,
 } from '$lib/shared/reader-location';
-import type { ImageArrivalStanding, ReaderRequest, ShownPlace } from '$lib/shared/reader-location';
+import type { ReaderRequest, ShownPlace } from '$lib/shared/reader-location';
+import { createImageArrival } from './image-arrival.svelte';
+import type { ImageArrivalHook } from './image-arrival.svelte';
+import { imageArrivalOf, passageArrivalOf } from './read-arrival';
 
 type ReadAddress = {
   readonly fileId: () => string | undefined;
@@ -55,7 +48,7 @@ class ReadSession {
   #client: QueryClient;
   #address: ReadAddress;
   #listing: () => CaptureListing | undefined;
-  #standing = $state<ImageArrivalStanding>(IMAGE_ARRIVAL_SHOWING);
+  #imageArrival: ImageArrivalHook;
   #requested: ReaderRequest | null = null;
   #arriving: BookId | null = null;
   #id = $derived.by(() => parsedBookId(this.#address.fileId() ?? ''));
@@ -66,17 +59,9 @@ class ReadSession {
   #cards = $derived.by(() => panelCapturesOf(this.listing, this.captures.recording.unsaved.cards));
   #read = $derived.by(() => readOf(this.#cards, this.listing));
   #anchors = $derived.by(() => anchorsOf(this.#cards));
-  #here = $derived.by(() =>
-    arrivalFrom(this.#read, this.#found, this.reader.direction, comparePassages),
-  );
-  #glow = $derived(arrivalGlow(this.#here));
-  #everyGlow = $derived.by(() => everyOtherGlow(this.#read, this.#here));
-  #passage = $derived.by(() => passageFrom(this.#anchors, this.#found));
-  #stepping = $derived(this.#here?.stepping ?? null);
-  #passageHere = $derived.by(() => passageArrivalFrom(this.#read, this.#found, comparePassages));
-  #passageStepping = $derived(this.#passageHere?.stepping ?? null);
+  #image = $derived.by(() => imageArrivalOf(this.#read, this.#found, this.reader.direction));
+  #passageArrival = $derived.by(() => passageArrivalOf(this.#read, this.#anchors, this.#found));
   #finding = $derived(arrivalQuery(this.#found));
-  #arrivalShows = $derived(imageArrivalShows(this.#standing));
 
   constructor(
     container: Container,
@@ -89,6 +74,7 @@ class ReadSession {
     this.#client = client;
     this.#address = address;
     this.#listing = listing;
+    this.#imageArrival = createImageArrival(address.shown, address.replace);
     this.reader = new ReaderView(
       container,
       notify,
@@ -122,19 +108,19 @@ class ReadSession {
   }
 
   get glow(): readonly GlowRegion[] {
-    return this.#glow;
+    return this.#image.glow;
   }
 
   get everyGlow(): readonly GlowRegion[] {
-    return this.#everyGlow;
+    return this.#image.everyGlow;
   }
 
   get stepping() {
-    return this.#stepping;
+    return this.#image.stepping;
   }
 
   get passageStepping() {
-    return this.#passageStepping;
+    return this.#passageArrival.stepping;
   }
 
   get finding(): string | null {
@@ -142,17 +128,15 @@ class ReadSession {
   }
 
   get arrivalShows(): boolean {
-    return this.#arrivalShows;
+    return this.#imageArrival.shows;
   }
 
   mirror(place: ShownPlace): void {
-    const mirrored = mirroredPlace(this.#address.shown(), place, this.#standing);
-    this.#standing = mirrored.standing;
-    if (mirrored.url !== null) this.#address.replace(mirrored.url);
+    this.#imageArrival.mirror(place);
   }
 
   arrive(book: BookId): void {
-    const wanted = this.#passage;
+    const wanted = this.#passageArrival.passage;
     if (wanted !== null) this.flow.arrivals.arriveAt(book, wanted);
   }
 
@@ -163,7 +147,7 @@ class ReadSession {
   }
 
   navigate(): void {
-    this.#standing = IMAGE_ARRIVAL_SHOWING;
+    this.#imageArrival.reset();
     const named = this.#id;
     if (named === null) {
       this.#address.leave(LIBRARY_AFTER_MISSING_BOOK);
