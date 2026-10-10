@@ -99,6 +99,7 @@
   --ds-tracking-tight: 0.02em;
   --ds-tracking-wider: 0.16em;
   --ds-tracking-widest: 0.3em;
+  --ds-container-prose: 85ch;
 
   --ds-corner-xs: var(--ds-radius-none);
   --ds-corner-sm: var(--ds-radius-none);

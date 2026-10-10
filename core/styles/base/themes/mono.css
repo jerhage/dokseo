@@ -81,6 +81,7 @@
   --ds-tracking-tight: var(--ds-ls-normal);
   --ds-tracking-wider: var(--ds-ls-wider);
   --ds-tracking-widest: var(--ds-ls-widest);
+  --ds-container-prose: 68ch;
 
   --ds-corner-xs: var(--ds-radius-none);
   --ds-corner-sm: var(--ds-radius-none);
