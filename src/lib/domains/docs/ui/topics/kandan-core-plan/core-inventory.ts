@@ -274,6 +274,7 @@ const COMPONENTS = [
   'Modal',
   'NavLink',
   'OverflowList',
+  'PacketLayout',
   'PageHeader',
   'Pagination',
   'Popover',
@@ -282,6 +283,7 @@ const COMPONENTS = [
   'SearchField',
   'SegmentedControl',
   'Select',
+  'SequenceDiagram',
   'SettingsRow',
   'Skeleton',
   'Slider',
@@ -289,6 +291,7 @@ const COMPONENTS = [
   'StatusIcon',
   'StepItem',
   'StepList',
+  'StepThrough',
   'Stepper',
   'Table',
   'TableBody',
@@ -310,11 +313,13 @@ const COMPONENTS = [
   'WindowDropzone',
 ] as const;
 
+const CLASS_ONLY_FIXTURE_FOLDERS = ['link'] as const;
+
 const ICON_COUNT = 38;
 
 const SERVER_RENDER_SPEC_COUNT = 28;
 
-const FIXTURE_COUNT = 354;
+const FIXTURE_COUNT = 369;
 
 const RULE_FILE_COUNT = 22;
 
@@ -348,7 +353,14 @@ const CORE_TEST_FILES = [
   'library-files.test.js',
 ] as const;
 
+const FIXTURE_FOLDER_NAMES: Readonly<Record<string, string>> = {
+  PacketLayout: 'packet',
+  SequenceDiagram: 'sequence',
+};
+
 function fixtureFolder(component: string): string {
+  const named = FIXTURE_FOLDER_NAMES[component];
+  if (named !== undefined) return named;
   return component.replaceAll(/(?<=[a-z0-9])(?=[A-Z])/gu, '-').toLowerCase();
 }
 
@@ -521,6 +533,7 @@ export {
   ADDED,
   BEHAVIOURS,
   COMPONENTS,
+  CLASS_ONLY_FIXTURE_FOLDERS,
   CORE_PATH,
   CORE_TEST_FILES,
   DOKSEO_FILES_NAMING_CORE_PATHS,

@@ -21,31 +21,31 @@ const RELATIVE_FONT_URLS = 28;
 
 const LIBRARY_REACH: Readonly<Record<LibraryFiles, LibraryReach>> = {
   source: {
-    files: 176,
+    files: 185,
     aliased: 0,
     above: 7,
     tallies: [
-      { target: 'svelte/elements', kind: 'package', files: 71 },
-      { target: 'svelte', kind: 'package', files: 42 },
+      { target: 'svelte/elements', kind: 'package', files: 74 },
+      { target: 'svelte', kind: 'package', files: 43 },
       { target: 'ts-pattern', kind: 'package', files: 26 },
       { target: 'svelte/attachments', kind: 'package', files: 9 },
       { target: 'svelte/reactivity', kind: 'package', files: 1 },
-      { target: './', kind: 'sibling', files: 119 },
+      { target: './', kind: 'sibling', files: 127 },
       { target: '../core/', kind: 'parent', files: 7 },
     ],
   },
   specs: {
-    files: 70,
+    files: 73,
     aliased: 0,
     above: 4,
     tallies: [
-      { target: 'vitest', kind: 'package', files: 70 },
+      { target: 'vitest', kind: 'package', files: 73 },
       { target: 'svelte', kind: 'package', files: 29 },
       { target: 'svelte/server', kind: 'package', files: 28 },
       { target: 'node:fs', kind: 'package', files: 2 },
       { target: 'vitest/browser', kind: 'package', files: 2 },
       { target: 'svelte/attachments', kind: 'package', files: 1 },
-      { target: './', kind: 'sibling', files: 70 },
+      { target: './', kind: 'sibling', files: 73 },
       { target: '../core/styles/', kind: 'parent', files: 3 },
       { target: '../', kind: 'parent', files: 1 },
       { target: '../../core/icons/', kind: 'parent', files: 1 },

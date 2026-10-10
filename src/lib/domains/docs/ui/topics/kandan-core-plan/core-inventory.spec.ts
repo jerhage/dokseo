@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ADDED,
   BEHAVIOURS,
+  CLASS_ONLY_FIXTURE_FOLDERS,
   COMPONENTS,
   CORE_PATH,
   CORE_TEST_FILES,
@@ -134,13 +135,15 @@ describe('the Kandan UI inventory', () => {
     expect(naming).toEqual([...DOKSEO_FILES_NAMING_CORE_PATHS].toSorted());
   });
 
-  it('holds one fixture folder for each component', () => {
+  it('holds one fixture folder for each component and each class-only utility', () => {
     const folders = readdirSync(join(LIBRARY_ROOT, 'core', 'fixtures'), { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .toSorted();
 
-    expect(folders).toEqual(COMPONENTS.map(fixtureFolder).toSorted());
+    expect(folders).toEqual(
+      [...COMPONENTS.map(fixtureFolder), ...CLASS_ONLY_FIXTURE_FOLDERS].toSorted(),
+    );
   });
 
   it("lists every one of the core's node --test files", () => {

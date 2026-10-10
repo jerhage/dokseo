@@ -7,6 +7,7 @@
   import ContractCheckDemo from './ContractCheckDemo.svelte';
   import { CONTRACT_FLOW, CORE_CHAIN } from './core-diagrams';
   import {
+    CLASS_ONLY_FIXTURE_FOLDERS,
     COMPONENTS,
     CORE_TEST_FILES,
     FIXTURE_COUNT,
@@ -106,9 +107,10 @@
   <p>
     A fixture is the HTML one component writes for one variant, before any script runs, at
     <code>fixtures/&lt;component&gt;/&lt;variant&gt;.html</code>. The core holds {FIXTURE_COUNT} of them
-    in {COMPONENTS.length} folders, one folder per component. Each is written in one fixed form: attributes
-    sorted by name, class names sorted, one tag or text per line. A diff of a fixture is then a diff of
-    the contract and nothing else. The accordion item, closed:
+    in {COMPONENTS.length + CLASS_ONLY_FIXTURE_FOLDERS.length} folders: one per component and one for
+    each class-only utility ({CLASS_ONLY_FIXTURE_FOLDERS.join(', ')}). Each is written in one fixed
+    form: attributes sorted by name, class names sorted, one tag or text per line. A diff of a
+    fixture is then a diff of the contract and nothing else. The accordion item, closed:
   </p>
   <DocsCode label={ACCORDION_FIXTURE.label} code={ACCORDION_FIXTURE.code} />
   <p>The fixtures serve several readers at once:</p>
