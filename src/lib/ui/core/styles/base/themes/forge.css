@@ -94,6 +94,7 @@
   --ds-tracking-tight: -0.035em;
   --ds-tracking-wider: 0.12em;
   --ds-tracking-widest: 0.22em;
+  --ds-container-prose: 68ch;
 
   --ds-corner-xs: 2px;
   --ds-corner-sm: 2px;

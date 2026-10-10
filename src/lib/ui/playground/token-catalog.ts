@@ -193,6 +193,8 @@ const RADII: readonly string[] = [
   '--radius-control',
   '--radius-container',
   '--radius-overlay',
+  '--radius-diagram-box',
+  '--radius-diagram-group',
 ];
 
 const SHADOWS: readonly string[] = [

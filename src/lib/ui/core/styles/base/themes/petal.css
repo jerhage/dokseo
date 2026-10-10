@@ -103,6 +103,7 @@
   --ds-tracking-tight: var(--ds-ls-tight);
   --ds-tracking-wider: var(--ds-ls-wider);
   --ds-tracking-widest: var(--ds-ls-widest);
+  --ds-container-prose: 68ch;
 
   --ds-corner-xs: 10px;
   --ds-corner-sm: 10px;
