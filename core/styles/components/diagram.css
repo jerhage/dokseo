@@ -11,7 +11,7 @@
   fill: var(--color-surface-raised);
   stroke: var(--border-color-strong);
   stroke-width: var(--border-width-strong);
-  rx: var(--radius-control);
+  rx: var(--radius-diagram-box);
 }
 .diagram-box-primary {
   fill: var(--color-primary-subtle);
@@ -21,17 +21,42 @@
   fill: var(--color-accent-surface);
   stroke: var(--color-accent-border);
 }
+.diagram-box-success {
+  fill: var(--color-success-bg);
+  stroke: var(--color-success);
+}
+.diagram-box-warning {
+  fill: var(--color-warning-bg);
+  stroke: var(--color-warning);
+}
+.diagram-box-danger {
+  fill: var(--color-danger-bg);
+  stroke: var(--color-danger);
+}
+.diagram-box-active {
+  stroke: var(--color-primary);
+  filter: drop-shadow(0 0 var(--sp-2) var(--color-primary-glow));
+}
 .diagram-group {
   fill: var(--color-surface);
   stroke: var(--border-color);
   stroke-width: var(--border-width);
-  rx: var(--radius-container);
+  rx: var(--radius-diagram-group);
 }
 .diagram-group-primary {
   stroke: var(--color-primary);
 }
 .diagram-group-accent {
   stroke: var(--color-accent-border);
+}
+.diagram-group-success {
+  stroke: var(--color-success);
+}
+.diagram-group-warning {
+  stroke: var(--color-warning);
+}
+.diagram-group-danger {
+  stroke: var(--color-danger);
 }
 .diagram-label {
   fill: var(--color-text);
@@ -50,10 +75,39 @@
   stroke: var(--color-text-muted);
   stroke-width: var(--border-width-strong);
 }
+.diagram-edge-path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.diagram-edge-active {
+  stroke: var(--color-primary);
+}
 .diagram-edge-label {
   fill: var(--color-text-muted);
   font-size: var(--text-xs);
 }
+.diagram-edge-label-backed {
+  stroke: var(--color-bg);
+  stroke-width: var(--sp-2);
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+.diagram-edge-label-active {
+  fill: var(--color-text);
+  font-weight: var(--weight-medium);
+}
 .diagram-arrowhead {
   fill: var(--color-text-muted);
+}
+.diagram-arrowhead-active {
+  fill: var(--color-primary);
+}
+.diagram-scroll {
+  max-inline-size: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.diagram-scroll > .diagram {
+  min-inline-size: var(--diagram-width, 0px);
 }

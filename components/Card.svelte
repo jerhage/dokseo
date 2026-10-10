@@ -43,6 +43,13 @@
   const titleTag = $derived(form === 'button' ? 'span' : heading);
   const descriptionTag = $derived(form === 'button' ? 'span' : 'p');
 
+  const hasBody = $derived(
+    eyebrow !== undefined ||
+      title !== undefined ||
+      description !== undefined ||
+      children !== undefined,
+  );
+
   const mediaOnly = $derived(
     media !== undefined &&
       eyebrow === undefined &&
@@ -77,20 +84,22 @@
         >{@render media()}</svelte:element
       >
     {/if}
-    <svelte:element this={block} class="card-body">
-      {#if eyebrow}
-        <span class="card-eyebrow eyebrow">{@render eyebrow()}</span>
-      {/if}
-      {#if title}
-        <svelte:element this={titleTag} class="card-title">{@render title()}</svelte:element>
-      {/if}
-      {#if description}
-        <svelte:element this={descriptionTag} class="card-description"
-          >{@render description()}</svelte:element
-        >
-      {/if}
-      {@render children?.()}
-    </svelte:element>
+    {#if hasBody}
+      <svelte:element this={block} class="card-body">
+        {#if eyebrow}
+          <span class="card-eyebrow eyebrow">{@render eyebrow()}</span>
+        {/if}
+        {#if title}
+          <svelte:element this={titleTag} class="card-title">{@render title()}</svelte:element>
+        {/if}
+        {#if description}
+          <svelte:element this={descriptionTag} class="card-description"
+            >{@render description()}</svelte:element
+          >
+        {/if}
+        {@render children?.()}
+      </svelte:element>
+    {/if}
     {#if footer}
       <svelte:element this={block} class="card-footer">{@render footer()}</svelte:element>
     {/if}

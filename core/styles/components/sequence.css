@@ -1,0 +1,127 @@
+.sequence {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  font-size: var(--text-sm);
+}
+.sequence-participants {
+  display: grid;
+  grid-template-columns: repeat(var(--sequence-columns, 1), minmax(0, 1fr));
+}
+.sequence-participant {
+  margin-inline: var(--sp-1);
+  padding: var(--sp-2) var(--sp-3);
+  font-weight: var(--weight-medium);
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  background-color: var(--color-surface-raised);
+  border: var(--border-width-strong) solid var(--border-color-strong);
+  border-radius: var(--radius-control);
+}
+.sequence-participant-primary {
+  background-color: var(--color-primary-subtle);
+  border-color: var(--color-primary);
+}
+.sequence-participant-accent {
+  background-color: var(--color-accent-surface);
+  border-color: var(--color-accent-border);
+}
+.sequence-body {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--sequence-columns, 1), minmax(0, 1fr) minmax(0, 1fr));
+  row-gap: var(--sp-4);
+  padding-block: var(--sp-4);
+}
+.sequence-lifeline {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: calc((var(--sequence-index, 1) - 0.5) / var(--sequence-columns, 1) * 100%);
+  border-inline-start: var(--border-width) dashed var(--border-color-strong);
+  pointer-events: none;
+}
+.sequence-message {
+  --_head: var(--sp-2);
+  --_head-offset: calc(var(--border-width-strong) / 2 - var(--_head) / 2);
+  position: relative;
+  grid-column: calc(var(--sequence-start, 1) * 2) / calc(var(--sequence-end, 2) * 2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-block-end: var(--sp-2);
+  color: var(--color-text-muted);
+}
+.sequence-message::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  border-block-start: var(--border-width-strong) solid currentColor;
+}
+.sequence-message::before {
+  content: '';
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-end: var(--_head-offset);
+  inline-size: var(--_head);
+  block-size: var(--_head);
+  background-color: currentColor;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+.sequence-message-reverse::before {
+  inset-inline: 0 auto;
+  clip-path: polygon(100% 0, 0 50%, 100% 100%);
+}
+.sequence-message-dashed::after {
+  border-block-start-style: dashed;
+}
+.sequence-message-label {
+  padding-inline: var(--sp-2);
+  text-align: center;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+}
+.sequence-message-self {
+  grid-column: calc(var(--sequence-start, 1) * 2) / span 2;
+  align-items: flex-start;
+  padding: var(--sp-2) var(--sp-3);
+  border: var(--border-width-strong) solid currentColor;
+  border-inline-start: 0;
+  border-start-end-radius: var(--radius-control);
+  border-end-end-radius: var(--radius-control);
+}
+.sequence-message-self::after {
+  content: none;
+}
+.sequence-message-self::before {
+  inset-inline: 0 auto;
+  inset-block-end: calc(var(--_head-offset) - var(--border-width-strong));
+  clip-path: polygon(100% 0, 0 50%, 100% 100%);
+}
+.sequence-message-self .sequence-message-label {
+  padding-inline: 0;
+  text-align: start;
+}
+.sequence-message-active {
+  color: var(--color-primary);
+}
+.sequence-message-active .sequence-message-label {
+  font-weight: var(--weight-medium);
+  color: var(--color-brand-text);
+  background-color: var(--color-primary-subtle);
+}
+.sequence-note {
+  grid-column: calc(var(--sequence-start, 1) * 2 - 1) / calc(var(--sequence-end, 1) * 2 + 1);
+  padding: var(--sp-2) var(--sp-3);
+  text-align: center;
+  color: var(--color-text);
+  background-color: var(--color-info-bg);
+  border: var(--border-width) solid var(--color-info-border);
+  border-radius: var(--radius-control);
+  position: relative;
+}
+.sequence-note-active {
+  border-color: var(--color-primary);
+  border-width: var(--border-width-strong);
+}

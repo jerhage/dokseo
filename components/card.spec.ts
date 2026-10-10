@@ -79,4 +79,26 @@ describe('Card', () => {
     expect(html).toContain('<p class="card-description">');
     expect(html).toContain('<div class="card-footer">');
   });
+
+  it('renders no body and no text wrapper when only the media and the footer are given', () => {
+    const html = markup({ media: SLOTS.media, footer: SLOTS.footer });
+
+    expect(html).toContain('card-media');
+    expect(html).toContain('card-footer');
+    expect(html).not.toContain('card-body');
+    expect(html).not.toContain('card-eyebrow');
+    expect(html).not.toContain('card-title');
+    expect(html).not.toContain('card-description');
+  });
+
+  it('renders only the text wrappers whose snippet is given', () => {
+    const html = markup({ title: SLOTS.title });
+
+    expect(html).toContain('card-body');
+    expect(html).toContain('card-title');
+    expect(html).not.toContain('card-eyebrow');
+    expect(html).not.toContain('card-description');
+    expect(html).not.toContain('card-footer');
+    expect(html).not.toContain('card-media');
+  });
 });

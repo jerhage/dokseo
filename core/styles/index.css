@@ -82,6 +82,9 @@
 @import 'components/figure.css' layer(components);
 @import 'components/table-of-contents.css' layer(components);
 @import 'components/diagram.css' layer(components);
+@import 'components/sequence.css' layer(components);
+@import 'components/packet.css' layer(components);
+@import 'components/step-through.css' layer(components);
 @import 'components/step-list.css' layer(components);
 @import 'components/key-hints.css' layer(components);
 @import 'components/empty-state.css' layer(components);

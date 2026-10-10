@@ -85,6 +85,7 @@ export {
   currentHeading,
   readingLine,
   scrolledToEnd,
+  unusedAnchor,
 };
 export type {
   ContentsEntry,
