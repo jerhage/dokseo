@@ -1,0 +1,78 @@
+<div
+  aria-label="A generic packet header"
+  class="packet"
+  role="region"
+  style="--packet-bits: 32;"
+  tabindex="0"
+>
+  <div aria-hidden="true" class="packet-ruler">
+    <span class="packet-offset" style="--packet-offset: 0;">0</span>
+    <span class="packet-offset" style="--packet-offset: 8;">8</span>
+    <span class="packet-offset" style="--packet-offset: 16;">16</span>
+    <span class="packet-offset" style="--packet-offset: 24;">24</span>
+  </div>
+  <div class="packet-row">
+    <div class="packet-field packet-field-primary" style="--packet-span: 4;">
+      <span class="packet-field-name">Version</span>
+      <span class="packet-field-detail">4 bits</span>
+    </div>
+    <div class="packet-field packet-field-primary" style="--packet-span: 4;">
+      <span class="packet-field-name">Header length</span>
+      <span class="packet-field-detail">4 bits</span>
+    </div>
+    <div class="packet-field packet-field-accent" style="--packet-span: 8;">
+      <span class="packet-field-name">Flags</span>
+      <span class="packet-field-detail">8 bits</span>
+    </div>
+    <div class="packet-field" style="--packet-span: 16;">
+      <span class="packet-field-name">Total length</span>
+      <span class="packet-field-detail">16 bits</span>
+    </div>
+  </div>
+  <div class="packet-row">
+    <div class="packet-field" style="--packet-span: 16;">
+      <span class="packet-field-name">Identification</span>
+      <span class="packet-field-detail">16 bits</span>
+    </div>
+    <div class="packet-field packet-field-warning" style="--packet-span: 3;">
+      <span class="packet-field-name">Fragment</span>
+      <span class="packet-field-detail">3 bits</span>
+    </div>
+    <div class="packet-field packet-field-warning" style="--packet-span: 13;">
+      <span class="packet-field-name">Offset</span>
+      <span class="packet-field-detail">13 bits</span>
+    </div>
+  </div>
+  <div class="packet-row">
+    <div class="packet-field packet-field-success" style="--packet-span: 8;">
+      <span class="packet-field-name">Lifetime</span>
+      <span class="packet-field-detail">8 bits</span>
+    </div>
+    <div class="packet-field" style="--packet-span: 8;">
+      <span class="packet-field-name">Protocol</span>
+      <span class="packet-field-detail">8 bits</span>
+    </div>
+    <div class="packet-field packet-field-danger" style="--packet-span: 16;">
+      <span class="packet-field-name">Checksum</span>
+      <span class="packet-field-detail">16 bits</span>
+    </div>
+  </div>
+  <div class="packet-row">
+    <div class="packet-field" style="--packet-span: 32;">
+      <span class="packet-field-name">Source address</span>
+      <span class="packet-field-detail">32 bits</span>
+    </div>
+  </div>
+  <div class="packet-row">
+    <div class="packet-field" style="--packet-span: 32;">
+      <span class="packet-field-name">Destination address</span>
+      <span class="packet-field-detail">32 bits</span>
+    </div>
+  </div>
+  <div class="packet-row">
+    <div class="packet-field" style="--packet-span: 32;">
+      <span class="packet-field-name">Options</span>
+      <span class="packet-field-detail">variable</span>
+    </div>
+  </div>
+</div>

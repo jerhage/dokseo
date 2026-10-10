@@ -47,11 +47,13 @@
   import Modal from '../components/Modal.svelte';
   import NavLink from '../components/NavLink.svelte';
   import OverflowList from '../components/OverflowList.svelte';
+  import PacketLayout from '../components/PacketLayout.svelte';
   import PageHeader from '../components/PageHeader.svelte';
   import Pagination from '../components/Pagination.svelte';
   import Popover from '../components/Popover.svelte';
   import Progress from '../components/Progress.svelte';
   import Radio from '../components/Radio.svelte';
+  import SequenceDiagram from '../components/SequenceDiagram.svelte';
   import SearchField from '../components/SearchField.svelte';
   import SegmentedControl from '../components/SegmentedControl.svelte';
   import Select from '../components/Select.svelte';
@@ -63,6 +65,7 @@
   import StepItem from '../components/StepItem.svelte';
   import StepList from '../components/StepList.svelte';
   import Stepper from '../components/Stepper.svelte';
+  import StepThrough from '../components/StepThrough.svelte';
   import Table from '../components/Table.svelte';
   import TableBody from '../components/TableBody.svelte';
   import TableCell from '../components/TableCell.svelte';
@@ -84,25 +87,43 @@
   import Ellipsis from '../components/icons/Ellipsis.svelte';
   import LayoutGrid from '../components/icons/LayoutGrid.svelte';
   import Search from '../components/icons/Search.svelte';
+  import { stepEmphasis } from '../components/step-through';
   import {
+    ACTIVE_BOX,
     CLEARED_TOASTER,
     EDGES,
     ENTRIES,
     FILES,
+    HANDSHAKE_CAPTIONS,
+    HANDSHAKE_PARTICIPANTS,
+    HANDSHAKE_STEPS,
     HINTS,
     LANGUAGES,
     NAMES,
     NODES,
     OPTIONS,
     OPTIONS_WITH_DISABLED,
+    PACKET_OFFSETS,
+    PACKET_ROWS,
+    PAIR,
+    PEER_A,
+    PEER_B,
     REGION_TOASTER,
+    ROUTE_CAPTIONS,
+    ROUTE_SOURCE,
+    ROUTE_TARGET,
     SEGMENTS,
     SHELF_BOOK,
+    SINK,
     SLIDES,
     SOURCE,
     TABS,
     TABS_WITH_DISABLED,
+    TARGET,
+    TONE_NODES,
     TOASTS,
+    WIDE_SOURCE,
+    WIDE_STORE,
   } from './case-data';
   import type { ShelfBook } from './case-data';
 
@@ -225,6 +246,13 @@
     contextMenuAttached,
     diagramDefault,
     diagramBoxesOnly,
+    diagramTones,
+    diagramEdgePlain,
+    diagramEdgeBothHeads,
+    diagramEdgePath,
+    diagramEdgeLabelBacked,
+    diagramActive,
+    diagramScroll,
     dividerDefault,
     dividerStrong,
     dividerVertical,
@@ -300,6 +328,8 @@
     keyHintsText,
     keyHintsSm,
     keyHintsDecorativeFooter,
+    linkPlain,
+    linkTitle,
     listGroupDefault,
     listGroupTitled,
     listGroupInsetH3,
@@ -331,6 +361,8 @@
     navLinkIcon,
     overflowListFits,
     overflowListOverflowing,
+    packetDefault,
+    packetActive,
     overflowListInline,
     pageHeaderDefault,
     pageHeaderMetaLang,
@@ -365,6 +397,8 @@
     segmentedControlTrackDisabledOption,
     segmentedControlUnlabelled,
     selectDefault,
+    sequenceDefault,
+    sequenceActive,
     settingsRowDefault,
     skeletonDefault,
     skeletonText,
@@ -389,6 +423,8 @@
     stepItemDefault,
     stepItemTitleOnlyH4,
     stepListDefault,
+    stepThroughDefault,
+    stepThroughDiagram,
     stepperLinks,
     stepperActionsBlock,
     stepperMissingDisabled,
@@ -776,6 +812,73 @@
     nodes={[SOURCE]}
   />{/snippet}
 
+{#snippet diagramTones()}<Diagram
+    label="Box and group tones"
+    width={490}
+    height={130}
+    nodes={TONE_NODES}
+  />{/snippet}
+
+{#snippet diagramEdgePlain()}<Diagram
+    label="A plain edge"
+    width={360}
+    height={120}
+    nodes={[SOURCE, SINK]}
+    edges={[{ from: SOURCE, to: SINK, label: 'linked', heads: 'none' }]}
+  />{/snippet}
+
+{#snippet diagramEdgeBothHeads()}<Diagram
+    label="An edge with a head at both ends"
+    width={360}
+    height={120}
+    nodes={[PEER_A, PEER_B]}
+    edges={[{ from: PEER_A, to: PEER_B, label: 'syncs', heads: 'both' }]}
+  />{/snippet}
+
+{#snippet diagramEdgePath()}<Diagram
+    label="A routed edge with bends"
+    width={360}
+    height={220}
+    nodes={[ROUTE_SOURCE, ROUTE_TARGET]}
+    edges={[
+      {
+        from: ROUTE_SOURCE,
+        to: ROUTE_TARGET,
+        points: [
+          { x: 140, y: 44 },
+          { x: 180, y: 44 },
+          { x: 180, y: 164 },
+          { x: 220, y: 164 },
+        ],
+      },
+    ]}
+  />{/snippet}
+
+{#snippet diagramEdgeLabelBacked()}<Diagram
+    label="An edge label with a backing"
+    width={360}
+    height={120}
+    nodes={[SOURCE, TARGET]}
+    edges={[{ from: SOURCE, to: TARGET, label: 'over the line', labelBacked: true }]}
+  />{/snippet}
+
+{#snippet diagramActive()}<Diagram
+    label="An active box and edge"
+    width={360}
+    height={120}
+    nodes={[SOURCE, ACTIVE_BOX]}
+    edges={[{ from: SOURCE, to: ACTIVE_BOX, label: 'now', emphasis: 'active' }]}
+  />{/snippet}
+
+{#snippet diagramScroll()}<Diagram
+    label="A wide diagram"
+    scrollLabel="Wide diagram"
+    width={660}
+    height={120}
+    nodes={[WIDE_SOURCE, WIDE_STORE]}
+    edges={[{ from: WIDE_SOURCE, to: WIDE_STORE, label: 'wide diagram keeps its size' }]}
+  />{/snippet}
+
 {#snippet dividerDefault()}<Divider />{/snippet}
 
 {#snippet dividerStrong()}<Divider strong />{/snippet}
@@ -1028,6 +1131,11 @@
     hints={HINTS}
   />{/snippet}
 
+{#snippet linkPlain()}<a class="link-plain" href="/">Home</a>{/snippet}
+
+{#snippet linkTitle()}<a class="link-plain" href="/guide"><strong>A card title</strong></a
+  >{/snippet}
+
 {#snippet listGroupDefault()}<ListGroup><ListRow title="Theme" value="Ember" /></ListGroup
   >{/snippet}
 
@@ -1137,6 +1245,27 @@
     name={(n) => n}
     moreLabel="others">{#snippet item(n)}<Tag>{n}</Tag>{/snippet}</OverflowList
   >{/snippet}
+
+{#snippet packetDefault()}<PacketLayout
+    label="A generic packet header"
+    bits={32}
+    offsets={PACKET_OFFSETS}
+    rows={PACKET_ROWS}
+  />{/snippet}
+
+{#snippet packetActive()}<PacketLayout
+    label="A packet header with one field active"
+    bits={32}
+    offsets={PACKET_OFFSETS}
+    rows={[
+      [
+        { name: 'Version', detail: '4 bits', span: 4 },
+        { name: 'Header length', detail: '4 bits', span: 4 },
+        { name: 'Flags', detail: '8 bits', span: 8, tone: 'primary', emphasis: 'active' },
+        { name: 'Total length', detail: '16 bits', span: 16 },
+      ],
+    ]}
+  />{/snippet}
 
 {#snippet pageHeaderDefault()}<PageHeader title="Settings" />{/snippet}
 
@@ -1251,6 +1380,22 @@
     ><option value="a">Newest</option><option value="b">Oldest</option></Select
   >{/snippet}
 
+{#snippet sequenceDefault()}<SequenceDiagram
+    label="A TLS-like handshake"
+    participants={HANDSHAKE_PARTICIPANTS}
+    steps={HANDSHAKE_STEPS}
+  />{/snippet}
+
+{#snippet sequenceActive()}<SequenceDiagram
+    label="A highlighted step"
+    participants={PAIR}
+    steps={[
+      { kind: 'message', from: 0, to: 1, label: 'ClientHello' },
+      { kind: 'message', from: 1, to: 0, label: 'ServerHello', emphasis: 'active' },
+      { kind: 'note', from: 0, to: 1, text: 'Keys are agreed', emphasis: 'active' },
+    ]}
+  />{/snippet}
+
 {#snippet settingsRowDefault()}<SettingsRow label="Theme"
     ><Button size="sm">Ember</Button></SettingsRow
   >{/snippet}
@@ -1310,6 +1455,80 @@
 
 {#snippet stepListDefault()}<StepList
     ><StepItem title="Pick a file" /><StepItem title="Wait" /></StepList
+  >{/snippet}
+
+{#snippet stepThroughDefault()}<StepThrough
+    label="Handshake, step by step"
+    captions={HANDSHAKE_CAPTIONS}
+    initial={1}
+    >{#snippet children(step)}<SequenceDiagram
+        label="A TLS-like handshake"
+        participants={PAIR}
+        steps={[
+          {
+            kind: 'message',
+            from: 0,
+            to: 1,
+            label: 'ClientHello',
+            emphasis: stepEmphasis(0, step),
+          },
+          {
+            kind: 'message',
+            from: 1,
+            to: 0,
+            label: 'ServerHello, Certificate',
+            emphasis: stepEmphasis(1, step),
+          },
+          { kind: 'message', from: 0, to: 1, label: 'Finished', emphasis: stepEmphasis(2, step) },
+          {
+            kind: 'message',
+            from: 1,
+            to: 0,
+            label: 'Finished',
+            dashed: true,
+            emphasis: stepEmphasis(3, step),
+          },
+        ]}
+      />{/snippet}</StepThrough
+  >{/snippet}
+
+{#snippet stepThroughDiagram()}<StepThrough label="Route, step by step" captions={ROUTE_CAPTIONS}
+    >{#snippet children(step)}{@const client = {
+        kind: 'box',
+        label: 'Client',
+        x: 20,
+        y: 40,
+        width: 120,
+        height: 48,
+        emphasis: stepEmphasis(0, step + 1),
+      } as const}{@const router = {
+        kind: 'box',
+        label: 'Router',
+        tone: 'primary',
+        x: 220,
+        y: 40,
+        width: 120,
+        height: 48,
+        emphasis: stepEmphasis(1, step + 1),
+      } as const}{@const server = {
+        kind: 'box',
+        label: 'Server',
+        x: 420,
+        y: 40,
+        width: 120,
+        height: 48,
+        emphasis: stepEmphasis(2, step + 1),
+      } as const}<Diagram
+        label="Route of a packet"
+        scrollLabel="Route of a packet"
+        width={560}
+        height={120}
+        nodes={[client, router, server]}
+        edges={[
+          { from: client, to: router, label: 'packet', emphasis: stepEmphasis(0, step) },
+          { from: router, to: server, emphasis: stepEmphasis(1, step) },
+        ]}
+      />{/snippet}</StepThrough
   >{/snippet}
 
 {#snippet stepperLinks()}<Stepper

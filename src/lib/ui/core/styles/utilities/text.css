@@ -81,3 +81,7 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+.link-plain {
+  color: inherit;
+  text-decoration: none;
+}

@@ -1,0 +1,52 @@
+<div aria-label="A TLS-like handshake" class="sequence" role="group" style="--sequence-columns: 3;">
+  <div class="sequence-participants">
+    <div class="sequence-participant sequence-participant-primary">Client</div>
+    <div class="sequence-participant sequence-participant-accent">Server</div>
+    <div class="sequence-participant">Authority</div>
+  </div>
+  <div class="sequence-body">
+    <div aria-hidden="true" class="sequence-lifeline" style="--sequence-index: 1;"></div>
+    <div aria-hidden="true" class="sequence-lifeline" style="--sequence-index: 2;"></div>
+    <div aria-hidden="true" class="sequence-lifeline" style="--sequence-index: 3;"></div>
+    <div class="sequence-message" style="--sequence-end: 2; --sequence-start: 1;">
+      <span class="visually-hidden">Client to Server:</span>
+      <span class="sequence-message-label">ClientHello</span>
+    </div>
+    <div
+      class="sequence-message sequence-message-reverse"
+      style="--sequence-end: 2; --sequence-start: 1;"
+    >
+      <span class="visually-hidden">Server to Client:</span>
+      <span class="sequence-message-label">ServerHello, Certificate</span>
+    </div>
+    <div class="sequence-message" style="--sequence-end: 3; --sequence-start: 1;">
+      <span class="visually-hidden">Client to Authority:</span>
+      <span class="sequence-message-label">Check the certificate</span>
+    </div>
+    <div
+      class="sequence-message sequence-message-dashed sequence-message-reverse"
+      style="--sequence-end: 3; --sequence-start: 1;"
+    >
+      <span class="visually-hidden">Authority to Client:</span>
+      <span class="sequence-message-label">Valid</span>
+    </div>
+    <div class="sequence-message sequence-message-self" style="--sequence-start: 1;">
+      <span class="visually-hidden">Client to itself:</span>
+      <span class="sequence-message-label">Derive the session keys</span>
+    </div>
+    <div class="sequence-note" style="--sequence-end: 2; --sequence-start: 1;">
+      Both sides now hold the session keys
+    </div>
+    <div class="sequence-message" style="--sequence-end: 2; --sequence-start: 1;">
+      <span class="visually-hidden">Client to Server:</span>
+      <span class="sequence-message-label">Finished</span>
+    </div>
+    <div
+      class="sequence-message sequence-message-dashed sequence-message-reverse"
+      style="--sequence-end: 2; --sequence-start: 1;"
+    >
+      <span class="visually-hidden">Server to Client:</span>
+      <span class="sequence-message-label">Finished</span>
+    </div>
+  </div>
+</div>

@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { diagramTone, edgeLine, edgeRoute } from './diagram';
+import {
+  diagramLayers,
+  diagramTone,
+  edgeHeads,
+  edgeLabelPlacement,
+  edgeLine,
+  edgePathData,
+  edgeRoute,
+  edgeShape,
+  polylineMiddle,
+} from './diagram';
+import type { DiagramNode } from './diagram';
 
 const top = { x: 0, y: 0, width: 100, height: 40 };
 
@@ -81,5 +92,123 @@ describe('diagramTone', () => {
 
   it('keeps the tone a node names', () => {
     expect(diagramTone({ kind: 'group', ...top, label: 'Origin', tone: 'accent' })).toBe('accent');
+  });
+});
+
+describe('edgePathData', () => {
+  it('moves to the first point and lines through the bends to the last', () => {
+    expect(
+      edgePathData([
+        { x: 140, y: 44 },
+        { x: 180, y: 44 },
+        { x: 180, y: 164 },
+        { x: 220, y: 164 },
+      ]),
+    ).toBe('M 140 44 L 180 44 L 180 164 L 220 164');
+  });
+});
+
+describe('polylineMiddle', () => {
+  it('finds the point halfway along the length of a bent route', () => {
+    expect(
+      polylineMiddle([
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+        { x: 100, y: 100 },
+      ]),
+    ).toEqual({ x: 100, y: 0 });
+  });
+});
+
+describe('edgeShape', () => {
+  const from: DiagramNode = { kind: 'box', ...top, label: 'A' };
+  const to: DiagramNode = { kind: 'box', x: 160, y: 0, width: 100, height: 40, label: 'B' };
+
+  it('draws a straight line for an edge with no points', () => {
+    expect(edgeShape({ from, to }).kind).toBe('line');
+  });
+
+  it('draws a straight line for an edge with a single point', () => {
+    expect(edgeShape({ from, to, points: [{ x: 1, y: 1 }] }).kind).toBe('line');
+  });
+
+  it('draws a path for an edge with two points or more', () => {
+    expect(
+      edgeShape({
+        from,
+        to,
+        points: [
+          { x: 100, y: 20 },
+          { x: 160, y: 20 },
+        ],
+      }),
+    ).toMatchObject({ kind: 'path', d: 'M 100 20 L 160 20' });
+  });
+});
+
+describe('edgeHeads', () => {
+  it('draws a head at the end by default', () => {
+    expect(edgeHeads(undefined)).toEqual({ start: false, end: true });
+  });
+
+  it('draws no head, or a head at both ends, when asked', () => {
+    expect([edgeHeads('none'), edgeHeads('both')]).toEqual([
+      { start: false, end: false },
+      { start: true, end: true },
+    ]);
+  });
+});
+
+describe('edgeLabelPlacement', () => {
+  const edge = {
+    from: { kind: 'box', ...top, label: 'A' },
+    to: { kind: 'box', ...top, label: 'B' },
+  } as const;
+  const middle = { x: 10, y: 20 };
+
+  it('sets the label above a horizontal edge, at its middle', () => {
+    expect(edgeLabelPlacement(edge, middle, 'above')).toEqual({
+      x: 10,
+      y: 20,
+      dy: '-0.5em',
+      anchor: 'middle',
+    });
+  });
+
+  it('centres a label at the position the layout gives it', () => {
+    expect(edgeLabelPlacement({ ...edge, labelAt: { x: 5, y: 6 } }, middle, 'above')).toEqual({
+      x: 5,
+      y: 6,
+      dy: '0.35em',
+      anchor: 'middle',
+    });
+  });
+
+  it('sets a backed label on the line with no offset', () => {
+    expect(edgeLabelPlacement({ ...edge, labelBacked: true }, middle, 'beside')).toEqual({
+      x: 10,
+      y: 20,
+      dy: undefined,
+      anchor: 'middle',
+    });
+  });
+});
+
+describe('diagramLayers', () => {
+  const group: DiagramNode = { kind: 'group', ...top, label: 'G' };
+  const box: DiagramNode = { kind: 'box', ...top, label: 'B' };
+
+  it('draws the edges after the last group and before the boxes that follow it', () => {
+    expect(diagramLayers([group, box, group, box]).map((layer) => layer.kind)).toEqual([
+      'group',
+      'box',
+      'group',
+      'edges',
+      'box',
+    ]);
+  });
+
+  it('draws the edges after every box when there is no group', () => {
+    expect(diagramLayers([box, box]).map((layer) => layer.kind)).toEqual(['box', 'box', 'edges']);
   });
 });

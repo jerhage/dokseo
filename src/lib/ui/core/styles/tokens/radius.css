@@ -12,4 +12,6 @@
   --radius-control: var(--ds-radius-control);
   --radius-container: var(--ds-radius-container);
   --radius-overlay: var(--ds-radius-overlay);
+  --radius-diagram-box: var(--ds-radius-sm);
+  --radius-diagram-group: var(--ds-radius-md);
 }

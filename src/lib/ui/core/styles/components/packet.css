@@ -1,0 +1,77 @@
+.packet {
+  max-inline-size: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  font-size: var(--text-sm);
+}
+.packet-ruler,
+.packet-row {
+  display: grid;
+  grid-template-columns: repeat(var(--packet-bits, 32), minmax(0, 1fr));
+  min-inline-size: calc(var(--packet-bits, 32) * var(--sp-4));
+}
+.packet-ruler {
+  padding-block-end: var(--sp-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.packet-offset {
+  grid-column-start: calc(var(--packet-offset, 0) + 1);
+  padding-inline-start: var(--sp-1);
+  border-inline-start: var(--border-width) solid var(--border-color-strong);
+}
+.packet-row + .packet-row {
+  margin-block-start: calc(var(--border-width) * -1);
+}
+.packet-field {
+  position: relative;
+  grid-column: span var(--packet-span, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 0;
+  min-block-size: var(--control-h-lg);
+  padding: var(--sp-2) var(--sp-1);
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  background-color: var(--color-surface-raised);
+  border: var(--border-width) solid var(--border-color-strong);
+}
+.packet-field + .packet-field {
+  margin-inline-start: calc(var(--border-width) * -1);
+}
+.packet-field-primary {
+  background-color: var(--color-primary-subtle);
+  border-color: var(--color-primary);
+}
+.packet-field-accent {
+  background-color: var(--color-accent-surface);
+  border-color: var(--color-accent-border);
+}
+.packet-field-success {
+  background-color: var(--color-success-bg);
+  border-color: var(--color-success);
+}
+.packet-field-warning {
+  background-color: var(--color-warning-bg);
+  border-color: var(--color-warning);
+}
+.packet-field-danger {
+  background-color: var(--color-danger-bg);
+  border-color: var(--color-danger);
+}
+.packet-field-active {
+  z-index: var(--z-raised);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 var(--sp-2) var(--color-primary-glow);
+}
+.packet-field-name {
+  font-weight: var(--weight-medium);
+}
+.packet-field-detail {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
