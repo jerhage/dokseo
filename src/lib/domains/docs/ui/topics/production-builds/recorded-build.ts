@@ -55,13 +55,13 @@ const GROUP_FOLDERS: Readonly<Record<OutputGroupName, string>> = {
 };
 
 const BUILD_WITH_PLUGIN: RecordedBuild = {
-  bytes: 6_800_650,
-  files: 218,
-  precache: 194,
-  precacheBytes: 6_702_218,
-  preloaded: 36,
-  preloadedBytes: 437_092,
-  stubNodes: 33,
+  bytes: 6_903_176,
+  files: 231,
+  precache: 207,
+  precacheBytes: 6_804_233,
+  preloaded: 39,
+  preloadedBytes: 461_568,
+  stubNodes: 34,
   guardNodes: 3,
   groups: [
     {
@@ -69,28 +69,28 @@ const BUILD_WITH_PLUGIN: RecordedBuild = {
       folder: GROUP_FOLDERS.entry,
       holds: "SvelteKit's start script and the app",
       files: 2,
-      bytes: 13_919,
+      bytes: 14_513,
     },
     {
       name: 'nodes',
       folder: GROUP_FOLDERS.nodes,
       holds: 'one node per route and layout',
-      files: 50,
-      bytes: 449_369,
+      files: 52,
+      bytes: 525_629,
     },
     {
       name: 'chunks',
       folder: GROUP_FOLDERS.chunks,
       holds: 'shared modules and code loaded on demand',
-      files: 101,
-      bytes: 1_602_457,
+      files: 112,
+      bytes: 1_619_809,
     },
     {
       name: 'assets',
       folder: GROUP_FOLDERS.assets,
       holds: 'extracted CSS, the fonts and the pdf.js workers',
       files: 32,
-      bytes: 3_404_779,
+      bytes: 3_412_369,
     },
     {
       name: 'workers',
@@ -125,18 +125,18 @@ const BUILD_WITH_PLUGIN: RecordedBuild = {
       folder: GROUP_FOLDERS.shell,
       holds: 'the fallback document and the service worker',
       files: 2,
-      bytes: 20_425,
+      bytes: 21_155,
     },
   ],
 };
 
 const BUILD_WITHOUT_PLUGIN: RecordedBuild = {
-  bytes: 9_111_617,
-  files: 381,
-  precache: 357,
-  precacheBytes: 9_006_716,
-  preloaded: 75,
-  preloadedBytes: 453_471,
+  bytes: 9_279_114,
+  files: 393,
+  precache: 369,
+  precacheBytes: 9_173_737,
+  preloaded: 77,
+  preloadedBytes: 477_674,
   stubNodes: 0,
   guardNodes: 0,
   groups: [
@@ -145,28 +145,28 @@ const BUILD_WITHOUT_PLUGIN: RecordedBuild = {
       folder: GROUP_FOLDERS.entry,
       holds: "SvelteKit's start script and the app",
       files: 2,
-      bytes: 24_279,
+      bytes: 24_986,
     },
     {
       name: 'nodes',
       folder: GROUP_FOLDERS.nodes,
       holds: 'one node per route and layout',
-      files: 50,
-      bytes: 2_405_165,
+      files: 52,
+      bytes: 2_541_988,
     },
     {
       name: 'chunks',
       folder: GROUP_FOLDERS.chunks,
       holds: 'shared modules and code loaded on demand',
-      files: 249,
-      bytes: 1_881_628,
+      files: 258,
+      bytes: 1_902_603,
     },
     {
       name: 'assets',
       folder: GROUP_FOLDERS.assets,
       holds: 'extracted CSS, the fonts and the pdf.js workers',
-      files: 45,
-      bytes: 3_460_405,
+      files: 46,
+      bytes: 3_468_773,
     },
     {
       name: 'workers',
@@ -201,7 +201,7 @@ const BUILD_WITHOUT_PLUGIN: RecordedBuild = {
       folder: GROUP_FOLDERS.shell,
       holds: 'the fallback document and the service worker',
       files: 2,
-      bytes: 29_663,
+      bytes: 30_287,
     },
   ],
 };
@@ -238,30 +238,30 @@ const LARGEST_FILES: readonly LargeFile[] = [
     holds: 'pdf.js, modern build',
   },
   {
-    path: '_app/immutable/nodes/39.B1q_y9-K.js',
-    bytes: 251_567,
+    path: '_app/immutable/nodes/40.7W9sHAbF.js',
+    bytes: 249_144,
     holds: 'the reader route',
   },
   {
-    path: '_app/immutable/assets/0.vlPmFGMx.css',
-    bytes: 184_710,
+    path: '_app/immutable/assets/0.B0i7ol0s.css',
+    bytes: 192_300,
     holds: 'the global stylesheet',
   },
   {
-    path: '_app/immutable/chunks/CCYcuKbk.js',
+    path: '_app/immutable/chunks/KK5FQA8f.js',
     bytes: 155_545,
     holds: 'zip.js, for archives and EPUBs',
   },
   {
-    path: '_app/immutable/nodes/0.8vop6jGN.js',
-    bytes: 74_688,
-    holds: 'the root layout',
+    path: '_app/immutable/nodes/4.DzQRD4II.js',
+    bytes: 116_672,
+    holds: 'the library route',
   },
 ];
 
-const BUILT_GUARD_NODE = `import{Tt as e}from"../chunks/BR-qb5ne.js";import"../chunks/xihTtKlq.js";import{t}from"../chunks/DRByVC-c.js";var n=e({load:()=>r});function r(){t(404,\`Not found\`)}function i(e){}export{i as component,n as universal};`;
+const BUILT_GUARD_NODE = `import{Dt as e}from"../chunks/BYsvaYfY.js";import"../chunks/xihTtKlq.js";import{t}from"../chunks/DRByVC-c.js";var n=e({load:()=>r});function r(){t(404,\`Not found\`)}function i(e){}export{i as component,n as universal};`;
 
-const BUILT_STUB_NODE = `import"../chunks/BR-qb5ne.js";import"../chunks/xihTtKlq.js";function e(e){}export{e as component};`;
+const BUILT_STUB_NODE = `import"../chunks/BYsvaYfY.js";import"../chunks/xihTtKlq.js";function e(e){}export{e as component};`;
 
 const BUILD_MILESTONES: readonly BuildMilestone[] = [
   { label: 'Everything built', bytes: 8_480_329, files: 342, precache: 318 },
