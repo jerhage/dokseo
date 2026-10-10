@@ -1,0 +1,46 @@
+@layer features {
+  @scope (.ch-demo) {
+    :scope {
+      position: relative;
+      overflow: clip;
+    }
+    .probe {
+      position: absolute;
+      inset-block-start: 0;
+      inset-inline-start: 0;
+      visibility: hidden;
+      font-family: var(--demo-font);
+      font-size: var(--demo-size);
+      inline-size: var(--probe-length);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .bar-track {
+      inline-size: 100%;
+      block-size: var(--track-h-md);
+      background-color: var(--color-surface-sunken);
+      border-radius: var(--radius-control);
+    }
+    .bar {
+      inline-size: calc(var(--bar-share, 0) * 100%);
+      block-size: 100%;
+      background-color: var(--color-primary);
+      border-radius: var(--radius-control);
+    }
+    .ch-box {
+      inline-size: var(--box-length);
+      flex: none;
+      overflow: hidden;
+      white-space: nowrap;
+      padding: var(--sp-2);
+    }
+    .font-text {
+      font-family: var(--demo-font);
+    }
+    .column-box {
+      inline-size: var(--box-length);
+      flex: none;
+      padding: var(--sp-2);
+    }
+  }
+}

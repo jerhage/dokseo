@@ -8,6 +8,7 @@ import * as accessibility from './accessibility/accessibility-sections';
 import * as architecture from './architecture/architecture-sections';
 import * as asyncCorrectness from './async-correctness/async-sections';
 import * as bookIdentity from './book-identity/sections';
+import * as chUnit from './ch-unit/ch-sections';
 import * as contributing from './contributing/contributing-sections';
 import * as epubRendering from './epub-rendering/epub-sections';
 import * as exampleDrift from './example-drift/drift-sections';
@@ -63,6 +64,7 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   'sql-set-theory': sqlSetTheory.SQL_SET_SECTIONS,
   'sql-patterns': sqlPatterns.SQL_PATTERNS_SECTIONS,
   unicode: unicode.UNICODE_SECTIONS,
+  'ch-unit': chUnit.CH_SECTIONS,
   workers: workers.WORKERS_SECTIONS,
   'typescript-types': typescriptTypes.TYPE_SECTIONS,
   'async-correctness': asyncCorrectness.ASYNC_SECTIONS,
@@ -81,6 +83,7 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
   'architecture/architecture-sections.ts': architecture,
   'async-correctness/async-sections.ts': asyncCorrectness,
   'book-identity/sections.ts': bookIdentity,
+  'ch-unit/ch-sections.ts': chUnit,
   'contributing/contributing-sections.ts': contributing,
   'epub-rendering/epub-sections.ts': epubRendering,
   'example-drift/drift-sections.ts': exampleDrift,

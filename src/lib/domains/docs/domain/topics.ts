@@ -194,6 +194,14 @@ const DOCS_TOPICS = [
     kind: 'explainer',
   },
   {
+    slug: 'ch-unit',
+    title: 'The CSS ch unit',
+    summary:
+      'What 1ch measures, why 68ch is a different width in every font, how a font that has not loaded changes it, and the other font-relative units.',
+    status: 'published',
+    kind: 'explainer',
+  },
+  {
     slug: 'workers',
     title: 'Workers and data transfer',
     summary:
