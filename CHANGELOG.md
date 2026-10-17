@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0](https://github.com/jerhage/dokseo/compare/v1.2.0...v1.3.0) (2026-10-17)
+
+
+### Features
+
+* **catalog:** offer every file a publication carries ([a675005](https://github.com/jerhage/dokseo/commit/a6750057cd27ec631567840518fb686992914c65))
+
+
+### Fixes
+
+* **catalog:** read every Calibre-Web feed as its own feed ([5e5f287](https://github.com/jerhage/dokseo/commit/5e5f2871d7e98d45c48733576cd389f6f04ea620))
+* **catalog:** tell the reader when a feed is too large to read ([c62e2e0](https://github.com/jerhage/dokseo/commit/c62e2e0e292a5624da850d122371c615c5a16d5b))
+
 ## [1.2.0](https://github.com/jerhage/dokseo/compare/v1.1.2...v1.2.0) (2026-10-09)
 
 
