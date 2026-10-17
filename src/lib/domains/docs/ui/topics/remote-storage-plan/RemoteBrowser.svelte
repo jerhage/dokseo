@@ -51,9 +51,14 @@
 
 <DocsSection title={REMOTE_SECTIONS.calibre}>
   <p>
-    Dokseo's reader of OPDS feeds was written against Calibre 9.15, and copes with each place where
-    that server departs from the specification.
+    Two servers speak the one contract Dokseo reads, OPDS 1.2 Atom, and mean different things by its
+    fields. The shared reading copes with both; a rule that would contradict another server lives in
+    a <em>dialect</em>, read from the feed in hand — its generator uri, or an id it reuses.
+    Calibre's own server needs no dialect, because the generic reading is the one the specification
+    asks for. A server whose API is its own, rather than a feed read differently, would get its own
+    <code>CatalogSource</code> adapter instead.
   </p>
+  <p>Calibre 9.15, which this reader was written against:</p>
   <ul class="col gap-2">
     <li>
       A navigation entry's link has no <code>rel</code>. The reader finds it by a
@@ -90,6 +95,40 @@
       <code>filename</code> and a percent-encoded <code>filename*</code>. The File takes the
       <code>filename*</code> name, then <code>filename</code>, then the entry's title with the
       extension of its media type.
+    </li>
+  </ul>
+  <p>Calibre-Web, probed against a live server in October 2026:</p>
+  <ul class="col gap-2">
+    <li>
+      Every feed carries the SAME <code>atom:id</code>,
+      <code>urn:uuid:2853dacf-ed79-42f5-8e8a-a7bb3d1ae6a2</code>, a literal in its templates. Read
+      as an identity it made each feed look like the root it came from, so the crumb rule above sent
+      the reader straight back and no navigation link worked. The <code>calibre-web</code> dialect answers
+      no feed id, which that rule already treats as "never matches".
+    </li>
+    <li>
+      Each stored format of a book is its own acquisition link, so an entry can offer a ZIP and an
+      EPUB. A publication carries every format it offers and the reader picks one.
+    </li>
+    <li>
+      A format's media type comes from the host's mimetypes map, which can lack
+      <code>.cbz</code> and answer <code>application/octet-stream</code> for a comic. The link's
+      <code>title</code> and its href's extension are read after the media type.
+    </li>
+    <li>
+      A book's comment HTML is escaped into <code>content type="xhtml"</code>, so the feed carries
+      <code>&amp;lt;p&amp;gt;</code> where it means a paragraph. An escaped break becomes a break and
+      every other tag shape is dropped.
+    </li>
+    <li>
+      A search answers the whole result set with no <code>next</code> link. A feed past four million characters
+      is reported as too large to read, rather than as a server that is not a catalog.
+    </li>
+    <li>
+      A navigation entry's link has no <code>rel</code> in the root feed and
+      <code>rel="subsection"</code> in an index feed; both are found by the <code>type</code> rule
+      above. The feed's <code>title</code> is the instance name on every feed, so a crumb uses the title
+      of the link that was followed.
     </li>
   </ul>
 </DocsSection>

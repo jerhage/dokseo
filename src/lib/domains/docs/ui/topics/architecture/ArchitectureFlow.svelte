@@ -13,6 +13,7 @@
     CATALOG_PROTOCOLS_LIST,
     CATALOG_SOURCE_FOR,
     CATALOG_SOURCE_PORT,
+    FEED_DIALECT,
     FEED_SEARCH,
     LOAD_MANGA_OCR,
     QUERY_CLIENT,
@@ -238,6 +239,21 @@ adapters/opds2/opds2-catalog-source.ts
     arm for the new protocol. The same holds for the other <code>match</code> over
     <code>CatalogProtocol</code>, the one in the catalog screens' texts that words the "not a
     catalog" message. Nothing is left to find by running the app.
+  </p>
+  <p>
+    One protocol is not one server. Calibre and Calibre-Web both speak OPDS 1.2 Atom and mean
+    different things by its fields: Calibre-Web answers the same <code>atom:id</code> from every
+    feed, and lists each stored format of a book as its own acquisition link. That is a second tier
+    inside the adapter, not a second adapter. A <code>FeedDialect</code> holds what an application means,
+    read from the feed in hand, while the port and everything above it stay as they are:
+  </p>
+  <DocsCode label={FEED_DIALECT.label} code={FEED_DIALECT.code} />
+  <p>
+    A fix that is strictly more permissive goes in the shared reading with no dialect branch, since
+    it cannot mislead another server. Only a rule that contradicts another server's meaning earns a
+    member, which is why Calibre's own server has none: generic is the reading the specification
+    asks for. A server whose API is its own, Komga or Kavita over REST, is the other case — a new
+    protocol and a new <code>CatalogSource</code> adapter.
   </p>
   <p>
     No second protocol exists. This sketch, which is not code from the repository, shows where an

@@ -5,7 +5,7 @@ import { SERIES_PLAN_SECTIONS } from '../series-plan/series-sections';
 const REMOTE_SECTIONS = {
   goal: 'What a catalog adds',
   opds: 'OPDS 1.2 in brief',
-  calibre: "Where Calibre's feeds differ",
+  calibre: "Where each server's feeds differ",
   browser: 'What the browser requires',
   contract: 'Books, publications and origins',
   views: 'Tabs, browsing and cards',

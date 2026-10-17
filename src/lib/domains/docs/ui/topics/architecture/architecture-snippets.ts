@@ -390,6 +390,17 @@ const CATALOG_SOURCE_FOR: SourceSnippet = {
 }`,
 };
 
+const FEED_DIALECT: SourceSnippet = {
+  label: 'A dialect of one contract, in adapters/opds1/',
+  file: 'src/lib/domains/catalog/adapters/opds1/opds1-dialect.ts',
+  code: `type DialectName = 'generic' | 'calibre-web';
+
+type FeedDialect = {
+  readonly name: DialectName;
+  readonly identifiesEachFeed: boolean;
+};`,
+};
+
 const CATALOG_PROTOCOLS_LIST: SourceSnippet = {
   label: 'The protocols a catalog can speak',
   file: 'src/lib/domains/catalog/domain/catalog-protocol.ts',
@@ -443,6 +454,7 @@ const ARCHITECTURE_SNIPPETS: readonly SourceSnippet[] = [
   FEED_SEARCH,
   SEARCH_ADDRESS,
   CATALOG_SOURCE_FOR,
+  FEED_DIALECT,
   LEAF_LIST,
   LEAF_RULE,
   BRAND,
@@ -458,6 +470,7 @@ export {
   CATALOG_PROTOCOLS_LIST,
   CATALOG_SOURCE_FOR,
   CATALOG_SOURCE_PORT,
+  FEED_DIALECT,
   FEED_SEARCH,
   IF_CHAIN,
   LEAF_LIST,
