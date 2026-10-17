@@ -13,6 +13,8 @@ import type {
   TrailStep,
 } from '../../domain/catalog-feed';
 import { formatOfMediaType } from '../../domain/remote-publication';
+import { feedDialect } from './opds1-dialect';
+import { childText, childrenNamed } from './opds1-elements';
 import type {
   Acquisition,
   FeedPath,
@@ -38,14 +40,6 @@ const THREE_LETTER_LANGUAGES: ReadonlyMap<string, string> = new Map([
   ['eng', 'en'],
 ]);
 const CATALOG_PROFILE = 'profile=opds-catalog';
-
-function childrenNamed(element: XmlElement, localName: string): readonly XmlElement[] {
-  return element.children.filter((child) => child.localName === localName);
-}
-
-function childText(element: XmlElement, localName: string): string {
-  return childrenNamed(element, localName)[0]?.text.trim() ?? '';
-}
 
 function allText(element: XmlElement): string {
   return element.text + element.children.map(allText).join('');
@@ -199,7 +193,8 @@ function readOpdsFeed(
   const root = parseXml(xml, MAX_FEED_CHARACTERS, { lineBreaks: true });
   if (root === null || root.localName !== 'feed') return { kind: 'not-a-feed' };
   const entries = childrenNamed(root, 'entry');
-  const id = childText(root, 'id');
+  const dialect = feedDialect(root);
+  const id = dialect.identifiesEachFeed ? childText(root, 'id') : '';
   const title = childText(root, 'title');
   const template = searchTemplateOf(root, feedUrl);
   const head = {

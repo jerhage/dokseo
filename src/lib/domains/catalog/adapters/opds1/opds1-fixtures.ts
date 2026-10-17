@@ -114,6 +114,159 @@ const UNKNOWN_MEDIA_TYPE = `<feed xmlns="http://www.w3.org/2005/Atom">
   </entry>
 </feed>`;
 
+const CALIBRE_WEB_ID = 'urn:uuid:2853dacf-ed79-42f5-8e8a-a7bb3d1ae6a2';
+
+const CALIBRE_WEB_ROOT = `<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <icon>/books/static/favicon.ico</icon>
+  <id>${CALIBRE_WEB_ID}</id>
+  <updated>2026-10-17T16:25:30+00:00</updated>
+  <link rel="self" href="/books/opds" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+  <link rel="start" title="Start" href="/books/opds"
+        type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+  <link rel="search"
+      href="/books/opds/osd"
+      type="application/opensearchdescription+xml"/>
+  <link type="application/atom+xml" rel="search" title="Search" href="/books/opds/search/{searchTerms}" />
+  <title>Calibre-Web</title>
+  <author>
+    <name>Calibre-Web</name>
+    <uri>https://github.com/janeczku/calibre-web</uri>
+  </author>
+  <entry>
+    <title>Recently added Books</title>
+    <link href="/books/opds/new" type="application/atom+xml;profile=opds-catalog"/>
+    <id>/books/opds/new</id>
+    <updated>2026-10-17T16:25:30+00:00</updated>
+    <content type="text">The latest Books</content>
+  </entry>
+  <entry>
+    <title>Series</title>
+    <link href="/books/opds/series" type="application/atom+xml;profile=opds-catalog"/>
+    <id>/books/opds/series</id>
+    <updated>2026-10-17T16:25:30+00:00</updated>
+    <content type="text">Books ordered by series</content>
+  </entry>
+</feed>`;
+
+const CALIBRE_WEB_BOOKS = `<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/terms/" xmlns:dcterms="http://purl.org/dc/terms/">
+  <icon>/books/static/favicon.ico</icon>
+  <id>${CALIBRE_WEB_ID}</id>
+  <updated>2026-10-17T16:25:30+00:00</updated>
+  <link rel="self"
+        href="/books/opds/new?"
+        type="application/atom+xml;profile=opds-catalog;type=feed;kind=navigation"/>
+  <link rel="up"
+        href="/books/opds"
+        type="application/atom+xml;profile=opds-catalog;type=feed;kind=navigation"/>
+  <link rel="next"
+        title="Next"
+        href="/books/opds/new?offset=60"
+        type="application/atom+xml;profile=opds-catalog;type=feed;kind=navigation"/>
+    <link rel="search"
+      href="/books/opds/osd"
+      type="application/opensearchdescription+xml"/>
+  <link type="application/atom+xml" rel="search" title="Search" href="/books/opds/search/{searchTerms}" />
+  <title>Calibre-Web</title>
+  <author>
+    <name>Calibre-Web</name>
+    <uri>https://github.com/janeczku/calibre-web</uri>
+  </author>
+  <entry>
+    <title>あのときの王子くん</title>
+    <id>urn:uuid:f7f144c3-9aa4-4494-8b7a-e2b5d501c970</id>
+    <updated>2025-03-22T14:46:22+00:00</updated>
+
+      <author>
+        <name>アントワーヌ・ド・サン＝テグジュペリ</name>
+      </author>
+
+    <published>101-01-01T00:00:00+00:00</published>
+
+      <dcterms:language>jpn</dcterms:language>
+
+    <content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml">
+
+
+
+    </div></content>
+
+    <link rel="http://opds-spec.org/acquisition" href="/books/opds/download/135/zip/"
+          length="48037" title="ZIP" mtime="2025-03-22T14:46:22+00:00" type="application/zip"/>
+
+    <link rel="http://opds-spec.org/acquisition" href="/books/opds/download/135/epub/"
+          length="208007" title="EPUB" mtime="2025-03-22T14:46:22+00:00" type="application/epub+zip"/>
+
+  </entry>
+  <entry>
+    <title>오뇌의 무도</title>
+    <id>urn:uuid:62d2a606-bec2-4dde-a600-478d5ba0f1aa</id>
+    <updated>2026-10-16T21:32:01+00:00</updated>
+
+      <author>
+        <name>김억 (金億)</name>
+      </author>
+
+      <dcterms:language>kor</dcterms:language>
+
+    <content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml">
+
+        <p>&lt;p&gt;오뇌의 무도 (1921년) — 한국 최초의 번역시집.&lt;br/&gt;두산백과&lt;/p&gt;</p>
+
+    </div></content>
+
+    <link type="image/jpeg" href="/books/opds/cover/1480" rel="http://opds-spec.org/image"/>
+    <link type="image/jpeg" href="/books/opds/cover/1480" rel="http://opds-spec.org/image/thumbnail"/>
+
+    <link rel="http://opds-spec.org/acquisition" href="/books/opds/download/1480/epub/"
+          length="288955" title="EPUB" mtime="2026-10-16T21:32:01+00:00" type="application/epub+zip"/>
+
+  </entry>
+  <entry>
+    <title>Comic Without A Media Type</title>
+    <id>urn:uuid:5c0ffee0-0000-4000-8000-00000000cbz1</id>
+    <updated>2026-10-01T09:00:00+00:00</updated>
+    <content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"></div></content>
+
+    <link rel="http://opds-spec.org/acquisition" href="/books/opds/download/42/cbz/"
+          length="5120" title="CBZ" mtime="2026-10-01T09:00:00+00:00" type="application/octet-stream"/>
+
+  </entry>
+</feed>`;
+
+const CALIBRE_WEB_FORMATS = `<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/terms/" xmlns:dcterms="http://purl.org/dc/terms/">
+  <id>${CALIBRE_WEB_ID}</id>
+  <updated>2026-10-17T16:25:31+00:00</updated>
+  <link rel="self"
+        href="/books/opds/formats?"
+        type="application/atom+xml;profile=opds-catalog;type=feed;kind=navigation"/>
+  <link type="application/atom+xml" rel="search" title="Search" href="/books/opds/search/{searchTerms}" />
+  <title>Calibre-Web</title>
+  <author>
+    <name>Calibre-Web</name>
+    <uri>https://github.com/janeczku/calibre-web</uri>
+  </author>
+
+  <entry>
+
+    <title>CBR</title>
+
+    <id>/books/opds/formats/CBR</id>
+    <link rel="subsection" type="application/atom+xml;profile=opds-catalog" href="/books/opds/formats/CBR"/>
+  </entry>
+
+  <entry>
+
+    <title>EPUB</title>
+
+    <id>/books/opds/formats/EPUB</id>
+    <link rel="subsection" type="application/atom+xml;profile=opds-catalog" href="/books/opds/formats/EPUB"/>
+  </entry>
+
+</feed>`;
+
 const HTML_PAGE = `<!DOCTYPE html><html><head><title>Login</title></head><body><p>Sign in</p></body></html>`;
 
 const NON_FEED_ROOT = `<?xml version="1.0"?><rss version="2.0"><channel><title>News</title></channel></rss>`;
@@ -122,6 +275,10 @@ export {
   BUY_ONLY,
   CALIBRE_ROOT,
   CALIBRE_SERIES,
+  CALIBRE_WEB_BOOKS,
+  CALIBRE_WEB_FORMATS,
+  CALIBRE_WEB_ID,
+  CALIBRE_WEB_ROOT,
   HTML_PAGE,
   NON_FEED_ROOT,
   SPEC_CONFORMING_ACQUISITION,

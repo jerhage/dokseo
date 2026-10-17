@@ -4,6 +4,9 @@ import {
   BUY_ONLY,
   CALIBRE_ROOT,
   CALIBRE_SERIES,
+  CALIBRE_WEB_BOOKS,
+  CALIBRE_WEB_FORMATS,
+  CALIBRE_WEB_ROOT,
   HTML_PAGE,
   NON_FEED_ROOT,
   SPEC_CONFORMING_ACQUISITION,
@@ -213,5 +216,34 @@ describe('readOpdsFeed on input that is not a feed', () => {
     ['input past the size limit', `<feed>${' '.repeat(MAX_FEED_CHARACTERS)}</feed>`],
   ])('reports %s as not a feed', (_name, xml) => {
     expect(readOpdsFeed(xml, `${SERVER}/opds`, ID, [])).toEqual({ kind: 'not-a-feed' });
+  });
+});
+
+describe('readOpdsFeed on Calibre-Web feeds', () => {
+  const CW = 'https://books.test/books/opds';
+
+  it('reads a navigation entry whose link carries no rel', () => {
+    const read = navigation(CALIBRE_WEB_ROOT, CW);
+
+    expect(read.links.map((link) => [link.title, link.address.handle])).toEqual([
+      ['Recently added Books', 'https://books.test/books/opds/new'],
+      ['Series', 'https://books.test/books/opds/series'],
+    ]);
+  });
+
+  it('answers no feed id, because every Calibre-Web feed carries the same one', () => {
+    expect(navigation(CALIBRE_WEB_ROOT, CW).id).toBe('');
+    expect(navigation(CALIBRE_WEB_FORMATS, `${CW}/formats`).id).toBe('');
+    expect(acquisition(CALIBRE_WEB_BOOKS, `${CW}/new`).id).toBe('');
+  });
+
+  it('keeps the feed id of a server that gives each feed its own', () => {
+    expect(navigation(CALIBRE_ROOT).id).toBe('urn:calibre:main');
+  });
+
+  it('reads the subsection entries of a format index', () => {
+    const read = navigation(CALIBRE_WEB_FORMATS, `${CW}/formats`);
+
+    expect(read.links.map((link) => link.title)).toEqual(['CBR', 'EPUB']);
   });
 });
