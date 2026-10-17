@@ -37,6 +37,7 @@ class Opds1CatalogSource implements CatalogSource {
     if (fetched.kind !== 'success') return fetched;
     const page = readOpdsFeed(fetched.text, address.handle, placement.catalogId, placement.path);
     if (page.kind === 'not-a-feed') return { kind: 'not-a-catalog' };
+    if (page.kind === 'feed-too-large') return page;
     return { kind: 'success', page };
   }
 

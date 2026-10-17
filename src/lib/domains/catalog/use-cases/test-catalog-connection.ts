@@ -8,6 +8,7 @@ type TestedFeedKind = 'navigation' | 'acquisition';
 type TestCatalogConnectionResult =
   | { readonly kind: 'success'; readonly feedTitle: string; readonly feedKind: TestedFeedKind }
   | { readonly kind: 'not-a-catalog' }
+  | { readonly kind: 'feed-too-large' }
   | { readonly kind: 'locked' }
   | DraftRefusal
   | ClientFailure;

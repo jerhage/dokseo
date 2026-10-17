@@ -80,6 +80,7 @@ function connectionOutcome(
       variant: 'warning',
       text: notACatalogText(protocol),
     }))
+    .with({ kind: 'feed-too-large' }, () => ({ variant: 'warning', text: FEED_TOO_LARGE_TEXT }))
     .with({ kind: 'locked' }, () => ({
       variant: 'info',
       text: 'Enter the password to test the connection.',
@@ -118,6 +119,9 @@ const STORAGE_BLOCKED_TEXT = 'This browser blocks local storage, so catalogs can
 
 const UNKNOWN_CATALOG_TEXT = 'That catalog no longer exists.';
 
+const FEED_TOO_LARGE_TEXT =
+  'That feed is too large to read. Narrow the search, or open a smaller part of the catalog.';
+
 const UNREADABLE_CATALOG_TEXT =
   'That catalog could not be read. Remove it in Settings, then add it again.';
 
@@ -131,6 +135,7 @@ function browseFailureText(failure: BrowseFailure, protocol: CatalogProtocol): s
   return match(failure)
     .returnType<string>()
     .with({ kind: 'not-a-catalog' }, () => notACatalogText(protocol))
+    .with({ kind: 'feed-too-large' }, () => FEED_TOO_LARGE_TEXT)
     .with({ kind: 'not-found' }, () => NOT_FOUND_TEXT)
     .with({ kind: 'server-error' }, ({ status }) => serverErrorText(status))
     .with({ kind: 'blocked' }, () => BLOCKED_TEXT)
@@ -151,6 +156,7 @@ function feedProblemText(problem: PagedProblem<FeedProblem>, protocol: CatalogPr
     .with({ kind: 'unexpected' }, ({ message }) => message)
     .with(
       { kind: 'not-a-catalog' },
+      { kind: 'feed-too-large' },
       { kind: 'not-found' },
       { kind: 'server-error' },
       { kind: 'blocked' },
@@ -215,6 +221,7 @@ function catalogDescription(catalog: Catalog): string {
 
 export {
   BLOCKED_TEXT,
+  FEED_TOO_LARGE_TEXT,
   FORMAT_CHOICE_TEXT,
   NOT_FOUND_TEXT,
   OFFLINE_CATALOG_TEXT,

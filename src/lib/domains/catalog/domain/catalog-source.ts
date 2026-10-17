@@ -20,6 +20,7 @@ type FeedPlacement = { readonly catalogId: CatalogId; readonly path: readonly Tr
 type ReadFeedResult =
   | { readonly kind: 'success'; readonly page: FeedPage }
   | { readonly kind: 'not-a-catalog' }
+  | { readonly kind: 'feed-too-large' }
   | ClientFailure;
 
 type ReadImageResult = { readonly kind: 'success'; readonly image: Blob } | ClientFailure;

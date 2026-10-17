@@ -7,6 +7,7 @@ import type { CatalogAccessDeps, CatalogAccessFailure } from './catalog-access';
 type BrowseCatalogResult =
   | { readonly kind: 'success'; readonly page: FeedPage }
   | { readonly kind: 'not-a-catalog' }
+  | { readonly kind: 'feed-too-large' }
   | ClientFailure
   | CatalogAccessFailure;
 

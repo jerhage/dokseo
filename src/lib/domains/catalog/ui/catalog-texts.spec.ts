@@ -4,6 +4,7 @@ import type { Catalog } from '../domain/catalog';
 import type { TestCatalogConnectionResult } from '../use-cases/test-catalog-connection';
 import {
   BLOCKED_TEXT,
+  FEED_TOO_LARGE_TEXT,
   FORMAT_CHOICE_TEXT,
   OFFLINE_CATALOG_TEXT,
   PASSWORD_NEEDED_TEXT,
@@ -129,6 +130,12 @@ describe('browseFailureText', () => {
       browseFailureText({ kind: 'storage-unavailable' }, 'opds1'),
     ];
     expect(new Set(texts).size).toBe(texts.length);
+  });
+});
+
+describe('browseFailureText on a feed past the size limit', () => {
+  it('says the feed is too large instead of blaming the server', () => {
+    expect(browseFailureText({ kind: 'feed-too-large' }, 'opds1')).toBe(FEED_TOO_LARGE_TEXT);
   });
 });
 

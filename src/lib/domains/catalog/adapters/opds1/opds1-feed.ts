@@ -23,9 +23,12 @@ import type {
   RemotePublication,
 } from '../../domain/remote-publication';
 
-type OpdsFeedReading = FeedPage | { readonly kind: 'not-a-feed' };
+type OpdsFeedReading =
+  | FeedPage
+  | { readonly kind: 'not-a-feed' }
+  | { readonly kind: 'feed-too-large' };
 
-const MAX_FEED_CHARACTERS = 2_000_000;
+const MAX_FEED_CHARACTERS = 4_000_000;
 
 const ACQUISITION_REL = 'http://opds-spec.org/acquisition';
 const IMAGE_REL = 'http://opds-spec.org/image';
@@ -219,6 +222,7 @@ function readOpdsFeed(
   catalogId: CatalogId,
   trail: readonly TrailStep[],
 ): OpdsFeedReading {
+  if (xml.length > MAX_FEED_CHARACTERS) return { kind: 'feed-too-large' };
   const path = storedPathOf(trail);
   const root = parseXml(xml, MAX_FEED_CHARACTERS, { lineBreaks: true });
   if (root === null || root.localName !== 'feed') return { kind: 'not-a-feed' };

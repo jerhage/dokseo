@@ -217,9 +217,14 @@ describe('readOpdsFeed on input that is not a feed', () => {
     ['an HTML page', HTML_PAGE],
     ['a document with another root', NON_FEED_ROOT],
     ['an empty string', ''],
-    ['input past the size limit', `<feed>${' '.repeat(MAX_FEED_CHARACTERS)}</feed>`],
   ])('reports %s as not a feed', (_name, xml) => {
     expect(readOpdsFeed(xml, `${SERVER}/opds`, ID, [])).toEqual({ kind: 'not-a-feed' });
+  });
+
+  it('reports a feed past the size limit as too large, not as another server', () => {
+    const huge = `<feed>${' '.repeat(MAX_FEED_CHARACTERS)}</feed>`;
+
+    expect(readOpdsFeed(huge, `${SERVER}/opds`, ID, [])).toEqual({ kind: 'feed-too-large' });
   });
 });
 
