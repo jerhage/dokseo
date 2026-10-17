@@ -5,11 +5,17 @@ import { DEFAULT_BOOK_MATCHING } from '$lib/domains/library/domain/book/book-mat
 import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/reading-defaults';
 import type { DownloadProgress } from '../domain/catalog-source';
 import type { BookOriginLink } from '../domain/remote-item';
-import type { RemotePublication } from '../domain/remote-publication';
+import type { Acquisition, RemotePublication } from '../domain/remote-publication';
 import type { DownloadPublicationResult } from '../use-cases/download-publication';
 import type { UpdatePublicationResult } from '../use-cases/update-publication';
 import { CatalogDownloads } from './catalog-downloads.svelte';
 import { publication } from './catalog-ui-fixtures';
+
+function fileOf(wanted: RemotePublication): Acquisition {
+  const [only] = wanted.acquisitions;
+  if (only === undefined) throw new Error('the fixture offers no file');
+  return only;
+}
 
 type Pending = {
   readonly entryId: string;
@@ -37,7 +43,15 @@ function setup() {
         new Promise<UpdatePublicationResult>((resolve) => {
           updating.push({ entryId: item.entryId, bookId: heldBook, finish: resolve });
         }),
-      downloadPublication: (item, _position, _matching, _defaults, report, signal) => {
+      downloadPublication: (
+        item,
+        _acquisition,
+        _position,
+        _matching,
+        _defaults,
+        report,
+        signal,
+      ) => {
         calls.push(item.entryId);
         return new Promise<DownloadPublicationResult>((resolve) => {
           pending.push({ entryId: item.entryId, report, signal, finish: resolve });
@@ -82,7 +96,7 @@ describe('CatalogDownloads', () => {
 
   it('shows an unknown fraction while the first byte is awaited', () => {
     const { downloads } = setup();
-    void downloads.start(publication('a'), 0);
+    void downloads.start(publication('a'), 0, fileOf(publication('a')));
     expect(downloads.itemFor(publication('a'))).toMatchObject({
       kind: 'downloading',
       progress: null,
@@ -91,7 +105,7 @@ describe('CatalogDownloads', () => {
 
   it('follows the reported fraction', () => {
     const { downloads, next } = setup();
-    void downloads.start(publication('a'), 0);
+    void downloads.start(publication('a'), 0, fileOf(publication('a')));
     next().report(0.4);
     expect(downloads.itemFor(publication('a'))).toMatchObject({
       kind: 'downloading',
@@ -101,7 +115,7 @@ describe('CatalogDownloads', () => {
 
   it('holds the entry once the download succeeds and announces it', async () => {
     const { downloads, next, downloaded } = setup();
-    const running = downloads.start(publication('a'), 0);
+    const running = downloads.start(publication('a'), 0, fileOf(publication('a')));
     next().finish({ kind: 'success', bookId: bookId('book-a') });
     await running;
     expect(downloads.itemFor(publication('a'))).toMatchObject({
@@ -113,20 +127,20 @@ describe('CatalogDownloads', () => {
 
   it('reports the reason when the download fails, and retries from there', async () => {
     const { downloads, next } = setup();
-    const running = downloads.start(publication('a'), 0);
+    const running = downloads.start(publication('a'), 0, fileOf(publication('a')));
     next().finish({ kind: 'offline' });
     await running;
     expect(downloads.itemFor(publication('a'))).toMatchObject({
       kind: 'download-failed',
       reason: 'You are offline. Connect to the network and try again.',
     });
-    void downloads.start(publication('a'), 0);
+    void downloads.start(publication('a'), 0, fileOf(publication('a')));
     expect(stateOf(downloads, publication('a'))).toBe('downloading');
   });
 
   it('describes a failure to add the file through the library text', async () => {
     const { downloads, next } = setup();
-    const running = downloads.start(publication('a'), 0);
+    const running = downloads.start(publication('a'), 0, fileOf(publication('a')));
     next().finish({ kind: 'fingerprint', cause: 'x' });
     await running;
     expect(downloads.itemFor(publication('a'))).toMatchObject({
@@ -137,7 +151,7 @@ describe('CatalogDownloads', () => {
 
   it('returns to remote when the reader cancels', async () => {
     const { downloads, next } = setup();
-    const running = downloads.start(publication('a'), 0);
+    const running = downloads.start(publication('a'), 0, fileOf(publication('a')));
     const waiting = next();
     downloads.cancel('a');
     await running;
@@ -147,8 +161,8 @@ describe('CatalogDownloads', () => {
 
   it('starts an entry once while it is running', () => {
     const { downloads, calls } = setup();
-    void downloads.start(publication('a'), 0);
-    void downloads.start(publication('a'), 0);
+    void downloads.start(publication('a'), 0, fileOf(publication('a')));
+    void downloads.start(publication('a'), 0, fileOf(publication('a')));
     expect(calls).toEqual(['a']);
   });
 
@@ -191,12 +205,42 @@ describe('CatalogDownloads queue', () => {
     setHeld(new Map([['a', { bookId: bookId('x'), updated: '2026-08-01T00:00:00Z' }]]));
     const entries = [
       ...queued('a', 'b'),
-      { publication: publication('c', { acquisition: null }), feedPosition: 2 },
+      { publication: publication('c', { acquisitions: [] }), feedPosition: 2 },
     ];
     const all = downloads.downloadAll(entries);
     next().finish({ kind: 'success', bookId: bookId('1') });
     await all;
     expect(calls).toEqual(['b']);
+  });
+
+  it('leaves a book offering several files for the reader, and reports it', async () => {
+    const { downloads, calls, next } = setup();
+    const several = publication('m', {
+      acquisitions: [
+        {
+          href: 'https://home.test/get/m.zip',
+          format: 'cbz',
+          mediaType: 'application/zip',
+          length: null,
+        },
+        {
+          href: 'https://home.test/get/m.epub',
+          format: 'epub',
+          mediaType: 'application/epub+zip',
+          length: null,
+        },
+      ],
+    });
+    const entries = [...queued('a'), { publication: several, feedPosition: 1 }];
+
+    const all = downloads.downloadAll(entries);
+    next().finish({ kind: 'success', bookId: bookId('1') });
+    await all;
+
+    expect(calls).toEqual(['a']);
+    expect(downloads.needsPick.map((wanted) => wanted.entryId)).toEqual(['m']);
+    downloads.forgetNeedsPick();
+    expect(downloads.needsPick).toEqual([]);
   });
 
   it('stops the rest and aborts the running one on cancel all', async () => {
@@ -242,7 +286,7 @@ describe('CatalogDownloads queue', () => {
   it('skips an entry the reader downloaded by hand while it waited', async () => {
     const { downloads, calls, next } = setup();
     const all = downloads.downloadAll(queued('a', 'b'));
-    void downloads.start(publication('b'), 1);
+    void downloads.start(publication('b'), 1, fileOf(publication('b')));
     next().finish({ kind: 'success', bookId: bookId('1') });
     await settle();
     expect(calls).toEqual(['a', 'b']);
@@ -335,7 +379,7 @@ describe('CatalogDownloads replacing a held book', () => {
       reason: 'Another book on this device already has the newer file.',
     });
 
-    void downloads.start(publication('a'), 0);
+    void downloads.start(publication('a'), 0, fileOf(publication('a')));
     expect(updating).toHaveLength(2);
     expect(calls).toEqual([]);
   });

@@ -10,7 +10,6 @@ type AcquisitionDownload =
       readonly file: File;
       readonly acquisition: Acquisition;
     }
-  | { readonly kind: 'unsupported' }
   | ClientFailure
   | CatalogAccessFailure;
 
@@ -19,12 +18,10 @@ type DownloadAcquisitionDeps = CatalogAccessDeps;
 async function downloadAcquisition(
   deps: DownloadAcquisitionDeps,
   publication: RemotePublication,
+  acquisition: Acquisition,
   onProgress: DownloadProgress,
   signal?: AbortSignal,
 ): Promise<AcquisitionDownload> {
-  const { acquisition } = publication;
-  if (acquisition === null) return { kind: 'unsupported' };
-
   const access = await catalogAccess(deps, publication.catalogId);
   if (access.kind !== 'success') return access;
 

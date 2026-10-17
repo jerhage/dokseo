@@ -5,7 +5,7 @@ import type { OpenFileFailure, OpenFileResult } from '$lib/domains/library/use-c
 import { bookOriginOf } from '../domain/book-origin';
 import type { ClientFailure, DownloadProgress } from '../domain/catalog-source';
 import type { OriginRepository } from '../domain/origin-repository';
-import type { RemotePublication } from '../domain/remote-publication';
+import type { Acquisition, RemotePublication } from '../domain/remote-publication';
 import type { CatalogAccessFailure } from './catalog-access';
 import { downloadAcquisition } from './download-acquisition';
 import type { DownloadAcquisitionDeps } from './download-acquisition';
@@ -18,7 +18,6 @@ type OpenFile = (
 
 type DownloadPublicationResult =
   | { readonly kind: 'success'; readonly bookId: BookId }
-  | { readonly kind: 'unsupported' }
   | ClientFailure
   | CatalogAccessFailure
   | OpenFileFailure;
@@ -32,13 +31,14 @@ type DownloadPublicationDeps = DownloadAcquisitionDeps & {
 async function downloadPublication(
   deps: DownloadPublicationDeps,
   publication: RemotePublication,
+  acquisition: Acquisition,
   feedPosition: number,
   matching: BookMatching,
   defaults: ReadingDefaults,
   onProgress: DownloadProgress,
   signal?: AbortSignal,
 ): Promise<DownloadPublicationResult> {
-  const downloaded = await downloadAcquisition(deps, publication, onProgress, signal);
+  const downloaded = await downloadAcquisition(deps, publication, acquisition, onProgress, signal);
   if (downloaded.kind !== 'success') return downloaded;
 
   const opened = await deps.openFile([downloaded.file], matching, defaults);

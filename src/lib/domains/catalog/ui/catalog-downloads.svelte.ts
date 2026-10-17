@@ -5,7 +5,8 @@ import type { ReadingDefaults } from '$lib/domains/library/domain/book/reading-d
 import { isLater, remoteItem } from '../domain/remote-item';
 import type { BookOriginLink, DownloadState, RemoteItem } from '../domain/remote-item';
 import type { DownloadProgress } from '../domain/catalog-source';
-import type { RemotePublication } from '../domain/remote-publication';
+import { onlyAcquisition } from '../domain/remote-publication';
+import type { Acquisition, RemotePublication } from '../domain/remote-publication';
 import type { DownloadPublicationResult } from '../use-cases/download-publication';
 import type { UpdatePublicationResult } from '../use-cases/update-publication';
 import { downloadFailureText, updateFailureText } from './catalog-texts';
@@ -14,6 +15,7 @@ import type { DescribeOpenFile, DownloadFailure, UpdateFailure } from './catalog
 type DownloadsUseCases = {
   readonly downloadPublication: (
     publication: RemotePublication,
+    acquisition: Acquisition,
     feedPosition: number,
     matching: BookMatching,
     defaults: ReadingDefaults,
@@ -91,6 +93,7 @@ class CatalogDownloads {
   #states = $state.raw<ReadonlyMap<string, DownloadState>>(new Map());
   #downloaded = $state.raw<ReadonlyMap<string, BookOriginLink>>(NO_HELD);
   #queue = $state.raw<QueueState>(QUEUE_IDLE);
+  #needsPick = $state.raw<readonly RemotePublication[]>([]);
   #replacement = $state.raw<ReplacementState>(NO_REPLACEMENT);
   #controllers = new Map<string, AbortController>();
   #cases: DownloadsUseCases;
@@ -126,6 +129,14 @@ class CatalogDownloads {
     return this.#replacement;
   }
 
+  get needsPick(): readonly RemotePublication[] {
+    return this.#needsPick;
+  }
+
+  forgetNeedsPick(): void {
+    this.#needsPick = [];
+  }
+
   askToReplace(publication: RemotePublication, feedPosition: number): void {
     const bookId = this.#staleBook(publication);
     if (bookId === null) return;
@@ -144,12 +155,16 @@ class CatalogDownloads {
     return this.#run(request.publication, this.#updating(request), this.#hooks.updated);
   }
 
-  async start(publication: RemotePublication, feedPosition: number): Promise<RunOutcome> {
+  async start(
+    publication: RemotePublication,
+    feedPosition: number,
+    acquisition: Acquisition,
+  ): Promise<RunOutcome> {
     const bookId = this.#staleBook(publication);
     if (bookId === null) {
       return this.#run(
         publication,
-        this.#downloading(publication, feedPosition),
+        this.#downloading(publication, acquisition, feedPosition),
         this.#hooks.downloaded,
       );
     }
@@ -166,14 +181,19 @@ class CatalogDownloads {
     started?: (publication: RemotePublication) => void,
   ): Promise<void> {
     if (this.#queue.kind !== 'idle') return;
-    const pending = wanted.filter(({ publication }) => this.#queueable(publication));
+    const queueable = wanted.filter(({ publication }) => this.#queueable(publication));
+    const pending = queueable.filter(({ publication }) => onlyAcquisition(publication) !== null);
+    this.#needsPick = queueable
+      .filter(({ publication }) => onlyAcquisition(publication) === null)
+      .map(({ publication }) => publication);
     if (pending.length === 0) return;
     for (const [index, download] of pending.entries()) {
       if (this.#isStopping()) break;
       this.#queue = { kind: 'running', position: index + 1, total: pending.length };
-      if (!this.#queueable(download.publication)) continue;
+      const acquisition = onlyAcquisition(download.publication);
+      if (acquisition === null || !this.#queueable(download.publication)) continue;
       started?.(download.publication);
-      const outcome = await this.start(download.publication, download.feedPosition);
+      const outcome = await this.start(download.publication, download.feedPosition, acquisition);
       if (outcome === 'stop') break;
     }
     this.#queue = QUEUE_IDLE;
@@ -227,11 +247,16 @@ class CatalogDownloads {
     return settled.queueEffect === 'ends-queue' ? 'stop' : 'done';
   }
 
-  #downloading(publication: RemotePublication, feedPosition: number): Attempt {
+  #downloading(
+    publication: RemotePublication,
+    acquisition: Acquisition,
+    feedPosition: number,
+  ): Attempt {
     return async (report, signal) => {
       const result = await this.#cases
         .downloadPublication(
           publication,
+          acquisition,
           feedPosition,
           this.#choices.matching(),
           this.#choices.defaults(),

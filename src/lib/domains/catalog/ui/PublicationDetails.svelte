@@ -3,6 +3,7 @@
   import Modal from '$lib/ui/components/Modal.svelte';
   import Thumbnail from '$lib/ui/components/Thumbnail.svelte';
   import type { BookId } from '$lib/shared/ids';
+  import type { Acquisition } from '../domain/remote-publication';
   import type { OpenedPublication } from './remote-details';
   import RemoteActions from './RemoteActions.svelte';
 
@@ -11,7 +12,7 @@
     readonly readerHref: (id: BookId) => string;
     readonly onclose: () => void;
     readonly ongone: () => void;
-    readonly ondownload: () => void;
+    readonly ondownload: (acquisition: Acquisition) => void;
     readonly oncancel: () => void;
     readonly onreplace: () => void;
   };
@@ -45,6 +46,13 @@
         {/each}
       </div>
     {/if}
-    <RemoteActions item={opened.item} {readerHref} {ondownload} {oncancel} {onreplace} />
+    <RemoteActions
+      item={opened.item}
+      {readerHref}
+      layout="details"
+      {ondownload}
+      {oncancel}
+      {onreplace}
+    />
   </div>
 </Modal>

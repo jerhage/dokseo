@@ -10,7 +10,7 @@ import type { CatalogDraft } from '../domains/catalog/domain/catalog-draft';
 import type { BookMatching } from '../domains/library/domain/book/book-matching';
 import type { ReadingDefaults } from '../domains/library/domain/book/reading-defaults';
 import type { DownloadProgress } from '../domains/catalog/domain/catalog-source';
-import type { RemotePublication } from '../domains/catalog/domain/remote-publication';
+import type { Acquisition, RemotePublication } from '../domains/catalog/domain/remote-publication';
 import { addCatalog } from '../domains/catalog/use-cases/add-catalog';
 import type { AddCatalogResult } from '../domains/catalog/use-cases/add-catalog';
 import { browseCatalog } from '../domains/catalog/use-cases/browse-catalog';
@@ -89,6 +89,7 @@ type CatalogUseCases = {
   ) => Promise<ReadCatalogCoverResult>;
   readonly downloadPublication: (
     publication: RemotePublication,
+    acquisition: Acquisition,
     feedPosition: number,
     matching: BookMatching,
     defaults: ReadingDefaults,
@@ -137,10 +138,19 @@ function buildCatalog(library: CatalogLibrary): CatalogUseCases {
     searchCatalog: (id, search, query, path, signal) =>
       searchCatalog(access, id, search, query, path, signal),
     readCatalogCover: (id, url, signal) => readCatalogCover(access, id, url, signal),
-    downloadPublication: (publication, feedPosition, matching, defaults, onProgress, signal) =>
+    downloadPublication: (
+      publication,
+      acquisition,
+      feedPosition,
+      matching,
+      defaults,
+      onProgress,
+      signal,
+    ) =>
       downloadPublication(
         { ...access, origins, openFile: library.openFile, now: Date.now },
         publication,
+        acquisition,
         feedPosition,
         matching,
         defaults,

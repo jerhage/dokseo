@@ -14,7 +14,7 @@ function listed(
   state: DownloadState = IDLE,
   unsupported = false,
 ): ListedPublication {
-  const entry = publication(entryId, unsupported ? { acquisition: null } : {});
+  const entry = publication(entryId, unsupported ? { acquisitions: [] } : {});
   return { publication: entry, feedPosition: 0, item: remoteItem(entry, link, state) };
 }
 

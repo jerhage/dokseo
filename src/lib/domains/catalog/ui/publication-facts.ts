@@ -1,6 +1,6 @@
 import { languageName } from '$lib/shared/language';
 import { formatFileSize } from '$lib/ui/components/file-selection';
-import type { RemotePublication } from '../domain/remote-publication';
+import type { Acquisition, RemotePublication } from '../domain/remote-publication';
 
 type PublicationFact = { readonly label: string; readonly value: string };
 
@@ -11,15 +11,35 @@ function updatedText(updated: string): string | null {
   return Number.isNaN(time) ? null : DATES.format(time);
 }
 
+function sizeText(length: number | null): string {
+  return length === null ? '' : ` · ${formatFileSize(length)}`;
+}
+
+function formatFacts(acquisitions: readonly Acquisition[]): readonly PublicationFact[] {
+  const [first, ...rest] = acquisitions;
+  if (first === undefined) return [];
+  if (rest.length === 0) {
+    const size =
+      first.length === null ? [] : [{ label: 'Size', value: formatFileSize(first.length) }];
+    return [{ label: 'Format', value: first.format.toUpperCase() }, ...size];
+  }
+  return [
+    {
+      label: 'Formats',
+      value: acquisitions
+        .map((offered) => `${offered.format.toUpperCase()}${sizeText(offered.length)}`)
+        .join(', '),
+    },
+  ];
+}
+
 function publicationFacts(publication: RemotePublication): readonly PublicationFact[] {
-  const { authors, language, acquisition, updated } = publication;
+  const { authors, language, acquisitions, updated } = publication;
   const date = updatedText(updated);
-  const length = acquisition?.length ?? null;
   const facts: (PublicationFact | null)[] = [
     authors.length === 0 ? null : { label: 'Authors', value: authors.join(', ') },
     language === null ? null : { label: 'Language', value: languageName(language) },
-    acquisition === null ? null : { label: 'Format', value: acquisition.format.toUpperCase() },
-    length === null ? null : { label: 'Size', value: formatFileSize(length) },
+    ...formatFacts(acquisitions),
     date === null ? null : { label: 'Updated', value: date },
   ];
   return facts.filter((fact) => fact !== null);

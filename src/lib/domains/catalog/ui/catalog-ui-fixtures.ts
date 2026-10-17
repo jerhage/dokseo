@@ -31,12 +31,14 @@ function publication(
     summary: '',
     updated: '2026-08-01T00:00:00Z',
     cover: { href: `https://home.test/cover/${entryId}`, mediaType: 'image/png' },
-    acquisition: {
-      href: `https://home.test/get/${entryId}`,
-      format: 'epub',
-      mediaType: 'application/epub+zip',
-      length: null,
-    },
+    acquisitions: [
+      {
+        href: `https://home.test/get/${entryId}`,
+        format: 'epub',
+        mediaType: 'application/epub+zip',
+        length: null,
+      },
+    ],
     feedPath: [],
     ...overrides,
   };

@@ -7,12 +7,14 @@ const FULL = publication('full', {
   authors: ['Jane Roe', 'John Doe'],
   language: 'ja',
   updated: '2026-08-15T12:30:00+00:00',
-  acquisition: {
-    href: 'https://home.test/get/full',
-    format: 'epub',
-    mediaType: 'application/epub+zip',
-    length: 1071903,
-  },
+  acquisitions: [
+    {
+      href: 'https://home.test/get/full',
+      format: 'epub',
+      mediaType: 'application/epub+zip',
+      length: 1071903,
+    },
+  ],
 });
 
 describe('publicationFacts', () => {
@@ -47,18 +49,20 @@ describe('publicationFacts', () => {
   });
 
   it('leaves out every field the publication lacks', () => {
-    const bare = publication('bare', { acquisition: null, updated: '' });
+    const bare = publication('bare', { acquisitions: [], updated: '' });
     expect(publicationFacts(bare)).toEqual([]);
   });
 
   it('leaves out the size when the server gave no length', () => {
     const unsized = publication('unsized', {
-      acquisition: {
-        href: 'https://home.test/get/unsized',
-        format: 'cbz',
-        mediaType: 'application/x-cbz',
-        length: null,
-      },
+      acquisitions: [
+        {
+          href: 'https://home.test/get/unsized',
+          format: 'cbz',
+          mediaType: 'application/x-cbz',
+          length: null,
+        },
+      ],
     });
     expect(publicationFacts(unsized).map((fact) => fact.label)).toEqual(['Format', 'Updated']);
   });
@@ -80,5 +84,34 @@ describe('summaryLines', () => {
 
   it('returns no lines for an empty summary', () => {
     expect(summaryLines('')).toEqual([]);
+  });
+});
+
+describe('publicationFacts on a publication offering several files', () => {
+  const SEVERAL = publication('several', {
+    acquisitions: [
+      {
+        href: 'https://home.test/get/several.zip',
+        format: 'cbz',
+        mediaType: 'application/zip',
+        length: 48_037,
+      },
+      {
+        href: 'https://home.test/get/several.epub',
+        format: 'epub',
+        mediaType: 'application/epub+zip',
+        length: null,
+      },
+    ],
+  });
+
+  it('lists the formats in one row, each with its own size', () => {
+    const formats = publicationFacts(SEVERAL).find((fact) => fact.label === 'Formats');
+
+    expect(formats?.value).toBe(`CBZ · ${formatFileSize(48_037)}, EPUB`);
+  });
+
+  it('keeps the single Size row out, because the sizes sit with the formats', () => {
+    expect(publicationFacts(SEVERAL).map((fact) => fact.label)).toEqual(['Formats', 'Updated']);
   });
 });

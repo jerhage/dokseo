@@ -3,7 +3,8 @@ import type { ReplaceBookFileResult } from '$lib/domains/library/use-cases/repla
 import { bookOriginOf } from '../domain/book-origin';
 import type { ClientFailure, DownloadProgress } from '../domain/catalog-source';
 import type { OriginRepository } from '../domain/origin-repository';
-import type { RemotePublication } from '../domain/remote-publication';
+import { acquisitionInFormat, onlyAcquisition } from '../domain/remote-publication';
+import type { Acquisition, RemotePublication } from '../domain/remote-publication';
 import type { CatalogAccessFailure } from './catalog-access';
 import { downloadAcquisition } from './download-acquisition';
 import type { DownloadAcquisitionDeps } from './download-acquisition';
@@ -12,7 +13,7 @@ type ReplaceFile = (id: BookId, files: readonly File[]) => Promise<ReplaceBookFi
 
 type UpdatePublicationResult =
   | { readonly kind: 'success'; readonly bookId: BookId }
-  | { readonly kind: 'unsupported' }
+  | { readonly kind: 'format-choice' }
   | { readonly kind: 'book-missing'; readonly bookId: BookId }
   | { readonly kind: 'already-held'; readonly bookId: BookId }
   | ClientFailure
@@ -28,6 +29,16 @@ type UpdatePublicationDeps = DownloadAcquisitionDeps & {
   readonly now: () => number;
 };
 
+async function heldFormat(
+  deps: UpdatePublicationDeps,
+  publication: RemotePublication,
+): Promise<Acquisition | null> {
+  const found = await deps.origins.find(publication.catalogId, publication.entryId);
+  const held = found.kind === 'success' ? found.origin : null;
+  const asHeld = held === null ? null : acquisitionInFormat(publication, held.acquisition.format);
+  return asHeld ?? onlyAcquisition(publication);
+}
+
 async function updatePublication(
   deps: UpdatePublicationDeps,
   publication: RemotePublication,
@@ -36,7 +47,10 @@ async function updatePublication(
   onProgress: DownloadProgress,
   signal?: AbortSignal,
 ): Promise<UpdatePublicationResult> {
-  const downloaded = await downloadAcquisition(deps, publication, onProgress, signal);
+  const acquisition = await heldFormat(deps, publication);
+  if (acquisition === null) return { kind: 'format-choice' };
+
+  const downloaded = await downloadAcquisition(deps, publication, acquisition, onProgress, signal);
   if (downloaded.kind !== 'success') return downloaded;
 
   const replaced = await deps.replaceBookFile(bookId, [downloaded.file]);

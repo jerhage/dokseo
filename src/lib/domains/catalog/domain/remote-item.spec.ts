@@ -16,12 +16,14 @@ function publication(overrides: Partial<RemotePublication> = {}): RemotePublicat
     summary: '',
     updated: '2026-08-01T00:00:00Z',
     cover: null,
-    acquisition: {
-      href: 'https://example.org/get/1',
-      format: 'epub',
-      mediaType: 'application/epub+zip',
-      length: null,
-    },
+    acquisitions: [
+      {
+        href: 'https://example.org/get/1',
+        format: 'epub',
+        mediaType: 'application/epub+zip',
+        length: null,
+      },
+    ],
     feedPath: [],
     ...overrides,
   };
@@ -37,7 +39,7 @@ describe('remoteItem', () => {
   });
 
   it('reports a publication without an acquisition as unsupported', () => {
-    expect(remoteItem(publication({ acquisition: null }), null, IDLE).kind).toBe('unsupported');
+    expect(remoteItem(publication({ acquisitions: [] }), null, IDLE).kind).toBe('unsupported');
   });
 
   it('reports a running download with its progress', () => {
@@ -79,7 +81,7 @@ describe('remoteItem', () => {
 
   it('reports a held book without an acquisition as held', () => {
     const item = remoteItem(
-      publication({ acquisition: null }),
+      publication({ acquisitions: [] }),
       origin('2026-08-01T00:00:00Z'),
       IDLE,
     );

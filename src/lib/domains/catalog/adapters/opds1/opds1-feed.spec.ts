@@ -111,12 +111,14 @@ describe('readOpdsFeed on a Calibre series feed', () => {
       summary: 'SERIES: 星の旅 [2]\nThe second voyage begins.',
       updated: '2026-08-15T12:30:00+00:00',
       cover: { href: `${SERVER}/get/cover/720/calibre`, mediaType: 'image/jpeg' },
-      acquisition: {
-        href: `${SERVER}/get/epub/720/calibre`,
-        format: 'epub',
-        mediaType: 'application/epub+zip',
-        length: 1_071_903,
-      },
+      acquisitions: [
+        {
+          href: `${SERVER}/get/epub/720/calibre`,
+          format: 'epub',
+          mediaType: 'application/epub+zip',
+          length: 1_071_903,
+        },
+      ],
       feedPath: [{ title: 'By Series', href: `${SERVER}/opds/navcatalog/4e736572696573` }],
     });
   });
@@ -125,7 +127,7 @@ describe('readOpdsFeed on a Calibre series feed', () => {
     const [, second] = acquisition(CALIBRE_SERIES).publications;
 
     expect(second?.language).toBe('en');
-    expect(second?.acquisition).toMatchObject({ format: 'pdf', length: null });
+    expect(second?.acquisitions).toMatchObject([{ format: 'pdf', length: null }]);
   });
 
   it('falls back to the cover rel when no image rel is present', () => {
@@ -164,12 +166,14 @@ describe('readOpdsFeed on spec-conforming feeds', () => {
       href: 'https://example.org/covers/42.png',
       mediaType: 'image/png',
     });
-    expect(book?.acquisition).toEqual({
-      href: 'https://example.org/files/42.cbz',
-      format: 'cbz',
-      mediaType: 'application/vnd.comicbook+zip',
-      length: 2048,
-    });
+    expect(book?.acquisitions).toEqual([
+      {
+        href: 'https://example.org/files/42.cbz',
+        format: 'cbz',
+        mediaType: 'application/vnd.comicbook+zip',
+        length: 2048,
+      },
+    ]);
     expect(book?.summary).toBe('A short summary.');
   });
 });
@@ -198,13 +202,13 @@ describe('readOpdsFeed on entries without a usable download', () => {
     const [book] = acquisition(BUY_ONLY).publications;
 
     expect(book?.title).toBe('Paid Book');
-    expect(book?.acquisition).toBeNull();
+    expect(book?.acquisitions).toEqual([]);
   });
 
   it('reports an unknown media type as no acquisition', () => {
     const [book] = acquisition(UNKNOWN_MEDIA_TYPE).publications;
 
-    expect(book?.acquisition).toBeNull();
+    expect(book?.acquisitions).toEqual([]);
   });
 });
 
@@ -245,5 +249,55 @@ describe('readOpdsFeed on Calibre-Web feeds', () => {
     const read = navigation(CALIBRE_WEB_FORMATS, `${CW}/formats`);
 
     expect(read.links.map((link) => link.title)).toEqual(['CBR', 'EPUB']);
+  });
+
+  it('offers every format of an entry, in feed order', () => {
+    const [first] = acquisition(CALIBRE_WEB_BOOKS, `${CW}/new`).publications;
+
+    expect(first?.acquisitions).toEqual([
+      {
+        href: 'https://books.test/books/opds/download/135/zip/',
+        format: 'cbz',
+        mediaType: 'application/zip',
+        length: 48_037,
+      },
+      {
+        href: 'https://books.test/books/opds/download/135/epub/',
+        format: 'epub',
+        mediaType: 'application/epub+zip',
+        length: 208_007,
+      },
+    ]);
+  });
+
+  it('names a format from the link title when the media type says nothing', () => {
+    const [, , third] = acquisition(CALIBRE_WEB_BOOKS, `${CW}/new`).publications;
+
+    expect(third?.acquisitions).toEqual([
+      {
+        href: 'https://books.test/books/opds/download/42/cbz/',
+        format: 'cbz',
+        mediaType: 'application/octet-stream',
+        length: 5120,
+      },
+    ]);
+  });
+
+  it('reads an escaped comment as prose, with its breaks and without its tags', () => {
+    const [, second] = acquisition(CALIBRE_WEB_BOOKS, `${CW}/new`).publications;
+
+    expect(second?.summary).toBe('오뇌의 무도 (1921년) — 한국 최초의 번역시집.\n두산백과');
+  });
+
+  it('follows the offset of the next link', () => {
+    const read = acquisition(CALIBRE_WEB_BOOKS, `${CW}/new`);
+
+    expect(read.next?.handle).toBe('https://books.test/books/opds/new?offset=60');
+  });
+
+  it('reads the search template every feed carries', () => {
+    expect(acquisition(CALIBRE_WEB_BOOKS, `${CW}/new`).search?.handle).toBe(
+      'https://books.test/books/opds/search/{searchTerms}',
+    );
   });
 });

@@ -69,12 +69,14 @@ const HOME_SERIES_FEED: FeedPage = {
       summary: 'SERIES: 星の旅 [2]The second voyage begins.',
       updated: '2026-08-15T12:30:00+00:00',
       cover: { href: 'https://home.test/get/cover/720/calibre', mediaType: 'image/jpeg' },
-      acquisition: {
-        href: 'https://home.test/get/epub/720/calibre',
-        format: 'epub',
-        mediaType: 'application/epub+zip',
-        length: 1071903,
-      },
+      acquisitions: [
+        {
+          href: 'https://home.test/get/epub/720/calibre',
+          format: 'epub',
+          mediaType: 'application/epub+zip',
+          length: 1071903,
+        },
+      ],
       feedPath: [],
     }),
     publicationEntry({
@@ -86,12 +88,14 @@ const HOME_SERIES_FEED: FeedPage = {
       summary: 'SERIES: Star Voyage [3]Plain tale.',
       updated: '2026-08-16T08:00:00+00:00',
       cover: { href: 'https://home.test/get/cover/721/calibre', mediaType: 'image/jpeg' },
-      acquisition: {
-        href: 'https://home.test/get/pdf/721/calibre',
-        format: 'pdf',
-        mediaType: 'application/pdf',
-        length: null,
-      },
+      acquisitions: [
+        {
+          href: 'https://home.test/get/pdf/721/calibre',
+          format: 'pdf',
+          mediaType: 'application/pdf',
+          length: null,
+        },
+      ],
       feedPath: [],
     }),
   ],
@@ -115,12 +119,14 @@ const SHELF_FICTION_FEED: FeedPage = {
       summary: 'A short summary.',
       updated: '2026-07-01T00:00:00Z',
       cover: { href: 'https://example.org/covers/42.png', mediaType: 'image/png' },
-      acquisition: {
-        href: 'https://example.org/files/42.cbz',
-        format: 'cbz',
-        mediaType: 'application/vnd.comicbook+zip',
-        length: 2048,
-      },
+      acquisitions: [
+        {
+          href: 'https://example.org/files/42.cbz',
+          format: 'cbz',
+          mediaType: 'application/vnd.comicbook+zip',
+          length: 2048,
+        },
+      ],
       feedPath: [],
     }),
   ],

@@ -5,6 +5,7 @@
   import type { BookId } from '$lib/shared/ids';
   import type { Catalog } from '../domain/catalog';
   import { CatalogCovers } from './catalog-covers';
+  import { needsPickText } from './catalog-texts';
   import type { CatalogDownloads, QueuedDownload } from './catalog-downloads.svelte';
   import type { createDetails } from './details-focus';
   import type { createNavigation } from './navigation.svelte';
@@ -50,6 +51,7 @@
   const selectable = $derived(selectableOf(listed));
   const chosen = $derived(chosenOf(listed, selection.chosen));
   const queue = $derived(downloads.queue);
+  const needsPick = $derived(downloads.needsPick);
   const opened = $derived(
     openedPublication(listed, navigation.detailsOf(catalog.id), (id) => covers.urlOf(id)),
   );
@@ -92,6 +94,9 @@
       {/if}
     </div>
   {/if}
+  {#if needsPick.length > 0}
+    <p class="text-sm text-muted" role="status">{needsPickText(needsPick.length)}</p>
+  {/if}
   <ul class="grid-auto grid-auto-sm p-0" aria-label="Books">
     {#each listed as { publication, feedPosition, item } (publication.entryId)}
       <RemoteCard
@@ -99,7 +104,7 @@
         cover={covers.urlOf(publication.entryId)}
         selected={selection.chosen.has(publication.entryId)}
         {readerHref}
-        ondownload={() => void downloads.start(publication, feedPosition)}
+        ondownload={(acquisition) => void downloads.start(publication, feedPosition, acquisition)}
         oncancel={() => downloads.cancel(publication.entryId)}
         onreplace={() => downloads.askToReplace(publication, feedPosition)}
         ontoggle={() => selection.toggle(publication.entryId)}
@@ -121,9 +126,11 @@
       navigation.closeDetails();
     }}
     ongone={() => details.restoreFocus()}
-    ondownload={() => {
+    ondownload={(acquisition) => {
       const entry = entryOf(opened.publication.entryId);
-      if (entry !== undefined) void downloads.start(entry.publication, entry.feedPosition);
+      if (entry !== undefined) {
+        void downloads.start(entry.publication, entry.feedPosition, acquisition);
+      }
     }}
     oncancel={() => downloads.cancel(opened.publication.entryId)}
     onreplace={() => {

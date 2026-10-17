@@ -12,11 +12,12 @@ import type {
   PublicationEntry,
   TrailStep,
 } from '../../domain/catalog-feed';
-import { formatOfMediaType } from '../../domain/remote-publication';
+import { formatOfMediaType, formatOfName } from '../../domain/remote-publication';
 import { feedDialect } from './opds1-dialect';
 import { childText, childrenNamed } from './opds1-elements';
 import type {
   Acquisition,
+  AcquisitionFormat,
   FeedPath,
   RemoteImage,
   RemotePublication,
@@ -106,9 +107,17 @@ function hasAcquisition(entry: XmlElement): boolean {
   return childrenNamed(entry, 'link').some((link) => relsOf(link).some(isAcquisitionRel));
 }
 
+const ESCAPED_BREAK = /<br\s*\/?>|<\/p\s*>|<\/div\s*>/giu;
+
+const ESCAPED_TAG = /<\/?[a-z][a-z0-9]*(?:\s[^<>]*)?\/?>/giu;
+
+function plainText(text: string): string {
+  return text.replace(ESCAPED_BREAK, LINE_BREAK).replace(ESCAPED_TAG, '');
+}
+
 function summaryOf(entry: XmlElement): string {
   const body = childrenNamed(entry, 'content')[0] ?? childrenNamed(entry, 'summary')[0];
-  return body === undefined ? '' : withBreaks(allText(body));
+  return body === undefined ? '' : withBreaks(plainText(allText(body)));
 }
 
 function navigationLinkOf(entry: XmlElement, base: string): NavigationLink | null {
@@ -138,19 +147,40 @@ function coverOf(entry: XmlElement, base: string): RemoteImage | null {
   return { href, mediaType: attributeOf(link, 'type') };
 }
 
-function acquisitionOf(entry: XmlElement, base: string): Acquisition | null {
+function extensionOfHref(href: string): string {
+  const [path = ''] = href.split(/[?#]/u);
+  const last = path.split('/').findLast((segment) => segment !== '') ?? '';
+  const dot = last.lastIndexOf('.');
+  return dot === -1 ? '' : last.slice(dot + 1);
+}
+
+function formatOfLink(link: XmlElement, href: string): AcquisitionFormat | null {
+  const mediaType = attributeOf(link, 'type');
+  const declared = mediaType === null ? null : formatOfMediaType(mediaType);
+  if (declared !== null) return declared;
+  const titled = formatOfName(attributeOf(link, 'title') ?? '');
+  if (titled !== null) return titled;
+  return formatOfName(extensionOfHref(href));
+}
+
+function acquisitionsOf(entry: XmlElement, base: string): readonly Acquisition[] {
+  const found: Acquisition[] = [];
   for (const link of childrenNamed(entry, 'link')) {
     const downloadable = relsOf(link).some(
       (rel) => isAcquisitionRel(rel) && !NON_DOWNLOAD_RELS.has(rel),
     );
-    const mediaType = attributeOf(link, 'type');
     const href = resolvedLink(link, base);
-    if (!downloadable || mediaType === null || href === null) continue;
-    const format = formatOfMediaType(mediaType);
+    if (!downloadable || href === null) continue;
+    const format = formatOfLink(link, href);
     if (format === null) continue;
-    return { href, format, mediaType, length: wholeNumber(attributeOf(link, 'length')) };
+    found.push({
+      href,
+      format,
+      mediaType: attributeOf(link, 'type') ?? '',
+      length: wholeNumber(attributeOf(link, 'length')),
+    });
   }
-  return null;
+  return found;
 }
 
 function authorsOf(entry: XmlElement): readonly string[] {
@@ -174,7 +204,7 @@ function publicationOf(
     summary: summaryOf(entry),
     updated: childText(entry, 'updated'),
     cover: coverOf(entry, base),
-    acquisition: acquisitionOf(entry, base),
+    acquisitions: acquisitionsOf(entry, base),
     feedPath: path,
   };
 }

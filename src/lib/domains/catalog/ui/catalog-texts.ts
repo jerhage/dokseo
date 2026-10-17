@@ -166,7 +166,6 @@ function feedProblemText(problem: PagedProblem<FeedProblem>, protocol: CatalogPr
 function downloadFailureText(failure: DownloadFailure, describeOpenFile: DescribeOpenFile): string {
   return match(failure)
     .returnType<string>()
-    .with({ kind: 'unsupported' }, () => UNSUPPORTED_TEXT)
     .with({ kind: 'unauthorized' }, { kind: 'locked' }, () => UNAUTHORIZED_TEXT)
     .with({ kind: 'not-found' }, () => 'The server no longer has that file.')
     .with({ kind: 'server-error' }, ({ status }) => serverErrorText(status))
@@ -186,6 +185,8 @@ function downloadFailureText(failure: DownloadFailure, describeOpenFile: Describ
     .exhaustive();
 }
 
+const FORMAT_CHOICE_TEXT = 'Open the book and choose which file to download.';
+
 const BOOK_MISSING_TEXT = 'That book is no longer on this device.';
 
 const FILE_HELD_TEXT = 'Another book on this device already has the newer file.';
@@ -193,7 +194,13 @@ const FILE_HELD_TEXT = 'Another book on this device already has the newer file.'
 function updateFailureText(failure: UpdateFailure, describeOpenFile: DescribeOpenFile): string {
   if (failure.kind === 'book-missing') return BOOK_MISSING_TEXT;
   if (failure.kind === 'already-held') return FILE_HELD_TEXT;
+  if (failure.kind === 'format-choice') return FORMAT_CHOICE_TEXT;
   return downloadFailureText(failure, describeOpenFile);
+}
+
+function needsPickText(count: number): string {
+  const books = count === 1 ? 'book offers' : 'books offer';
+  return `${count} ${books} several files. Open each one to choose which file to download.`;
 }
 
 function catalogHost(rootUrl: string): string {
@@ -208,6 +215,7 @@ function catalogDescription(catalog: Catalog): string {
 
 export {
   BLOCKED_TEXT,
+  FORMAT_CHOICE_TEXT,
   NOT_FOUND_TEXT,
   OFFLINE_CATALOG_TEXT,
   PASSWORD_NEEDED_TEXT,
@@ -216,6 +224,7 @@ export {
   browseFailureText,
   downloadFailureText,
   feedProblemText,
+  needsPickText,
   updateFailureText,
   FIX_FIELDS_TEXT,
   PASSWORD_ASKED_EACH_SESSION,

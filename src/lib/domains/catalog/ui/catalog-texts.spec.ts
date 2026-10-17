@@ -4,10 +4,10 @@ import type { Catalog } from '../domain/catalog';
 import type { TestCatalogConnectionResult } from '../use-cases/test-catalog-connection';
 import {
   BLOCKED_TEXT,
+  FORMAT_CHOICE_TEXT,
   OFFLINE_CATALOG_TEXT,
   PASSWORD_NEEDED_TEXT,
   UNAUTHORIZED_TEXT,
-  UNSUPPORTED_TEXT,
   browseFailureText,
   catalogDescription,
   catalogHost,
@@ -15,6 +15,8 @@ import {
   downloadFailureText,
   feedProblemText,
   fieldRefusal,
+  needsPickText,
+  updateFailureText,
 } from './catalog-texts';
 
 describe('connectionOutcome', () => {
@@ -130,9 +132,18 @@ describe('browseFailureText', () => {
   });
 });
 
+describe('needsPickText', () => {
+  it('counts one book and several books', () => {
+    expect(needsPickText(1)).toBe(
+      '1 book offers several files. Open each one to choose which file to download.',
+    );
+    expect(needsPickText(3)).toContain('3 books offer several files');
+  });
+});
+
 describe('downloadFailureText', () => {
-  it('says the unsupported entry has no EPUB, PDF or CBZ file', () => {
-    expect(downloadFailureText({ kind: 'unsupported' }, () => '')).toBe(UNSUPPORTED_TEXT);
+  it('sends a reader who must choose a file to the book', () => {
+    expect(updateFailureText({ kind: 'format-choice' }, () => '')).toBe(FORMAT_CHOICE_TEXT);
   });
 
   it('describes a file the library refused through the library text', () => {

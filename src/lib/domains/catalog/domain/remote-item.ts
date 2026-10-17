@@ -44,7 +44,7 @@ function settled(publication: RemotePublication, origin: BookOriginLink | null):
     const kind = isLater(publication.updated, origin.updated) ? 'held-older' : 'held';
     return { kind, publication, bookId: origin.bookId };
   }
-  if (publication.acquisition === null) return { kind: 'unsupported', publication };
+  if (publication.acquisitions.length === 0) return { kind: 'unsupported', publication };
   return { kind: 'remote', publication };
 }
 

@@ -48,7 +48,7 @@ const PUBLICATION: RemotePublication = {
   summary: '',
   updated: '2026-07-01T00:00:00Z',
   cover: null,
-  acquisition: ACQUISITION,
+  acquisitions: [ACQUISITION],
   feedPath: [{ title: 'Fiction', href: 'https://example.org/opds/fiction' }],
 };
 
@@ -150,7 +150,13 @@ function setup(feed: ReadFeedResult = { kind: 'success', page: SHELF_FICTION_FEE
         origins: [...rows.values()].filter((found) => found.catalogId === id),
         unreadable: [],
       }),
-    find: () => Promise.resolve({ kind: 'success', origin: null }),
+    find: (id, entryId) =>
+      Promise.resolve({
+        kind: 'success',
+        origin:
+          [...rows.values()].find((found) => found.catalogId === id && found.entryId === entryId) ??
+          null,
+      }),
     deleteByBook: (id) => {
       deleted.push(id);
       rows.delete(id);
@@ -387,7 +393,7 @@ describe('readCatalogCover', () => {
 function downloading(world: ReturnType<typeof setup>, opened: Awaited<ReturnType<OpenFile>>) {
   const openFile: OpenFile = () => Promise.resolve(opened);
   const deps = { ...world, openFile, now: () => 1234 };
-  return downloadPublication(deps, PUBLICATION, 3, {} as never, {} as never, PROGRESS);
+  return downloadPublication(deps, PUBLICATION, ACQUISITION, 3, {} as never, {} as never, PROGRESS);
 }
 
 describe('downloadPublication', () => {
@@ -440,23 +446,6 @@ describe('downloadPublication', () => {
     expect(world.rows.size).toBe(0);
   });
 
-  it('answers unsupported without a request when the entry has no acquisition', async () => {
-    const world = setup();
-    const openFile: OpenFile = () => Promise.reject(new Error('never'));
-
-    const result = await downloadPublication(
-      { ...world, openFile, now: () => 1 },
-      { ...PUBLICATION, acquisition: null },
-      0,
-      {} as never,
-      {} as never,
-      PROGRESS,
-    );
-
-    expect(result).toEqual({ kind: 'unsupported' });
-    expect(world.requests).toEqual([]);
-  });
-
   it('answers client outcomes and writes no origin', async () => {
     const world = setup();
     world.answerDownload({ kind: 'blocked' });
@@ -472,6 +461,7 @@ describe('downloadPublication', () => {
     const result = await downloadPublication(
       { ...world, openFile, now: () => 1 },
       { ...PUBLICATION, catalogId: PRIVATE },
+      ACQUISITION,
       0,
       {} as never,
       {} as never,
@@ -489,6 +479,7 @@ describe('downloadPublication', () => {
     await downloadPublication(
       { ...world, openFile: () => Promise.resolve({ kind: 'added', book: held }), now: () => 1 },
       { ...PUBLICATION, catalogId: PRIVATE },
+      ACQUISITION,
       0,
       {} as never,
       {} as never,
@@ -591,19 +582,19 @@ describe('updatePublication', () => {
     expect(replaceCalls).toEqual([]);
   });
 
-  it('answers unsupported without a request when the entry has no acquisition', async () => {
+  it('answers format-choice without a request when it cannot pick the file', async () => {
     const world = setup();
     const replaceBookFile: ReplaceFile = () => Promise.reject(new Error('never'));
 
     const result = await updatePublication(
       { ...world, replaceBookFile, now: () => 1 },
-      { ...PUBLICATION, acquisition: null },
+      { ...PUBLICATION, acquisitions: [] },
       bookId('held-book'),
       0,
       PROGRESS,
     );
 
-    expect(result).toEqual({ kind: 'unsupported' });
+    expect(result).toEqual({ kind: 'format-choice' });
     expect(world.requests).toEqual([]);
   });
 
@@ -632,5 +623,48 @@ describe('forgetOrigin', () => {
 
     expect(await forgetOrigin(world, book)).toEqual({ kind: 'success' });
     expect(world.rows.size).toBe(0);
+  });
+});
+
+describe('updatePublication on an entry offering several files', () => {
+  const EPUB: Acquisition = {
+    href: 'https://example.org/files/42.epub',
+    format: 'epub',
+    mediaType: 'application/epub+zip',
+    length: 4096,
+  };
+
+  it('downloads the format the book is already held in', async () => {
+    const world = setup();
+    world.rows.set(bookId('held-book'), origin(bookId('held-book'), ENTRY));
+    const replaceBookFile: ReplaceFile = () =>
+      Promise.resolve({ kind: 'replaced', book: { id: bookId('held-book') } as never });
+
+    await updatePublication(
+      { ...world, replaceBookFile, now: () => 1 },
+      { ...PUBLICATION, acquisitions: [EPUB, ACQUISITION] },
+      bookId('held-book'),
+      0,
+      PROGRESS,
+    );
+
+    expect(world.requests).toEqual([`download ${ACQUISITION.href} as The Lantern Maker.cbz`]);
+  });
+
+  it('answers format-choice when the held format is gone and several remain', async () => {
+    const world = setup();
+    world.rows.set(bookId('held-book'), origin(bookId('held-book'), ENTRY));
+    const replaceBookFile: ReplaceFile = () => Promise.reject(new Error('never'));
+
+    const result = await updatePublication(
+      { ...world, replaceBookFile, now: () => 1 },
+      { ...PUBLICATION, acquisitions: [EPUB, { ...EPUB, format: 'pdf' }] },
+      bookId('held-book'),
+      0,
+      PROGRESS,
+    );
+
+    expect(result).toEqual({ kind: 'format-choice' });
+    expect(world.requests).toEqual([]);
   });
 });

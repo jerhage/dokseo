@@ -6,6 +6,7 @@
   import type { FocusReturn } from '$lib/shared/focus-return';
   import type { BookId } from '$lib/shared/ids';
   import type { RemoteItem } from '../domain/remote-item';
+  import type { Acquisition } from '../domain/remote-publication';
   import { isSelectable } from './selection-rules';
   import RemoteActions from './RemoteActions.svelte';
 
@@ -14,7 +15,7 @@
     readonly cover: string | null;
     readonly selected: boolean;
     readonly readerHref: (id: BookId) => string;
-    readonly ondownload: () => void;
+    readonly ondownload: (acquisition: Acquisition) => void;
     readonly oncancel: () => void;
     readonly onreplace: () => void;
     readonly ontoggle: () => void;
@@ -67,5 +68,13 @@
       <p class="text-xs text-muted truncate" title={authors}>{authors}</p>
     {/if}
   </div>
-  <RemoteActions {item} {readerHref} {ondownload} {oncancel} {onreplace} />
+  <RemoteActions
+    {item}
+    {readerHref}
+    layout="card"
+    {ondownload}
+    onchoose={() => ondetails(null)}
+    {oncancel}
+    {onreplace}
+  />
 </li>

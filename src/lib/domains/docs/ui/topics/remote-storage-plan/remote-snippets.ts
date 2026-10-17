@@ -54,7 +54,7 @@ const PUBLICATION_TYPE: SourceSnippet = {
   readonly summary: string;
   readonly updated: string;
   readonly cover: RemoteImage | null;
-  readonly acquisition: Acquisition | null;
+  readonly acquisitions: readonly Acquisition[];
   readonly feedPath: FeedPath;
 };`,
 };
