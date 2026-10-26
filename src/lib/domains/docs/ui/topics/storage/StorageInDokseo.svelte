@@ -14,6 +14,12 @@
   import StorageData from '$lib/domains/storage/ui/StorageData.svelte';
   import StorageSummary from '$lib/domains/storage/ui/StorageSummary.svelte';
   import { BLOCKED_PATIENCE_MS } from '$lib/platform/idb/connection';
+  import {
+    CATALOG_ORIGINS_DATABASE,
+    READER_DATABASE,
+    RECOGNITION_DATABASE,
+    SYNC_DATABASE,
+  } from '$lib/shared/testing/stored-format/database-layout';
   import { WRITE_CHUNK_BYTES } from '$workers/blob-chunks';
   import DocsCode from '../../DocsCode.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
@@ -26,39 +32,44 @@
 
   const DATABASE_STORES = [
     {
-      database: 'reader v3',
+      database: `${READER_DATABASE.name} v${READER_DATABASE.version}`,
       store: 'books',
       key: 'id',
       holds: 'One row per book: title, language, layout, content hash, reading place',
     },
     {
-      database: 'reader v3',
+      database: `${READER_DATABASE.name} v${READER_DATABASE.version}`,
       store: 'page-lists',
       key: 'id',
       holds: 'The page order fixed when a ZIP or a set of images was added',
     },
     {
-      database: 'reader v3',
+      database: `${READER_DATABASE.name} v${READER_DATABASE.version}`,
       store: 'removed-books',
       key: 'id',
       holds:
         'The whole row of a removed book plus the time it was removed, so its captures still have a title and a new upload of it can be matched',
     },
     {
-      database: 'recognition v5',
+      database: `${RECOGNITION_DATABASE.name} v${RECOGNITION_DATABASE.version}`,
       store: 'captures',
       key: 'id, indexed by bookId and by each tag id',
       holds: 'Recognized text, its regions on the page, note and tags',
     },
-    { database: 'recognition v5', store: 'tags', key: 'id', holds: 'The tags a capture can have' },
     {
-      database: 'recognition v5',
+      database: `${RECOGNITION_DATABASE.name} v${RECOGNITION_DATABASE.version}`,
+      store: 'tags',
+      key: 'id',
+      holds: 'The tags a capture can have',
+    },
+    {
+      database: `${RECOGNITION_DATABASE.name} v${RECOGNITION_DATABASE.version}`,
       store: 'model-consent',
       key: 'language',
       holds: "The agreement to download a language's model, naming the model",
     },
     {
-      database: 'recognition v5',
+      database: `${RECOGNITION_DATABASE.name} v${RECOGNITION_DATABASE.version}`,
       store: 'recognizer-setup',
       key: 'language',
       holds: 'The chosen model and compute for a language',
@@ -70,18 +81,25 @@
       holds: "The EPUB reader's text size, line spacing and reading aids, in one row",
     },
     {
-      database: 'catalog-origins v1',
+      database: `${CATALOG_ORIGINS_DATABASE.name} v${CATALOG_ORIGINS_DATABASE.version}`,
       store: 'catalogs',
       key: 'id',
       holds:
         'The catalogs the reader added: title, protocol, root URL and sign-in kind, never a password',
     },
     {
-      database: 'catalog-origins v1',
+      database: `${CATALOG_ORIGINS_DATABASE.name} v${CATALOG_ORIGINS_DATABASE.version}`,
       store: 'origins',
       key: 'bookId, indexed by catalogId and by catalog and entry',
       holds:
         "Where a downloaded book came from, one row per book. A catalog's feeds are never copied here",
+    },
+    {
+      database: `${SYNC_DATABASE.name} v${SYNC_DATABASE.version}`,
+      store: 'settings',
+      key: 'id',
+      holds:
+        "This device's sync connection: server address, device name, token, and how far it has synced",
     },
   ] as const;
 
@@ -133,6 +151,11 @@
       {/each}
     </TableBody>
   </Table>
+  <p>
+    <code>reader</code>, <code>recognition</code> and <code>catalog-origins</code> each also hold
+    two sync stores, <code>outbox</code> and <code>record-versions</code>, keyed by kind and record
+    id. A write to a synced record puts a change marker in <code>outbox</code> in the same transaction.
+  </p>
   <p>
     The adapters share one connection module, <code>platform/idb/connection.ts</code>, which keeps
     one open connection per database name. Its job is the case two tabs make together, when one of

@@ -10,6 +10,7 @@
   import TableRow from '$lib/ui/components/TableRow.svelte';
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
+  import { STORE_ROWS } from '../stored-format/stored-layout';
   import {
     EXPORT_IDS_HREF,
     EXPORT_PROXY_HREF,
@@ -32,75 +33,31 @@
 
   const patienceSeconds = BLOCKED_PATIENCE_MS / 1000;
 
-  const STORES = [
-    { database: 'reader', version: 3, store: 'books', key: "keyPath 'id'", index: '' },
-    { database: 'reader', version: 3, store: 'page-lists', key: "keyPath 'id'", index: '' },
-    { database: 'reader', version: 3, store: 'removed-books', key: "keyPath 'id'", index: '' },
-    {
-      database: 'recognition',
-      version: 5,
-      store: 'model-consent',
-      key: "keyPath 'language'",
-      index: '',
-    },
-    {
-      database: 'recognition',
-      version: 5,
-      store: 'captures',
-      key: "keyPath 'id'",
-      index: "bookId on 'bookId', not unique; tagIds on 'tagIds', multiEntry",
-    },
-    {
-      database: 'recognition',
-      version: 5,
-      store: 'recognizer-setup',
-      key: "keyPath 'language'",
-      index: '',
-    },
-    { database: 'recognition', version: 5, store: 'tags', key: "keyPath 'id'", index: '' },
-    {
-      database: 'flowing',
-      version: 1,
-      store: 'reading-settings',
-      key: "keyPath 'reader'",
-      index: '',
-    },
-    {
-      database: 'catalog-origins',
-      version: 1,
-      store: 'catalogs',
-      key: "keyPath 'id'",
-      index: '',
-    },
-    {
-      database: 'catalog-origins',
-      version: 1,
-      store: 'origins',
-      key: "keyPath 'bookId'",
-      index: "catalogId on 'catalogId', not unique; entry on 'catalogId' and 'entryId', unique",
-    },
-  ] as const;
-
   const HISTORY = [
-    { database: 'reader', steps: '1 books · 2 page-lists · 3 removed-books' },
+    {
+      database: 'reader',
+      steps: '1 books · 2 page-lists · 3 removed-books · 4 outbox and record-versions',
+    },
     {
       database: 'recognition',
       steps:
-        '1 model-consent · 2 captures and its bookId index · 3 recognizer-setup · 4 tags · 5 the tagIds index',
+        '1 model-consent · 2 captures and its bookId index · 3 recognizer-setup · 4 tags · 5 the tagIds index · 6 outbox and record-versions',
     },
     { database: 'flowing', steps: '1 reading-settings' },
     {
       database: 'catalog-origins',
-      steps: '1 catalogs · origins and its catalogId and entry indexes',
+      steps:
+        '1 catalogs · origins and its catalogId and entry indexes · 2 outbox and record-versions',
     },
+    { database: 'sync', steps: '1 settings' },
   ] as const;
 </script>
 
 <DocsSection title={INDEXEDDB_SECTIONS.databases}>
   <p>
-    Dokseo keeps its records in four databases, one per domain that stores records, so a change to
+    Dokseo keeps its records in five databases, one per domain that stores records, so a change to
     one domain's layout never bumps another's version.
-    <a href={STORAGE_DATABASES_HREF}>Dokseo's four databases</a> says what each store holds; this table
+    <a href={STORAGE_DATABASES_HREF}>Dokseo's five databases</a> says what each store holds; this table
     shows how each one is keyed and indexed.
   </p>
   <Table size="sm" caption="Every store and index, as the upgrade functions create them">
@@ -113,12 +70,12 @@
       </TableRow>
     </TableHeader>
     <TableBody>
-      {#each STORES as row (row.store)}
+      {#each STORE_ROWS as row (`${row.database}/${row.store}`)}
         <TableRow>
           <TableCell><code>{row.database}</code> v{row.version}</TableCell>
           <TableCell><code>{row.store}</code></TableCell>
-          <TableCell><code>{row.key}</code></TableCell>
-          <TableCell>{row.index === '' ? 'none' : row.index}</TableCell>
+          <TableCell><code>{row.keyPath}</code></TableCell>
+          <TableCell>{row.indexes.length === 0 ? 'none' : row.indexes.join('; ')}</TableCell>
         </TableRow>
       {/each}
     </TableBody>
@@ -142,8 +99,8 @@
     it. Each database's name, version, store names and upgrade live in one place: the library
     repository itself for
     <code>reader</code>, and <code>recognition-database.ts</code>,
-    <code>flowing-database.ts</code> and <code>catalog-origins-database.ts</code> for the other three,
-    which several adapters share.
+    <code>flowing-database.ts</code>, <code>catalog-origins-database.ts</code> and
+    <code>sync-database.ts</code> for the other four, which several adapters share.
   </p>
   <DocsCode label={RECOGNITION_UPGRADE.label} code={RECOGNITION_UPGRADE.code} />
 </DocsSection>
@@ -245,7 +202,7 @@
   <p>
     Dokseo can be open in more than one tab, and after a release one tab can run the new build while
     another still runs the old one. The steps of that case are in
-    <a href={STORAGE_DATABASES_HREF}>Dokseo's four databases</a>. The two halves in
+    <a href={STORAGE_DATABASES_HREF}>Dokseo's five databases</a>. The two halves in
     <code>connection.ts</code>
     are short. The holding side closes its connection on <code>versionchange</code> and marks it retired,
     so the next helper call opens a fresh connection:
