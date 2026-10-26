@@ -101,6 +101,13 @@
       holds:
         "This device's sync connection: server address, device name, token, and how far it has synced",
     },
+    {
+      database: `${SYNC_DATABASE.name} v${SYNC_DATABASE.version}`,
+      store: 'held-changes',
+      key: 'kind + recordId',
+      holds:
+        'Changes pulled from the server that wait for their book to arrive on this device, one per record',
+    },
   ] as const;
 
   const patienceSeconds = BLOCKED_PATIENCE_MS / 1000;
