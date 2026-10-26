@@ -63,6 +63,7 @@ function fakes(): Fakes {
       end: (): void => undefined,
     }),
     catalog: {} as Container['catalog'],
+    sync: {} as Container['sync'],
     library: {
       openFile: unused,
       replaceBookFile: unused,

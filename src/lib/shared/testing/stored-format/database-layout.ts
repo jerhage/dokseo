@@ -107,5 +107,13 @@ const CATALOG_ORIGINS_DATABASE: DatabaseLayout = {
   },
 };
 
-export { CATALOG_ORIGINS_DATABASE, READER_DATABASE, RECOGNITION_DATABASE, layoutOf };
+const SYNC_DATABASE: DatabaseLayout = {
+  name: 'sync',
+  version: 1,
+  stores: {
+    settings: { options: { keyPath: 'id' }, indexes: {} },
+  },
+};
+
+export { CATALOG_ORIGINS_DATABASE, READER_DATABASE, RECOGNITION_DATABASE, SYNC_DATABASE, layoutOf };
 export type { DatabaseLayout, OpenedDatabase, Upgrade };

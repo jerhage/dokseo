@@ -29,6 +29,8 @@ import type {
   StorageUseCases,
   UnreadableRowsExports,
 } from './composition/storage';
+import { buildSync } from './composition/sync';
+import type { SyncUseCases } from './composition/sync';
 import { createLibraryRepository } from './domains/library/adapters/indexeddb-opfs-library.repo';
 import { createCaptureRepository } from './domains/recognition/adapters/capture/indexeddb-captures.repo';
 
@@ -39,6 +41,7 @@ type Container = {
   readonly flowing: FlowingUseCases;
   readonly recognition: RecognitionUseCases & BookCapturesExports & UnreadableRowsExports;
   readonly storage: StorageUseCases & CapturesExports & CapturesImports;
+  readonly sync: SyncUseCases;
 };
 
 function buildContainer(): Container {
@@ -67,6 +70,7 @@ function buildContainer(): Container {
       ...buildCapturesExports(repository, captures),
       ...buildCapturesImports(repository, captures),
     },
+    sync: buildSync(),
   };
 }
 
