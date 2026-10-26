@@ -12,8 +12,10 @@ const RULE_NOTES: Readonly<Record<string, string>> = {
   'cross-domain-contract-only':
     'From another domain, only its domain/ and use-cases/ folders may be imported, except by docs.',
   'leaf-domains-are-independent': 'A leaf domain imports no other domain at all.',
-  'non-leaves-import-only-leaves':
-    'A non-leaf domain other than docs imports only its own folders and the leaves.',
+  'non-leaves-import-in-order':
+    'A non-leaf domain imports only its own folders, the leaves, and the non-leaves earlier in NON_LEAF_ORDER: catalog, then storage, then sync.',
+  'every-domain-is-placed':
+    'A domain folder other than docs that is neither a leaf nor listed in NON_LEAF_ORDER imports nothing from src/lib/domains.',
   'domains-know-no-wiring-or-routes':
     'A domain other than docs imports container.ts, composition/ and src/routes/ for their types only.',
   'the-base-layers-know-no-domain': 'shared/ and platform/ import no domain.',

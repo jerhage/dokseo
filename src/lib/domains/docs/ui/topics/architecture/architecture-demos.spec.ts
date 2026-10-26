@@ -102,9 +102,9 @@ describe('importMapDiagram', () => {
 
 describe('the rule notes and sections', () => {
   it('describes every rule dependency-cruiser holds', () => {
-    const names = [...PATH_RULES.map((rule) => rule.name), ...UNPORTED_RULES];
+    const names = new Set([...PATH_RULES.map((rule) => rule.name), ...UNPORTED_RULES]);
 
-    expect(Object.keys(RULE_NOTES).toSorted()).toEqual(names.toSorted());
+    expect(Object.keys(RULE_NOTES).toSorted()).toEqual([...names].toSorted());
   });
 
   it('gives every section a distinct title', () => {

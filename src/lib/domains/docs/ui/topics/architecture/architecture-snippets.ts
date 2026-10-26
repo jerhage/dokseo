@@ -278,10 +278,12 @@ const LOAD_MANGA_OCR: SourceSnippet = {
 };
 
 const LEAF_LIST: SourceSnippet = {
-  label: '.dependency-cruiser.cjs, the leaf list',
+  label: '.dependency-cruiser.cjs, the leaf list and the non-leaf order',
   file: '.dependency-cruiser.cjs',
   code: `const LEAF_DOMAINS = ['library', 'viewing', 'flowing', 'recognition'];
-const LEAF_DOMAIN_PATH = \`^src/lib/domains/(\${LEAF_DOMAINS.join('|')})/\`;`,
+const LEAF_DOMAIN_PATH = \`^src/lib/domains/(\${LEAF_DOMAINS.join('|')})/\`;
+const DOCS_DOMAIN_PATH = '^src/lib/domains/docs/';
+const NON_LEAF_ORDER = ['catalog', 'storage', 'sync'];`,
 };
 
 const LEAF_RULE: SourceSnippet = {

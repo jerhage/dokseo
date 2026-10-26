@@ -139,21 +139,34 @@ const DOMAIN_CYCLE: DiagramSpec = {
   ],
 };
 
-const storageDomain = box(0, 0, 184, 'storage', 'non-leaf', 'primary');
-const libraryDomain = box(0, 110, 76, 'library', 'leaf');
-const recognitionDomain = box(88, 110, 96, 'recognition', 'leaf');
-const viewingDomain = box(196, 110, 76, 'viewing', 'leaf');
-const flowingDomain = box(284, 110, 76, 'flowing', 'leaf');
+const catalogDomain = box(0, 0, 112, 'catalog', 'non-leaf', 'primary');
+const storageDomain = box(124, 0, 112, 'storage', 'non-leaf', 'primary');
+const syncDomain = box(248, 0, 112, 'sync', 'non-leaf', 'primary');
+const flowingDomain = box(0, 184, 76, 'flowing', 'leaf');
+const libraryDomain = box(88, 184, 76, 'library', 'leaf');
+const recognitionDomain = box(176, 184, 96, 'recognition', 'leaf');
+const viewingDomain = box(284, 184, 76, 'viewing', 'leaf');
 
 const DOMAIN_GRAPH: DiagramSpec = {
   label:
-    'storage imports library and recognition. The four leaves import no domain, and nothing imports storage.',
+    'catalog imports library, storage imports library and recognition, and sync imports library and recognition. The four leaves import no domain, and no non-leaf imports a later one in the order catalog, storage, sync.',
   width: 360,
-  height: 154,
-  nodes: [storageDomain, libraryDomain, recognitionDomain, viewingDomain, flowingDomain],
+  height: 228,
+  nodes: [
+    catalogDomain,
+    storageDomain,
+    syncDomain,
+    libraryDomain,
+    recognitionDomain,
+    viewingDomain,
+    flowingDomain,
+  ],
   edges: [
+    { from: catalogDomain, to: libraryDomain },
     { from: storageDomain, to: libraryDomain },
     { from: storageDomain, to: recognitionDomain },
+    { from: syncDomain, to: libraryDomain },
+    { from: syncDomain, to: recognitionDomain },
   ],
 };
 
