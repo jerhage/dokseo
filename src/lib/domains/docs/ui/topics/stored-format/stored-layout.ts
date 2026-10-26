@@ -1,4 +1,5 @@
 import { readCapturesFile } from '$lib/domains/storage/use-cases/read-captures-file';
+import { OUTBOX_STORE, RECORD_VERSION_STORE } from '$lib/shared/change-marker';
 import { isStoredFields, isText } from '$lib/shared/corrupt-row';
 import GOLDEN_FILE from '$lib/shared/testing/stored-format/captures-v1.golden.json';
 import {
@@ -25,7 +26,9 @@ type GoldenCount = {
   readonly read: number;
 };
 
-const OUTSIDE_ROWS = new Set(['model-consent', 'recognizer-setup']);
+const STORE_ONLY_ROWS = new Set(['model-consent', 'recognizer-setup']);
+
+const SYNC_BOOKKEEPING_STORES = new Set([OUTBOX_STORE, RECORD_VERSION_STORE]);
 
 const FLOWING_STORE: StoreRow = {
   database: 'flowing',
@@ -38,19 +41,25 @@ const FLOWING_STORE: StoreRow = {
 
 const GOLDEN_TEXT = JSON.stringify(GOLDEN_FILE, null, 2);
 
+function pathText(keyPath: unknown): string {
+  if (Array.isArray(keyPath)) return keyPath.filter(isText).join(' + ');
+  return isText(keyPath) ? keyPath : '';
+}
+
 function keyPathOf(options: unknown): string {
-  return isStoredFields(options) && isText(options.keyPath) ? options.keyPath : '';
+  return isStoredFields(options) ? pathText(options.keyPath) : '';
 }
 
 function indexText(name: string, keyPath: unknown, options: unknown): string {
   const many = isStoredFields(options) && options.multiEntry === true;
   const unique = isStoredFields(options) && options.unique === true;
-  const path = Array.isArray(keyPath)
-    ? keyPath.filter(isText).join(' + ')
-    : isText(keyPath)
-      ? keyPath
-      : '';
+  const path = pathText(keyPath);
   return `${name} on ${path}${many ? ', multiEntry' : ''}${unique ? ', unique' : ''}`;
+}
+
+function coverageOf(store: string): Coverage {
+  if (SYNC_BOOKKEEPING_STORES.has(store)) return 'outside';
+  return STORE_ONLY_ROWS.has(store) ? 'store only' : 'rows';
 }
 
 function storeRows(layout: DatabaseLayout): readonly StoreRow[] {
@@ -62,7 +71,7 @@ function storeRows(layout: DatabaseLayout): readonly StoreRow[] {
     indexes: Object.entries(held.indexes).map(([name, index]) =>
       indexText(name, index.keyPath, index.options),
     ),
-    coverage: OUTSIDE_ROWS.has(store) ? 'store only' : 'rows',
+    coverage: coverageOf(store),
   }));
 }
 

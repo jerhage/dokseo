@@ -44,6 +44,7 @@ const READER_UPGRADE: SourceSnippet = {
   if (!db.objectStoreNames.contains(REMOVED_BOOK_STORE)) {
     db.createObjectStore(REMOVED_BOOK_STORE, { keyPath: 'id' });
   }
+  createChangeStores(db);
 }`,
 };
 

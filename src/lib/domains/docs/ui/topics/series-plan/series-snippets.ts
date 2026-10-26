@@ -52,7 +52,10 @@ const REPOSITORY_UPDATE: SourceSnippet = {
   const record = await getRecord<StoredBook>(db, BOOK_STORE, id);
   if (record === undefined) return { kind: 'success', book: null };
   const updated = applyEdit(bookFromStored(record), edit);
-  await putRecord(db, BOOK_STORE, updated);
+  await writeRecords(db, [
+    { kind: 'put', store: BOOK_STORE, record: updated },
+    ...markingWrites(tracking, editMarkers(updated, edit, Date.now())),
+  ]);
   return { kind: 'success', book: updated };
 }`,
 };
