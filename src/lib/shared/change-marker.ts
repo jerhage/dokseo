@@ -30,6 +30,16 @@ type SettledMarker = {
   readonly version: HeldVersion;
 };
 
+type AcceptedVersion = {
+  readonly kind: ChangeKind;
+  readonly recordId: string;
+  readonly version: HeldVersion;
+};
+
+type RecordVersions =
+  | { readonly kind: 'success'; readonly versions: readonly RecordVersion[] }
+  | StorageUnavailable;
+
 type PendingMarkers =
   | { readonly kind: 'success'; readonly markers: readonly ChangeMarker[] }
   | StorageUnavailable;
@@ -66,11 +76,13 @@ export {
   markChanged,
 };
 export type {
+  AcceptedVersion,
   ChangeKind,
   ChangeMarker,
   ChangeTracking,
   HeldVersion,
   PendingMarkers,
   RecordVersion,
+  RecordVersions,
   SettledMarker,
 };

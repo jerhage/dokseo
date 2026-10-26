@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern';
 import {
   deleteRecord,
   getRecord,
@@ -9,15 +10,18 @@ import {
   writeRecords,
 } from '$lib/platform/idb/connection';
 import type { RecordWrite } from '$lib/platform/idb/connection';
-import { markingWrites } from '$lib/platform/idb/marking-writes';
+import { acceptedWrites, markingWrites } from '$lib/platform/idb/marking-writes';
 import { holdingLock, holdingLockIfFree } from '$lib/platform/locks/web-locks';
 import * as blobs from '$lib/platform/opfs/blob-store';
 import { isPrivateWindowRefusal } from '$lib/platform/opfs/directory';
-import { OUTBOX_STORE, createChangeStores } from '$lib/shared/change-marker';
+import { OUTBOX_STORE, RECORD_VERSION_STORE, createChangeStores } from '$lib/shared/change-marker';
 import type {
+  AcceptedVersion,
   ChangeMarker,
   ChangeTracking,
   PendingMarkers,
+  RecordVersion,
+  RecordVersions,
   SettledMarker,
 } from '$lib/shared/change-marker';
 import { parsedBookId } from '$lib/shared/ids';
@@ -41,6 +45,8 @@ import type {
   LibraryRepository,
   LibraryWrite,
   PageListLookup,
+  RemoteBookWrite,
+  RemoteBookWriteResult,
   RemovedListing,
   RestorableListing,
 } from '../domain/book/library-repository';
@@ -69,7 +75,11 @@ const REMOVED_BOOK_STORE = 'removed-books';
 
 const BOOK_RECORD_STORES = [BOOK_STORE, PAGE_LIST_STORE, REMOVED_BOOK_STORE, OUTBOX_STORE];
 
+const REMOTE_BOOK_STORES = [...BOOK_RECORD_STORES, RECORD_VERSION_STORE];
+
 const WRITTEN: LibraryWrite = { kind: 'success' };
+
+const NOT_FOUND: RemoteBookWriteResult = { kind: 'not-found' };
 
 type BlobKeys = { readonly source: string; readonly cover: string };
 
@@ -256,6 +266,40 @@ function createLibraryRepository(tracking: ChangeTracking = 'marked'): LibraryRe
       await discard(keys);
       throw cause;
     }
+    return WRITTEN;
+  };
+
+  const editRemotely = async (
+    id: BookId,
+    edit: BookEdit,
+    accepted: AcceptedVersion,
+  ): Promise<RemoteBookWriteResult> => {
+    const db = await database();
+    const record = await getRecord<StoredBook>(db, BOOK_STORE, id);
+    if (record === undefined) return NOT_FOUND;
+    await writeRecords(db, [
+      { kind: 'put', store: BOOK_STORE, record: applyEdit(bookFromStored(record), edit) },
+      ...acceptedWrites(accepted),
+    ]);
+    return WRITTEN;
+  };
+
+  const removeRemotely = async (
+    id: BookId,
+    removedAt: number,
+    accepted: AcceptedVersion,
+  ): Promise<RemoteBookWriteResult> => {
+    if (!blobs.isAvailable()) return STORAGE_UNAVAILABLE;
+    const db = await database();
+    if ((await getRecord<StoredBook>(db, BOOK_STORE, id)) === undefined) return NOT_FOUND;
+    const filesRemoved = await removeFiles(blobKeys(id));
+    if (filesRemoved.kind !== 'success') return filesRemoved;
+    await writeAfterRead<StoredBook>(
+      db,
+      REMOTE_BOOK_STORES,
+      { store: BOOK_STORE, key: id },
+      (row) => [...removalWrites(id, row, removedAt), ...acceptedWrites(accepted)],
+    );
     return WRITTEN;
   };
 
@@ -447,6 +491,29 @@ function createLibraryRepository(tracking: ChangeTracking = 'marked'): LibraryRe
     async settleChanges(settled: readonly SettledMarker[]): Promise<LibraryWrite> {
       if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
       await settleMarkers(await database(), settled);
+      return WRITTEN;
+    },
+
+    async recordVersions(): Promise<RecordVersions> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      const versions = await listRecords<RecordVersion>(await database(), RECORD_VERSION_STORE);
+      return { kind: 'success', versions };
+    },
+
+    async applyRemote(write: RemoteBookWrite): Promise<RemoteBookWriteResult> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      return match(write)
+        .returnType<Promise<RemoteBookWriteResult>>()
+        .with({ kind: 'edit' }, ({ id, edit, accepted }) => editRemotely(id, edit, accepted))
+        .with({ kind: 'remove' }, ({ id, removedAt, accepted }) =>
+          removeRemotely(id, removedAt, accepted),
+        )
+        .exhaustive();
+    },
+
+    async acceptRemoteVersion(accepted: AcceptedVersion): Promise<LibraryWrite> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      await writeRecords(await database(), acceptedWrites(accepted));
       return WRITTEN;
     },
 

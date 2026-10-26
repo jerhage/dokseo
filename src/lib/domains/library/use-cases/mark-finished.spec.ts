@@ -45,6 +45,9 @@ function fakeRepository(outcome: BookLookup) {
   const repository: LibraryRepository = {
     pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
     settleChanges: () => Promise.resolve({ kind: 'success' }),
+    recordVersions: () => Promise.resolve({ kind: 'success', versions: [] }),
+    applyRemote: () => Promise.resolve({ kind: 'not-found' }),
+    acceptRemoteVersion: () => Promise.resolve({ kind: 'success' }),
     list: () => Promise.resolve({ kind: 'success', books: [], unreadable: [] }),
     get: () => Promise.resolve(NO_BOOK),
     add: () => Promise.resolve(WRITTEN),

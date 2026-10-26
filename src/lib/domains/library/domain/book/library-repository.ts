@@ -1,4 +1,9 @@
-import type { PendingMarkers, SettledMarker } from '$lib/shared/change-marker';
+import type {
+  AcceptedVersion,
+  PendingMarkers,
+  RecordVersions,
+  SettledMarker,
+} from '$lib/shared/change-marker';
 import type { BookId } from '$lib/shared/ids';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Book, BookEdit } from './book';
@@ -46,6 +51,25 @@ type RestorableListing =
     }
   | StorageUnavailable;
 
+type RemoteBookWrite =
+  | {
+      readonly kind: 'edit';
+      readonly id: BookId;
+      readonly edit: BookEdit;
+      readonly accepted: AcceptedVersion;
+    }
+  | {
+      readonly kind: 'remove';
+      readonly id: BookId;
+      readonly removedAt: number;
+      readonly accepted: AcceptedVersion;
+    };
+
+type RemoteBookWriteResult =
+  | { readonly kind: 'success' }
+  | { readonly kind: 'not-found' }
+  | StorageUnavailable;
+
 type ByteCount = { readonly kind: 'success'; readonly bytes: number } | StorageUnavailable;
 
 interface LibraryRepository {
@@ -79,6 +103,9 @@ interface LibraryRepository {
   storedBytes(): Promise<ByteCount>;
   pendingChanges(): Promise<PendingMarkers>;
   settleChanges(settled: readonly SettledMarker[]): Promise<LibraryWrite>;
+  recordVersions(): Promise<RecordVersions>;
+  applyRemote(write: RemoteBookWrite): Promise<RemoteBookWriteResult>;
+  acceptRemoteVersion(accepted: AcceptedVersion): Promise<LibraryWrite>;
 }
 
 export type {
@@ -90,6 +117,8 @@ export type {
   LibraryRepository,
   LibraryWrite,
   PageListLookup,
+  RemoteBookWrite,
+  RemoteBookWriteResult,
   RemovedListing,
   RestorableListing,
 };

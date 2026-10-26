@@ -27,6 +27,9 @@ function deps(refusal: Refusal = 'none'): PreviewCapturesImportDeps {
   const repository: LibraryRepository = {
     pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
     settleChanges: () => Promise.resolve({ kind: 'success' }),
+    recordVersions: () => Promise.resolve({ kind: 'success', versions: [] }),
+    applyRemote: () => Promise.resolve({ kind: 'not-found' }),
+    acceptRemoteVersion: () => Promise.resolve({ kind: 'success' }),
     list: () =>
       Promise.resolve(
         refusal === 'shelf' ? STORAGE_UNAVAILABLE : { kind: 'success', books: [], unreadable: [] },
@@ -63,6 +66,8 @@ function deps(refusal: Refusal = 'none'): PreviewCapturesImportDeps {
   const captures: CaptureRepository = {
     pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
     settleChanges: () => Promise.resolve({ kind: 'success' }),
+    recordVersions: () => Promise.resolve({ kind: 'success', versions: [] }),
+    applyRemote: () => Promise.resolve({ kind: 'success' }),
     listForBook: notUsed,
     listEverything: () =>
       Promise.resolve(

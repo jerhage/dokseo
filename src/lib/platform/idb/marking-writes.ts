@@ -1,4 +1,5 @@
-import type { ChangeMarker, ChangeTracking } from '$lib/shared/change-marker';
+import { OUTBOX_STORE, RECORD_VERSION_STORE } from '$lib/shared/change-marker';
+import type { AcceptedVersion, ChangeMarker, ChangeTracking } from '$lib/shared/change-marker';
 import type { RecordWrite } from './connection';
 
 function markingWrites(
@@ -9,4 +10,16 @@ function markingWrites(
   return markers.map((marker) => ({ kind: 'mark', marker }));
 }
 
-export { markingWrites };
+function acceptedWrites(accepted: AcceptedVersion): readonly RecordWrite[] {
+  const { kind, recordId, version } = accepted;
+  return [
+    {
+      kind: 'put',
+      store: RECORD_VERSION_STORE,
+      record: { kind, recordId, updatedAt: version.updatedAt, deviceId: version.deviceId },
+    },
+    { kind: 'delete', store: OUTBOX_STORE, key: [kind, recordId] },
+  ];
+}
+
+export { acceptedWrites, markingWrites };
