@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import type { BookOrigin } from '$lib/domains/catalog/domain/book-origin';
 import type { Book } from '$lib/domains/library/domain/book/book';
-import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
+import { bookId, catalogId, contentHash, imageIndex } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import { fromSyncBookData, toSyncBookData } from './book-data';
 import { contractExamples, schemaKeys } from './contract-examples';
-
-const ORIGIN_NOT_READ = new Set(['origin-without-acquisition.json']);
 
 const BOOK: Book = {
   id: bookId('device-local-id'),
@@ -28,6 +27,22 @@ const BOOK: Book = {
   finishedAt: null,
 };
 
+const ORIGIN: BookOrigin = {
+  bookId: BOOK.id,
+  catalogId: catalogId('00000000-0000-4000-8000-000000000009'),
+  entryId: 'urn:uuid:5d1c',
+  acquisition: {
+    href: '/get/5d1c.cbz',
+    format: 'cbz',
+    mediaType: 'application/vnd.comicbook+zip',
+    length: 48210000,
+  },
+  updated: '2026-03-02T10:00:00Z',
+  feedPath: [{ title: 'Library', href: '/opds' }],
+  feedPosition: 3,
+  downloadedAt: 1772445600000,
+};
+
 describe('book record data', () => {
   it('reads every valid contract example as a book', () => {
     for (const { name, value } of contractExamples('valid', 'book')) {
@@ -37,22 +52,22 @@ describe('book record data', () => {
 
   it('reports every invalid contract example as unreadable', () => {
     for (const { name, value } of contractExamples('invalid', 'book')) {
-      if (ORIGIN_NOT_READ.has(name)) continue;
       expect(fromSyncBookData(value).kind, name).toBe('unreadable');
     }
   });
 
   it('leaves the device-local fields out of the data', () => {
     const { properties } = schemaKeys('book');
-    const keys = Object.keys(toSyncBookData(BOOK));
+    const keys = Object.keys(toSyncBookData(BOOK, ORIGIN));
     expect(keys.filter((key) => !properties.includes(key))).toEqual([]);
     expect(keys).not.toContain('id');
     expect(keys).not.toContain('position');
   });
 
-  it('reads a book back unchanged', () => {
-    const read = fromSyncBookData(toSyncBookData(BOOK));
+  it('reads a book without a catalog origin back unchanged', () => {
+    const read = fromSyncBookData(toSyncBookData(BOOK, null));
     if (read.kind !== 'success') throw new Error(read.reason);
+    expect(read.origin).toBeNull();
     expect(read.book).toEqual({
       contentHash: BOOK.contentHash,
       fileName: BOOK.fileName,
@@ -66,5 +81,12 @@ describe('book record data', () => {
       sourceKind: BOOK.sourceKind,
       imageCount: BOOK.imageCount,
     });
+  });
+
+  it('reads the catalog origin back without the device book id', () => {
+    const read = fromSyncBookData(toSyncBookData(BOOK, ORIGIN));
+    if (read.kind !== 'success') throw new Error(read.reason);
+    const { bookId: _local, ...synced } = ORIGIN;
+    expect(read.origin).toEqual(synced);
   });
 });
