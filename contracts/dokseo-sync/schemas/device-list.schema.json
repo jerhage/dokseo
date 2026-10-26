@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "device-list.schema.json",
+  "title": "Device list",
+  "description": "Response of GET /v1/devices.",
+  "type": "object",
+  "required": [
+    "devices"
+  ],
+  "properties": {
+    "devices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "deviceId",
+          "deviceName",
+          "createdAt",
+          "lastSeenAt"
+        ],
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "description": "Device id."
+          },
+          "deviceName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "createdAt": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unix milliseconds."
+          },
+          "lastSeenAt": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Unix milliseconds of the last authenticated request, or null if none yet."
+          }
+        }
+      }
+    }
+  }
+}

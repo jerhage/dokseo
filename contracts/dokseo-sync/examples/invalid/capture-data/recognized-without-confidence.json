@@ -1,0 +1,25 @@
+{
+  "bookKey": "0123456789abcdef0123456789abcdef",
+  "anchor": {
+    "kind": "region",
+    "regions": [
+      {
+        "index": 4,
+        "rect": {
+          "x": 0.1,
+          "y": 0.2,
+          "width": 0.3,
+          "height": 0.25
+        }
+      }
+    ]
+  },
+  "text": "よつば",
+  "origin": "recognized",
+  "createdAt": 1772445700000,
+  "editedAt": null,
+  "tagIds": [
+    "00000000-0000-4000-8000-000000000005"
+  ],
+  "note": null
+}

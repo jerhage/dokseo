@@ -1,0 +1,362 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: dokseo-sync API
+  version: 0.1.0
+  description: |
+    Ordered log of record changes for the devices of one Dokseo account. The server stores and orders changes. It does not merge them and it never receives book files.
+
+    A JSON Schema checks shape only. This description and the operation descriptions list the rules a schema cannot express. Where the two disagree, a client should fix itself to match the schema and these rules.
+
+    What the server does
+
+    The server stores an ordered log of changes. It does not merge, interpret or reorder records. Every change gets a seq that is strictly increasing and starts at 1. A device pulls the log from the last seq it has seen and applies each change itself.
+
+    Ordering
+
+    - seq is the order in which the server stored changes. It is the order of delivery, not an order of precedence between edits.
+    - GET /v1/changes returns changes with seq greater than after, ascending. It includes the caller's own changes.
+    - next is the seq of the last change returned, or after when none came back. Pass it as the next after.
+    - more is true when changes with a higher seq exist at the time of the response.
+    - Within one push, new changes get increasing seqs in request order. accepted has one entry per change, in request order.
+
+    Rules a schema cannot express
+
+    - recordId for book and position is the book's sync key, the same 32 lowercase hex characters as contentHash in the book's data. For capture, tag and catalog it is a lowercase uuid. The change schema checks these patterns per kind.
+    - A book change's data.contentHash must equal its recordId, otherwise 400 invalid-change. A JSON Schema cannot compare two fields, so the schema does not check this.
+    - deviceId must equal the device of the bearer token, otherwise 403 device-mismatch. That error has no index.
+    - data null is a tombstone: the record was deleted. A tombstone is an ordinary change and follows the merge rule below.
+    - The change envelope may carry extra fields. The server ignores and does not store them. Fields inside data are kept as sent, so a newer client can add fields and older clients ignore them.
+    - A capture's bookKey equals the recordId of its book. A capture's tagIds hold recordId values of tags. A book's origin.catalogId holds the recordId of a catalog. The server checks none of these links, and a change may arrive before the record it points to.
+    - Image rectangles are fractions of the page: x + width and y + height must be at most 1. A position's shownThrough must be at least its index. A capture's editedAt must not be before its createdAt. The server does not check these.
+    - A catalog record never holds a password or any other credential. catalog-data rejects a password field in the record and in auth. The server must not store a record that has one.
+    - lastSeenAt of a device is null until its first authenticated request.
+    - Timestamps are Unix milliseconds. createdAt, editedAt, lastReadAt and similar fields inside data are mirrored from Dokseo as plain numbers. updatedAt, receivedAt and the device timestamps are integers.
+
+    Merge rule for clients
+
+    The server does not merge. Each client applies a pulled change to its own copy of a record, identified by kind and recordId, with this rule:
+
+    1. The change with the greater updatedAt wins.
+    2. When updatedAt is equal, the greater deviceId wins, compared as lowercase text.
+    3. The loser is dropped. This applies to a tombstone and to a live record alike.
+
+    Applying the same change twice, or applying changes in a different order, gives the same result. A client should treat its own changes coming back in a pull as ordinary changes.
+
+    Auth
+
+    - GET /v1/info and POST /v1/devices need no bearer token. Everything else needs Authorization: Bearer <token>.
+    - A missing, unknown or revoked token is 401 unauthorized.
+    - POST /v1/devices checks username and password against the account and returns deviceId and token. The token is shown once. The server stores only its SHA-256.
+    - Wrong credentials are 401 unauthorized.
+    - DELETE /v1/devices/{deviceId} revokes that device's token and answers 204. A device may revoke itself. An unknown id is 404 not-found.
+
+    Errors
+
+    Every error body is an object with an error member holding code, message and, for invalid-change, index.
+
+    - 400 invalid-request: body is not JSON, a field is missing or out of range, a query value is invalid.
+    - 400 invalid-change: a change breaks a rule. Carries index.
+    - 401 unauthorized: missing, unknown or revoked token, or wrong credentials.
+    - 403 forbidden: authenticated but not allowed.
+    - 403 device-mismatch: a change names a device other than the token's.
+    - 404 not-found: no such device.
+    - 404 unsupported-version: a path under an unknown /vN/.
+    - 413 too-large: body over 1 MiB.
+    - 429 rate-limited: too many requests.
+    - 500 internal: unexpected failure.
+
+    When several rules fail at once the order is: 413, 401, 400 invalid-request, 403 device-mismatch, 400 invalid-change.
+
+    CORS
+
+    Dokseo runs in a browser, so the server answers preflight itself. It does this for configured origins only.
+
+    - Access-Control-Allow-Origin echoes the request origin when it is configured, and is absent otherwise.
+    - Access-Control-Allow-Headers: Authorization, Content-Type
+    - Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS
+    - No Access-Control-Allow-Credentials. Requests carry a bearer token and no cookies, so clients use credentials: 'omit'.
+    - Vary: Origin on every response that depends on the origin.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: http://localhost:8080
+    description: Local development. The port is a placeholder until the server exists.
+security:
+  - bearer: []
+tags:
+  - name: info
+  - name: devices
+  - name: changes
+paths:
+  /v1/info:
+    get:
+      operationId: getInfo
+      tags: [info]
+      summary: Server name, version and supported API versions
+      security: []
+      responses:
+        '200':
+          description: Server information.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/info.schema.json
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /v1/devices:
+    post:
+      operationId: createDevice
+      tags: [devices]
+      summary: Register a device
+      description: >-
+        Checks the account's username and password and creates a device with a new token. The
+        token is shown once in this response. The server stores only its SHA-256. Wrong
+        credentials are 401 unauthorized.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: schemas/device-request.schema.json
+      responses:
+        '201':
+          description: Device created.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/device-created.schema.json
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/Internal'
+    get:
+      operationId: listDevices
+      tags: [devices]
+      summary: List the account's devices
+      responses:
+        '200':
+          description: The devices that hold a token.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/device-list.schema.json
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /v1/devices/{deviceId}:
+    delete:
+      operationId: revokeDevice
+      tags: [devices]
+      summary: Revoke a device's token
+      description: Revokes that device's token and answers 204. A device may revoke itself. An unknown id is 404 not-found.
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      responses:
+        '204':
+          description: Token revoked.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /v1/changes:
+    post:
+      operationId: pushChanges
+      tags: [changes]
+      summary: Push changes
+      description: |
+        Idempotency
+
+        - A change id that is already stored returns its existing seq and is not stored again. The stored content is not replaced, even if the new body differs.
+        - If one request holds the same id twice, both entries get the same seq.
+        - A client may therefore retry a push after a timeout without checking whether it landed.
+
+        All or nothing
+
+        A push either stores every change or none. If any change is invalid the response is 400 invalid-change and index is the position in changes of the first invalid change. Nothing is stored, including changes before that index.
+
+        Limits
+
+        - Request body: 1 MiB, otherwise 413 too-large.
+        - Changes per push: 1 to 500, otherwise 400 invalid-request.
+        - Serialized data of one change: 64 KiB, otherwise 400 invalid-change with index. The limit counts the UTF-8 bytes of data serialized as JSON.
+        - updatedAt: greater than 0 and at most 24 hours ahead of server time, otherwise 400 invalid-change with index.
+
+        No example holds 64 KiB of data or 501 changes, so those two rules are described here only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: schemas/push-request.schema.json
+      responses:
+        '200':
+          description: One entry per change, in request order.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/push-response.schema.json
+        '400':
+          $ref: '#/components/responses/InvalidChange'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/DeviceMismatch'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/Internal'
+    get:
+      operationId: pullChanges
+      tags: [changes]
+      summary: Pull changes
+      description: |
+        Returns changes with seq greater than after, ascending, including the caller's own.
+
+        Limits
+
+        - limit: 1 to 1000, default 500, otherwise 400 invalid-request.
+        - after: integer 0 or more, default 0, otherwise 400 invalid-request.
+      parameters:
+        - name: after
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 500
+      responses:
+        '200':
+          description: A page of stored changes.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/pull-response.schema.json
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/Internal'
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      description: The device token from POST /v1/devices.
+  responses:
+    Unauthorized:
+      description: Missing, unknown or revoked token, or wrong credentials on POST /v1/devices.
+      content:
+        application/json:
+          schema:
+            $ref: schemas/error.schema.json
+          example:
+            error:
+              code: unauthorized
+              message: missing, unknown or revoked token
+    DeviceMismatch:
+      description: The deviceId of a change is not the device of the token. This error has no index.
+      content:
+        application/json:
+          schema:
+            $ref: schemas/error.schema.json
+          example:
+            error:
+              code: device-mismatch
+              message: the deviceid of a change is not the device of the token
+    NotFound:
+      description: No such device.
+      content:
+        application/json:
+          schema:
+            $ref: schemas/error.schema.json
+          example:
+            error:
+              code: not-found
+              message: no such device
+    InvalidRequest:
+      description: The request is malformed. The body is not JSON, a field is missing or out of range, or a query value is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: schemas/error.schema.json
+          example:
+            error:
+              code: invalid-request
+              message: the request is malformed
+    InvalidChange:
+      description: A change is invalid, or the request is malformed. invalid-change carries the index of the first invalid change.
+      content:
+        application/json:
+          schema:
+            $ref: schemas/error.schema.json
+          example:
+            error:
+              code: invalid-change
+              message: updatedAt is more than 24 hours in the future
+              index: 3
+    TooLarge:
+      description: The request body is over 1 MiB. This is checked before any other rule.
+      content:
+        application/json:
+          schema:
+            $ref: schemas/error.schema.json
+          example:
+            error:
+              code: too-large
+              message: the request body is over 1 mib
+    RateLimited:
+      description: Too many requests.
+      content:
+        application/json:
+          schema:
+            $ref: schemas/error.schema.json
+          example:
+            error:
+              code: rate-limited
+              message: too many requests
+    Internal:
+      description: Unexpected server failure.
+      content:
+        application/json:
+          schema:
+            $ref: schemas/error.schema.json
+          example:
+            error:
+              code: internal
+              message: unexpected server failure

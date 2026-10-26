@@ -1,0 +1,23 @@
+{
+  "bookKey": "0123456789abcdef0123456789abcdef",
+  "anchor": {
+    "kind": "region",
+    "regions": [
+      {
+        "index": 4,
+        "rect": {
+          "x": 0.1,
+          "y": 0.2,
+          "width": 0.3,
+          "height": 0.25
+        }
+      }
+    ]
+  },
+  "text": "my own note",
+  "origin": "written",
+  "createdAt": 1772445700000,
+  "editedAt": 1772445800000,
+  "tagIds": [],
+  "note": "x"
+}

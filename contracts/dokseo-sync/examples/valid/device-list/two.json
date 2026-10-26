@@ -1,0 +1,16 @@
+{
+  "devices": [
+    {
+      "deviceId": "00000000-0000-4000-8000-000000000002",
+      "deviceName": "Phone",
+      "createdAt": 1772445000000,
+      "lastSeenAt": 1772446000000
+    },
+    {
+      "deviceId": "00000000-0000-4000-8000-000000000003",
+      "deviceName": "Laptop",
+      "createdAt": 1772445100000,
+      "lastSeenAt": null
+    }
+  ]
+}

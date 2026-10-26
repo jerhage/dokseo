@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "device-created.schema.json",
+  "title": "Device created",
+  "description": "Response of POST /v1/devices. The token appears only here.",
+  "type": "object",
+  "required": [
+    "deviceId",
+    "token"
+  ],
+  "properties": {
+    "deviceId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "Id of the new device."
+    },
+    "token": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "title": "Home library",
+  "protocol": "kavita",
+  "rootUrl": "https://books.example.net/opds",
+  "auth": {
+    "kind": "basic",
+    "username": "reader"
+  }
+}

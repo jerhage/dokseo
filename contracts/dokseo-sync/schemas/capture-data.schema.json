@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "capture-data.schema.json",
+  "title": "Capture data",
+  "description": "A captured passage. recordId is the capture id. The book is named by its sync key.",
+  "type": "object",
+  "required": [
+    "bookKey",
+    "anchor",
+    "text",
+    "origin",
+    "createdAt",
+    "editedAt",
+    "tagIds"
+  ],
+  "properties": {
+    "bookKey": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "anchor": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "regions"
+          ],
+          "properties": {
+            "kind": {
+              "const": "region"
+            },
+            "regions": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "index",
+                  "rect"
+                ],
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "rect": {
+                    "type": "object",
+                    "required": [
+                      "x",
+                      "y",
+                      "width",
+                      "height"
+                    ],
+                    "properties": {
+                      "x": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "y": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "width": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 1
+                      },
+                      "height": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "cfi",
+            "quote",
+            "chapter"
+          ],
+          "properties": {
+            "kind": {
+              "const": "text"
+            },
+            "cfi": {
+              "type": "string",
+              "minLength": 1
+            },
+            "quote": {
+              "type": "object",
+              "required": [
+                "exact",
+                "prefix",
+                "suffix"
+              ],
+              "properties": {
+                "exact": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "prefix": {
+                  "type": "string"
+                },
+                "suffix": {
+                  "type": "string"
+                }
+              }
+            },
+            "chapter": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
+    "text": {
+      "type": "string"
+    },
+    "origin": {
+      "enum": [
+        "recognized",
+        "written",
+        "lifted"
+      ]
+    },
+    "createdAt": {
+      "type": "number"
+    },
+    "editedAt": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "tagIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        "description": "recordId of a tag record."
+      }
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "confidence": {
+      "type": [
+        "number",
+        "null"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "origin": {
+            "const": "written"
+          }
+        },
+        "required": [
+          "origin"
+        ]
+      },
+      "then": {
+        "properties": {
+          "note": false,
+          "confidence": false
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "origin": {
+            "const": "lifted"
+          }
+        },
+        "required": [
+          "origin"
+        ]
+      },
+      "then": {
+        "required": [
+          "note"
+        ],
+        "properties": {
+          "confidence": false
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "origin": {
+            "const": "recognized"
+          }
+        },
+        "required": [
+          "origin"
+        ]
+      },
+      "then": {
+        "required": [
+          "note",
+          "confidence"
+        ]
+      }
+    }
+  ]
+}

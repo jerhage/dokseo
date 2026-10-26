@@ -1,0 +1,30 @@
+{
+  "contentHash": "0123456789abcdef0123456789abcdef",
+  "fileName": "Yotsuba v01.cbz",
+  "title": "Yotsuba&!",
+  "alias": null,
+  "seriesId": null,
+  "volume": 1,
+  "language": "ja",
+  "direction": "rtl",
+  "layoutKind": "paged",
+  "sourceKind": "archive",
+  "imageCount": 192,
+  "origin": {
+    "catalogId": "00000000-0000-4000-8000-000000000009",
+    "entryId": "urn:uuid:5d1c",
+    "updated": "2026-03-02T10:00:00Z",
+    "feedPath": [
+      {
+        "title": "Library",
+        "href": "/opds"
+      },
+      {
+        "title": "Manga",
+        "href": "/opds/manga"
+      }
+    ],
+    "feedPosition": 3,
+    "downloadedAt": 1772445600000
+  }
+}

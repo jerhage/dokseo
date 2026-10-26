@@ -1,0 +1,16 @@
+{
+  "id": "00000000-0000-4000-8000-000000000014",
+  "kind": "catalog",
+  "recordId": "00000000-0000-4000-8000-000000000009",
+  "data": {
+    "title": "Home library",
+    "protocol": "opds1",
+    "rootUrl": "https://books.example.net/opds",
+    "auth": {
+      "kind": "basic",
+      "username": "reader"
+    }
+  },
+  "updatedAt": 1772445000000,
+  "deviceId": "00000000-0000-4000-8000-000000000002"
+}

@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "invalid-change",
+    "message": "updatedAt is in the future",
+    "index": 3
+  }
+}

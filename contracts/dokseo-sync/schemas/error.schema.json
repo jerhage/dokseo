@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "error.schema.json",
+  "title": "Error",
+  "description": "Body of every error response.",
+  "type": "object",
+  "required": [
+    "error"
+  ],
+  "properties": {
+    "error": {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "unauthorized",
+            "forbidden",
+            "device-mismatch",
+            "not-found",
+            "invalid-request",
+            "invalid-change",
+            "too-large",
+            "rate-limited",
+            "unsupported-version",
+            "internal"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Position in the request changes array. Present with invalid-change."
+        }
+      },
+      "if": {
+        "properties": {
+          "code": {
+            "const": "invalid-change"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "then": {
+        "required": [
+          "index"
+        ]
+      }
+    }
+  }
+}
