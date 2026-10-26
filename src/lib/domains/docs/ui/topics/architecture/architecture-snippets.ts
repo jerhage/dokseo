@@ -71,10 +71,11 @@ const BUILD_CONTAINER: SourceSnippet = {
   const removedBooks = buildRemovedBooks(repository, captures);
   const bookExports = buildBookCapturesExports(repository, captures);
   const library = buildLibrary(repository, removedBooks.mergeIntoBook);
+  const catalog = buildCatalog(library);
 
   return {
     beginTrace,
-    catalog: buildCatalog(library),
+    catalog,
     library: {
       ...library,
       ...removedBooks,
@@ -91,7 +92,7 @@ const BUILD_CONTAINER: SourceSnippet = {
       ...buildCapturesExports(repository, captures),
       ...buildCapturesImports(repository, captures),
     },
-    sync: buildSync(repository, captures),
+    sync: buildSync(repository, captures, catalog),
   };
 }`,
 };
