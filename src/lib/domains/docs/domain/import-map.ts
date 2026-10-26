@@ -67,6 +67,7 @@ const MAP_AREAS: readonly MapArea[] = [
   domainArea('viewing', ['domain', 'queries', 'ui']),
   domainArea('flowing', ['adapters', 'domain', 'queries', 'ui', 'use-cases']),
   domainArea('recognition', ['adapters', 'domain', 'queries', 'ui', 'use-cases']),
+  domainArea('sync', ['domain']),
   layerArea('shared', 'shared/', 'src/lib/shared/sample.ts'),
   layerArea('platform', 'platform/', 'src/lib/platform/sample.ts'),
   layerArea('workers', 'workers/', 'src/workers/sample.ts'),
