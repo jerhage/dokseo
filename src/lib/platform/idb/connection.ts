@@ -1,4 +1,6 @@
 import { describeCause } from '$lib/shared/cause';
+import { OUTBOX_STORE, markChanged } from '$lib/shared/change-marker';
+import type { ChangeMarker } from '$lib/shared/change-marker';
 
 function isSupported(): boolean {
   return typeof indexedDB !== 'undefined';
@@ -156,11 +158,22 @@ async function transact<T>(
 
 type RecordWrite =
   | { readonly kind: 'put'; readonly store: string; readonly record: unknown }
-  | { readonly kind: 'delete'; readonly store: string; readonly key: IDBValidKey };
+  | { readonly kind: 'delete'; readonly store: string; readonly key: IDBValidKey }
+  | { readonly kind: 'mark'; readonly marker: ChangeMarker };
+
+type MarkerFor = (primaryKey: IDBValidKey) => ChangeMarker | null;
 
 type RecordRead = { readonly store: string; readonly key: IDBValidKey };
 
+function storeOf(write: RecordWrite): string {
+  return write.kind === 'mark' ? OUTBOX_STORE : write.store;
+}
+
 function place(transaction: IDBTransaction, write: RecordWrite): void {
+  if (write.kind === 'mark') {
+    markChanged(transaction, write.marker);
+    return;
+  }
   const objectStore = transaction.objectStore(write.store);
   if (write.kind === 'put') objectStore.put(write.record);
   else objectStore.delete(write.key);
@@ -199,7 +212,7 @@ async function transactAcross(
 }
 
 async function writeRecords(db: IDBDatabase, writes: readonly RecordWrite[]): Promise<void> {
-  const stores = [...new Set(writes.map((write) => write.store))];
+  const stores = [...new Set(writes.map(storeOf))];
   await transactAcross(db, stores, (transaction) => {
     for (const write of writes) place(transaction, write);
   });
@@ -255,7 +268,22 @@ async function deleteByIndex(
   store: string,
   index: string,
   key: IDBValidKey,
+  markerFor?: MarkerFor,
 ): Promise<void> {
+  if (markerFor !== undefined) {
+    await transactAcross(db, [store, OUTBOX_STORE], (transaction) => {
+      const objectStore = transaction.objectStore(store);
+      const matching = objectStore.index(index).getAllKeys(key);
+      matching.onsuccess = () => {
+        for (const primary of matching.result) {
+          objectStore.delete(primary);
+          const marker = markerFor(primary);
+          if (marker !== null) markChanged(transaction, marker);
+        }
+      };
+    });
+    return;
+  }
   await transact(db, store, 'readwrite', (objectStore) => {
     const matching = objectStore.index(index).getAllKeys(key);
     matching.onsuccess = () => {
@@ -271,7 +299,23 @@ async function rewriteByIndex<T>(
   index: string,
   key: IDBValidKey,
   rewrite: (record: T) => T,
+  markerFor?: (before: T, after: T) => ChangeMarker | null,
 ): Promise<void> {
+  if (markerFor !== undefined) {
+    await transactAcross(db, [store, OUTBOX_STORE], (transaction) => {
+      const objectStore = transaction.objectStore(store);
+      const matching = objectStore.index(index).getAll(key);
+      matching.onsuccess = () => {
+        for (const before of matching.result) {
+          const after = rewrite(before);
+          objectStore.put(after);
+          const marker = markerFor(before, after);
+          if (marker !== null) markChanged(transaction, marker);
+        }
+      };
+    });
+    return;
+  }
   await transact(db, store, 'readwrite', (objectStore) => {
     const matching = objectStore.index(index).getAll(key);
     matching.onsuccess = () => {
@@ -294,4 +338,4 @@ export {
   writeRecords,
   writeAfterRead,
 };
-export type { RecordRead, RecordWrite };
+export type { MarkerFor, RecordRead, RecordWrite };
