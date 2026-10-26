@@ -4,16 +4,18 @@ import {
   getRecord,
   listByIndex,
   listRecords,
-  putRecord,
   writeRecords,
 } from '$lib/platform/idb/connection';
 import type { RecordWrite } from '$lib/platform/idb/connection';
+import { markingWrites } from '$lib/platform/idb/marking-writes';
+import type { ChangeTracking } from '$lib/shared/change-marker';
 import { isText } from '$lib/shared/corrupt-row';
 import { bookId } from '$lib/shared/ids';
 import type { BookId, CatalogId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Catalog } from '../domain/catalog';
+import { catalogMarker } from '../domain/catalog-marker';
 import type {
   CatalogListing,
   CatalogLookup,
@@ -57,7 +59,9 @@ function displacedBy(origin: BookOrigin, holders: readonly StoredOrigin[]): read
   return writes;
 }
 
-function createCatalogOriginsRepository(): CatalogRepository & OriginRepository {
+function createCatalogOriginsRepository(
+  tracking: ChangeTracking = 'marked',
+): CatalogRepository & OriginRepository {
   const listOrigins = (read: () => Promise<StoredOrigin[]>): Promise<OriginListing> =>
     unlessUnavailable(async (): Promise<OriginListing> => {
       const { origins, unreadable } = originsFromStored(await read());
@@ -94,14 +98,20 @@ function createCatalogOriginsRepository(): CatalogRepository & OriginRepository 
 
     save(catalog: Catalog): Promise<CatalogWrite> {
       return unlessUnavailable(async (): Promise<CatalogWrite> => {
-        await putRecord(await catalogOriginsDatabase(), CATALOG_STORE, storedCatalogRow(catalog));
+        await writeRecords(await catalogOriginsDatabase(), [
+          { kind: 'put', store: CATALOG_STORE, record: storedCatalogRow(catalog) },
+          ...markingWrites(tracking, [catalogMarker(catalog.id, false, Date.now())]),
+        ]);
         return WRITTEN;
       });
     },
 
     remove(id: CatalogId): Promise<CatalogWrite> {
       return unlessUnavailable(async (): Promise<CatalogWrite> => {
-        await deleteRecord(await catalogOriginsDatabase(), CATALOG_STORE, id);
+        await writeRecords(await catalogOriginsDatabase(), [
+          { kind: 'delete', store: CATALOG_STORE, key: id },
+          ...markingWrites(tracking, [catalogMarker(id, true, Date.now())]),
+        ]);
         return WRITTEN;
       });
     },

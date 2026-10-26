@@ -75,14 +75,21 @@ describe('upgrade', () => {
 
     fresh.run();
 
-    expect(fresh.createdStores).toEqual(['model-consent', 'captures', 'recognizer-setup', 'tags']);
+    expect(fresh.createdStores).toEqual([
+      'model-consent',
+      'captures',
+      'recognizer-setup',
+      'tags',
+      'outbox',
+      'record-versions',
+    ]);
     expect(fresh.made).toEqual([
       { store: 'captures', name: 'bookId', keyPath: 'bookId', options: { unique: false } },
       TAG_INDEX,
     ]);
   });
 
-  it('adds only the multi-entry tag index to the captures store a version 4 database holds', () => {
+  it('adds the multi-entry tag index and the two change stores to a version 4 database', () => {
     const fourth = database({
       'model-consent': [],
       captures: ['bookId'],
@@ -92,7 +99,7 @@ describe('upgrade', () => {
 
     fourth.run();
 
-    expect(fourth.createdStores).toEqual([]);
+    expect(fourth.createdStores).toEqual(['outbox', 'record-versions']);
     expect(fourth.made).toEqual([TAG_INDEX]);
   });
 
@@ -102,6 +109,8 @@ describe('upgrade', () => {
       captures: ['bookId', 'tagIds'],
       'recognizer-setup': [],
       tags: [],
+      outbox: [],
+      'record-versions': [],
     });
 
     fifth.run();

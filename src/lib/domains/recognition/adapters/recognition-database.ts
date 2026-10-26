@@ -1,8 +1,9 @@
 import { openDatabase } from '$lib/platform/idb/connection';
+import { createChangeStores } from '$lib/shared/change-marker';
 
 const DATABASE_NAME = 'recognition';
 
-const DATABASE_VERSION = 5;
+const DATABASE_VERSION = 6;
 
 const CONSENT_STORE = 'model-consent';
 
@@ -41,6 +42,8 @@ function upgrade(db: IDBDatabase, upgrading: IDBTransaction): void {
   if (!db.objectStoreNames.contains(TAG_STORE)) {
     db.createObjectStore(TAG_STORE, { keyPath: 'id' });
   }
+
+  createChangeStores(db);
 }
 
 let connection: Promise<IDBDatabase> | null = null;

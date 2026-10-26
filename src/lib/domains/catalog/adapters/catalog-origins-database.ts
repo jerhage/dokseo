@@ -1,8 +1,9 @@
 import { openDatabase } from '$lib/platform/idb/connection';
+import { createChangeStores } from '$lib/shared/change-marker';
 
 const DATABASE_NAME = 'catalog-origins';
 
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 
 const CATALOG_STORE = 'catalogs';
 
@@ -28,6 +29,8 @@ function upgrade(db: IDBDatabase, upgrading: IDBTransaction): void {
       unique: true,
     });
   }
+
+  createChangeStores(db);
 }
 
 let connection: Promise<IDBDatabase> | null = null;
