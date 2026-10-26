@@ -54,7 +54,10 @@ const TAG_ADAPTER: SourceSnippet = {
 
 async save(tag: Tag): Promise<TagWrite> {
   if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
-  await putRecord(await recognitionDatabase(), TAG_STORE, tag);
+  await writeRecords(await recognitionDatabase(), [
+    { kind: 'put', store: TAG_STORE, record: tag },
+    ...markingWrites(tracking, [tagMarker(tag.id, false, Date.now())]),
+  ]);
   return WRITTEN;
 },`,
 };

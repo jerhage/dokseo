@@ -4,16 +4,22 @@ import { GOLDEN_TEXT, STORE_ROWS, goldenCounts, goldenPart } from './stored-layo
 describe('the stored layout on the page', () => {
   it('lists every store of the pinned layouts and the flowing store', () => {
     expect(STORE_ROWS.map((row) => `${row.database} v${row.version} ${row.store}`)).toEqual([
-      'reader v3 books',
-      'reader v3 page-lists',
-      'reader v3 removed-books',
-      'recognition v5 model-consent',
-      'recognition v5 captures',
-      'recognition v5 recognizer-setup',
-      'recognition v5 tags',
+      'reader v4 books',
+      'reader v4 page-lists',
+      'reader v4 removed-books',
+      'reader v4 outbox',
+      'reader v4 record-versions',
+      'recognition v6 model-consent',
+      'recognition v6 captures',
+      'recognition v6 recognizer-setup',
+      'recognition v6 tags',
+      'recognition v6 outbox',
+      'recognition v6 record-versions',
       'flowing v1 reading-settings',
-      'catalog-origins v1 catalogs',
-      'catalog-origins v1 origins',
+      'catalog-origins v2 catalogs',
+      'catalog-origins v2 origins',
+      'catalog-origins v2 outbox',
+      'catalog-origins v2 record-versions',
     ]);
   });
 

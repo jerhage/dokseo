@@ -28,6 +28,8 @@ function upgrade(db: IDBDatabase, upgrading: IDBTransaction): void {
   if (!db.objectStoreNames.contains(TAG_STORE)) {
     db.createObjectStore(TAG_STORE, { keyPath: 'id' });
   }
+
+  createChangeStores(db);
 }`,
 };
 
@@ -73,6 +75,7 @@ const MOVE_BOOK: SourceSnippet = {
   CAPTURE_BOOK_INDEX,
   from,
   (row) => movedCapture(row, to),
+  rewriteMarker,
 );`,
 };
 
@@ -127,6 +130,9 @@ const DELETE_TAG: SourceSnippet = {
       untagged += 1;
       return rewritten;
     },
+    tracking === 'marked'
+      ? (before, after) => (before === after ? null : rowMarker(after))
+      : undefined,
   );
   return { kind: 'success', untagged };
 },`,
