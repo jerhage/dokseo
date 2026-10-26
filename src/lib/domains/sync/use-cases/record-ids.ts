@@ -1,4 +1,5 @@
 import type { Book } from '$lib/domains/library/domain/book/book';
+import type { Catalog } from '$lib/domains/catalog/domain/catalog';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
 
@@ -18,4 +19,8 @@ function tagRecordId(tag: Pick<Tag, 'id'>): string {
   return tag.id;
 }
 
-export { bookRecordId, captureRecordId, positionRecordId, tagRecordId };
+function catalogRecordId(catalog: Pick<Catalog, 'id'>): string {
+  return catalog.id;
+}
+
+export { bookRecordId, captureRecordId, catalogRecordId, positionRecordId, tagRecordId };

@@ -1,3 +1,5 @@
+import { originFromStored } from '$lib/domains/catalog/domain/stored-origin';
+import type { BookOrigin } from '$lib/domains/catalog/domain/book-origin';
 import { DEFAULT_PAGE_PAIRING } from '$lib/domains/library/domain/book/book';
 import type { Book } from '$lib/domains/library/domain/book/book';
 import { bookFromStored } from '$lib/domains/library/domain/book/stored-book';
@@ -12,14 +14,35 @@ type SyncedBook = Omit<
   'id' | 'pagePairing' | 'pageFit' | 'addedAt' | 'position' | 'lastReadAt' | 'finishedAt'
 >;
 
-type BookData = SyncedBook;
+type SyncedOrigin = Omit<BookOrigin, 'bookId'>;
 
-type BookFromSyncData = { readonly kind: 'success'; readonly book: SyncedBook } | UnreadableData;
+type BookData = SyncedBook & { readonly origin?: SyncedOrigin };
+
+type BookFromSyncData =
+  | { readonly kind: 'success'; readonly book: SyncedBook; readonly origin: SyncedOrigin | null }
+  | UnreadableData;
 
 const UNPLACED_BOOK = bookId('unplaced');
 
-function toSyncBookData(book: Book): BookData {
+function toSyncOrigin(origin: BookOrigin): SyncedOrigin {
   return {
+    catalogId: origin.catalogId,
+    entryId: origin.entryId,
+    acquisition: {
+      href: origin.acquisition.href,
+      format: origin.acquisition.format,
+      mediaType: origin.acquisition.mediaType,
+      length: origin.acquisition.length,
+    },
+    updated: origin.updated,
+    feedPath: origin.feedPath.map((step) => ({ title: step.title, href: step.href })),
+    feedPosition: origin.feedPosition,
+    downloadedAt: origin.downloadedAt,
+  };
+}
+
+function toSyncBookData(book: Book, origin: BookOrigin | null): BookData {
+  const identity: SyncedBook = {
     contentHash: book.contentHash,
     fileName: book.fileName,
     title: book.title,
@@ -32,6 +55,14 @@ function toSyncBookData(book: Book): BookData {
     sourceKind: book.sourceKind,
     imageCount: book.imageCount,
   };
+  return origin === null ? identity : { ...identity, origin: toSyncOrigin(origin) };
+}
+
+function syncedOrigin(value: unknown): SyncedOrigin | null {
+  if (value === undefined) return null;
+  if (!isStoredFields(value)) throw new CorruptRow('book', 'origin', value);
+  const { bookId: _unplaced, ...origin } = originFromStored({ ...value, bookId: UNPLACED_BOOK });
+  return origin;
 }
 
 function fromSyncBookData(data: unknown): BookFromSyncData {
@@ -62,11 +93,11 @@ function fromSyncBookData(data: unknown): BookFromSyncData {
       sourceKind: row.sourceKind,
       imageCount: row.imageCount,
     };
-    return { kind: 'success', book };
+    return { kind: 'success', book, origin: syncedOrigin(data['origin']) };
   } catch (cause) {
     return unreadableData(cause);
   }
 }
 
 export { fromSyncBookData, toSyncBookData };
-export type { BookData, BookFromSyncData, SyncedBook };
+export type { BookData, BookFromSyncData, SyncedBook, SyncedOrigin };
