@@ -186,7 +186,9 @@ describe('createCaptureRepository', () => {
 
     await createCaptureRepository().save(captureFromStored(GOOD));
 
-    expect(markers()).toEqual([{ kind: 'capture', recordId: 'good', deleted: false, at: 5 }]);
+    expect(markers()).toEqual([
+      { kind: 'capture', recordId: 'good', deleted: false, at: 5, changeId: expect.any(String) },
+    ]);
   });
 
   it('leaves a deleted marker when a capture is removed', async () => {
@@ -194,7 +196,9 @@ describe('createCaptureRepository', () => {
 
     await createCaptureRepository().remove(captureId('good'));
 
-    expect(markers()).toEqual([{ kind: 'capture', recordId: 'good', deleted: true, at: 6 }]);
+    expect(markers()).toEqual([
+      { kind: 'capture', recordId: 'good', deleted: true, at: 6, changeId: expect.any(String) },
+    ]);
   });
 
   it('marks every capture of a cleared book as deleted', async () => {

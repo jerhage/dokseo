@@ -1,3 +1,4 @@
+import type { PendingMarkers, SettledMarker } from '$lib/shared/change-marker';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Capture, UnreadableCapture } from './capture';
@@ -24,6 +25,8 @@ interface CaptureRepository {
   clearBook(book: BookId): Promise<CaptureWrite>;
   moveBook(from: BookId, to: BookId): Promise<CaptureWrite>;
   untagEverywhere(tag: TagId): Promise<CaptureUntagging>;
+  pendingChanges(): Promise<PendingMarkers>;
+  settleChanges(settled: readonly SettledMarker[]): Promise<CaptureWrite>;
 }
 
 export type { CaptureListing, CaptureRepository, CaptureUntagging, CaptureWrite };

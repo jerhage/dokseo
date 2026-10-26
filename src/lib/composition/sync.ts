@@ -1,9 +1,15 @@
+import { createCatalogOriginsRepository } from '../domains/catalog/adapters/indexeddb-catalog-origins.repo';
+import type { LibraryRepository } from '../domains/library/domain/book/library-repository';
+import { createTagRepository } from '../domains/recognition/adapters/tag/indexeddb-tags.repo';
+import type { CaptureRepository } from '../domains/recognition/domain/capture/capture-repository';
 import { createSyncStateStore } from '../domains/sync/adapters/indexeddb-sync-state';
 import type { SyncServer } from '../domains/sync/domain/sync-server';
 import { connectSync } from '../domains/sync/use-cases/connect-sync';
 import type { ConnectSyncResult } from '../domains/sync/use-cases/connect-sync';
 import { disconnectSync } from '../domains/sync/use-cases/disconnect-sync';
 import type { DisconnectSyncResult } from '../domains/sync/use-cases/disconnect-sync';
+import { pushChanges } from '../domains/sync/use-cases/push-changes';
+import type { PushChangesResult } from '../domains/sync/use-cases/push-changes';
 import { revokeSyncDevice } from '../domains/sync/use-cases/revoke-sync-device';
 import type { RevokeSyncDeviceResult } from '../domains/sync/use-cases/revoke-sync-device';
 import { syncDevices } from '../domains/sync/use-cases/sync-devices';
@@ -22,6 +28,7 @@ type SyncUseCases = {
   readonly syncDevices: () => Promise<SyncDevicesResult>;
   readonly revokeSyncDevice: (deviceId: string) => Promise<RevokeSyncDeviceResult>;
   readonly syncStatus: () => Promise<SyncStatusResult>;
+  readonly pushChanges: () => Promise<PushChangesResult>;
 };
 
 let server: Promise<SyncServer> | null = null;
@@ -41,8 +48,9 @@ function loadSyncServer(): Promise<SyncServer> {
   return loading;
 }
 
-function buildSync(): SyncUseCases {
+function buildSync(shelf: LibraryRepository, captures: CaptureRepository): SyncUseCases {
   const state = createSyncStateStore();
+  const catalogs = createCatalogOriginsRepository();
   const remote: SyncServer = {
     info: async (url) => (await loadSyncServer()).info(url),
     createDevice: async (url, request) => (await loadSyncServer()).createDevice(url, request),
@@ -62,6 +70,15 @@ function buildSync(): SyncUseCases {
     syncDevices: () => syncDevices(deps),
     revokeSyncDevice: (deviceId) => revokeSyncDevice(deps, deviceId),
     syncStatus: () => syncStatus({ state }),
+    pushChanges: () =>
+      pushChanges({
+        ...deps,
+        shelf: { repository: shelf },
+        origins: { origins: catalogs },
+        captures: { captures },
+        tags: { tags: createTagRepository() },
+        catalogs: { catalogs },
+      }),
   };
 }
 

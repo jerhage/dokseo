@@ -4,11 +4,18 @@ import {
   getRecord,
   listByIndex,
   listRecords,
+  settleMarkers,
   writeRecords,
 } from '$lib/platform/idb/connection';
 import type { RecordWrite } from '$lib/platform/idb/connection';
 import { markingWrites } from '$lib/platform/idb/marking-writes';
-import type { ChangeTracking } from '$lib/shared/change-marker';
+import { OUTBOX_STORE } from '$lib/shared/change-marker';
+import type {
+  ChangeMarker,
+  ChangeTracking,
+  PendingMarkers,
+  SettledMarker,
+} from '$lib/shared/change-marker';
 import { isText } from '$lib/shared/corrupt-row';
 import { bookId } from '$lib/shared/ids';
 import type { BookId, CatalogId } from '$lib/shared/ids';
@@ -112,6 +119,23 @@ function createCatalogOriginsRepository(
           { kind: 'delete', store: CATALOG_STORE, key: id },
           ...markingWrites(tracking, [catalogMarker(id, true, Date.now())]),
         ]);
+        return WRITTEN;
+      });
+    },
+
+    pendingChanges(): Promise<PendingMarkers> {
+      return unlessUnavailable(async (): Promise<PendingMarkers> => {
+        const markers = await listRecords<ChangeMarker>(
+          await catalogOriginsDatabase(),
+          OUTBOX_STORE,
+        );
+        return { kind: 'success', markers };
+      });
+    },
+
+    settleChanges(settled: readonly SettledMarker[]): Promise<CatalogWrite> {
+      return unlessUnavailable(async (): Promise<CatalogWrite> => {
+        await settleMarkers(await catalogOriginsDatabase(), settled);
         return WRITTEN;
       });
     },

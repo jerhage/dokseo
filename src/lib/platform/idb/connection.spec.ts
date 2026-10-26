@@ -5,6 +5,7 @@ import {
   getRecord,
   openDatabase,
   rewriteByIndex,
+  settleMarkers,
   writeAfterRead,
   writeRecords,
 } from './connection';
@@ -382,8 +383,12 @@ describe('writeRecords', () => {
   });
 });
 
+function MARKER_OF(recordId: string) {
+  return { kind: 'tag', recordId, deleted: false, at: 1, changeId: 'c' } as const;
+}
+
 describe('change markers', () => {
-  const MARKER = { kind: 'tag', recordId: 't', deleted: false, at: 1 } as const;
+  const MARKER = { kind: 'tag', recordId: 't', deleted: false, at: 1, changeId: 'c1' } as const;
 
   it('places a marker write in the outbox store of the same transaction as the record', async () => {
     const db = new RecordingDatabase();
@@ -439,6 +444,35 @@ describe('change markers', () => {
       ['outbox', 'put'],
       ['captures', 'put'],
       ['outbox', 'put'],
+    ]);
+  });
+});
+
+describe('settleMarkers', () => {
+  it('deletes only the outbox entries that still hold the settled change id and puts every held version', async () => {
+    const db = new RecordingDatabase();
+    db.rows.set('outbox/tag,a', { ...MARKER_OF('a'), changeId: 'sent' });
+    db.rows.set('outbox/tag,b', { ...MARKER_OF('b'), changeId: 'newer' });
+    const version = { updatedAt: 4, deviceId: 'device' };
+
+    await settleMarkers(recordingConnection(db), [
+      { marker: { ...MARKER_OF('a'), changeId: 'sent' }, version },
+      { marker: { ...MARKER_OF('b'), changeId: 'sent' }, version },
+    ]);
+
+    expect(db.opened).toEqual([{ stores: ['outbox', 'record-versions'], mode: 'readwrite' }]);
+    expect(db.transactions[0]?.placed).toEqual([
+      {
+        store: 'record-versions',
+        kind: 'put',
+        value: { kind: 'tag', recordId: 'a', updatedAt: 4, deviceId: 'device' },
+      },
+      {
+        store: 'record-versions',
+        kind: 'put',
+        value: { kind: 'tag', recordId: 'b', updatedAt: 4, deviceId: 'device' },
+      },
+      { store: 'outbox', kind: 'delete', value: ['tag', 'a'] },
     ]);
   });
 });

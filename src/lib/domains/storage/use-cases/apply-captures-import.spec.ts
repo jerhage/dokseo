@@ -120,6 +120,8 @@ function exported(from: World): string {
 
 function repositories(into: World) {
   const repository: LibraryRepository = {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     list: () => Promise.resolve({ kind: 'success', books: [...into.shelf], unreadable: [] }),
     get: notUsed,
     add: notUsed,
@@ -163,6 +165,8 @@ function repositories(into: World) {
     },
   };
   const captures: CaptureRepository = {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     listForBook: notUsed,
     listEverything: () =>
       Promise.resolve({ kind: 'success', captures: [...into.captures.values()], unreadable: [] }),

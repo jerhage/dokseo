@@ -158,12 +158,12 @@ describe('createCatalogOriginsRepository', () => {
 
     await repository.save(catalog('calibre'));
     expect([...fake.outbox.values()]).toEqual([
-      { kind: 'catalog', recordId: 'calibre', deleted: false, at: 7 },
+      { kind: 'catalog', recordId: 'calibre', deleted: false, at: 7, changeId: expect.any(String) },
     ]);
 
     await repository.remove(catalogId('calibre'));
     expect([...fake.outbox.values()]).toEqual([
-      { kind: 'catalog', recordId: 'calibre', deleted: true, at: 8 },
+      { kind: 'catalog', recordId: 'calibre', deleted: true, at: 8, changeId: expect.any(String) },
     ]);
   });
 

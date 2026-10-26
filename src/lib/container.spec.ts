@@ -41,6 +41,8 @@ function notUsed(): Promise<never> {
 
 vi.mock('./domains/library/adapters/indexeddb-opfs-library.repo', () => ({
   createLibraryRepository: (): LibraryRepository => ({
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     list: () =>
       Promise.resolve({
         kind: 'success',
@@ -85,6 +87,8 @@ vi.mock('./domains/library/adapters/indexeddb-opfs-library.repo', () => ({
 
 vi.mock('./domains/recognition/adapters/capture/indexeddb-captures.repo', () => ({
   createCaptureRepository: (): CaptureRepository => ({
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     listForBook: notUsed,
     listEverything: notUsed,
     save: notUsed,

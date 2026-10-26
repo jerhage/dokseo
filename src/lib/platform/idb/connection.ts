@@ -1,6 +1,6 @@
 import { describeCause } from '$lib/shared/cause';
-import { OUTBOX_STORE, markChanged } from '$lib/shared/change-marker';
-import type { ChangeMarker } from '$lib/shared/change-marker';
+import { OUTBOX_STORE, RECORD_VERSION_STORE, markChanged } from '$lib/shared/change-marker';
+import type { ChangeMarker, SettledMarker } from '$lib/shared/change-marker';
 
 function isSupported(): boolean {
   return typeof indexedDB !== 'undefined';
@@ -233,6 +233,28 @@ async function writeAfterRead<T>(
   });
 }
 
+async function settleMarkers(db: IDBDatabase, settled: readonly SettledMarker[]): Promise<void> {
+  if (settled.length === 0) return;
+  await transactAcross(db, [OUTBOX_STORE, RECORD_VERSION_STORE], (transaction) => {
+    const outbox = transaction.objectStore(OUTBOX_STORE);
+    const versions = transaction.objectStore(RECORD_VERSION_STORE);
+    for (const { marker, version } of settled) {
+      const key = [marker.kind, marker.recordId];
+      const stored = outbox.get(key);
+      stored.onsuccess = () => {
+        const found: ChangeMarker | undefined = stored.result;
+        if (found?.changeId === marker.changeId) outbox.delete(key);
+      };
+      versions.put({
+        kind: marker.kind,
+        recordId: marker.recordId,
+        updatedAt: version.updatedAt,
+        deviceId: version.deviceId,
+      });
+    }
+  });
+}
+
 function getRecord<T>(db: IDBDatabase, store: string, key: IDBValidKey): Promise<T | undefined> {
   return transact(db, store, 'readonly', (objectStore) => objectStore.get(key));
 }
@@ -337,5 +359,6 @@ export {
   rewriteByIndex,
   writeRecords,
   writeAfterRead,
+  settleMarkers,
 };
 export type { MarkerFor, RecordRead, RecordWrite };

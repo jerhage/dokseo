@@ -37,6 +37,8 @@ function stores(rows: readonly Capture[], failAt: TagId | null = null) {
   const removed: TagId[] = [];
 
   const captures: CaptureRepository = {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     listForBook: () =>
       Promise.resolve({ kind: 'success' as const, captures: rows, unreadable: [] }),
     listEverything: () =>

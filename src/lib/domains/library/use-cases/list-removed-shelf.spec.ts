@@ -59,6 +59,8 @@ type Outcomes = {
 
 function repositoryWith(outcomes: Outcomes): LibraryRepository {
   return {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     list: () => Promise.resolve(outcomes.shelf ?? { kind: 'success', books: [], unreadable: [] }),
     listRemoved: () =>
       Promise.resolve(outcomes.removed ?? { kind: 'success', removed: [], unreadable: [] }),

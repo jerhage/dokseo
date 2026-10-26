@@ -4,6 +4,7 @@ import {
   listRecords,
   openDatabase,
   putRecord,
+  settleMarkers,
   writeAfterRead,
   writeRecords,
 } from '$lib/platform/idb/connection';
@@ -13,7 +14,12 @@ import { holdingLock, holdingLockIfFree } from '$lib/platform/locks/web-locks';
 import * as blobs from '$lib/platform/opfs/blob-store';
 import { isPrivateWindowRefusal } from '$lib/platform/opfs/directory';
 import { OUTBOX_STORE, createChangeStores } from '$lib/shared/change-marker';
-import type { ChangeTracking } from '$lib/shared/change-marker';
+import type {
+  ChangeMarker,
+  ChangeTracking,
+  PendingMarkers,
+  SettledMarker,
+} from '$lib/shared/change-marker';
 import { parsedBookId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
@@ -430,6 +436,18 @@ function createLibraryRepository(tracking: ChangeTracking = 'marked'): LibraryRe
 
     readCover(id: BookId): Promise<FileLookup> {
       return readBlob(id, (keys) => keys.cover);
+    },
+
+    async pendingChanges(): Promise<PendingMarkers> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      const markers = await listRecords<ChangeMarker>(await database(), OUTBOX_STORE);
+      return { kind: 'success', markers };
+    },
+
+    async settleChanges(settled: readonly SettledMarker[]): Promise<LibraryWrite> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      await settleMarkers(await database(), settled);
+      return WRITTEN;
     },
 
     async storedBytes(): Promise<ByteCount> {

@@ -114,6 +114,8 @@ function ids(count: number): readonly string[] {
 
 function deps(holdings: Holdings = {}): ExportCapturesDeps {
   const repository: LibraryRepository = {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     list: () =>
       Promise.resolve(
         holdings.unavailable === 'shelf'
@@ -175,6 +177,8 @@ function deps(holdings: Holdings = {}): ExportCapturesDeps {
     remove: notUsed,
   };
   const captures: CaptureRepository = {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     listForBook: notUsed,
     listEverything: () =>
       Promise.resolve(
