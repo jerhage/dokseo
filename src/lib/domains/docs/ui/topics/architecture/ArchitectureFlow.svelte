@@ -376,8 +376,8 @@ adapters/opds2/opds2-catalog-source.ts
       writes in a mutation.
     </li>
     <li>
-      When a screen needs two domains, compose them in the route with a snippet. A new domain is a
-      non-leaf until its name is added to <code>LEAF_DOMAINS</code>.
+      When a screen needs two domains, compose them in the route with a snippet. A new domain is
+      refused until its name is added to <code>LEAF_DOMAINS</code> or <code>NON_LEAF_ORDER</code>.
     </li>
     <li>No barrel files, and no <code>as</code> casts outside brands and library boundaries.</li>
     <li>

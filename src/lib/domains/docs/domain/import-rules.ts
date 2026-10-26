@@ -18,6 +18,14 @@ const LEAF_DOMAIN_PATH = `^src/lib/domains/(${LEAF_DOMAINS.join('|')})/`;
 
 const DOCS_DOMAIN_PATH = '^src/lib/domains/docs/';
 
+const NON_LEAF_ORDER = ['catalog', 'storage', 'sync'] as const;
+
+function domainPath(name: string): string {
+  return `^src/lib/domains/${name}/`;
+}
+
+const PLACED_DOMAIN_PATHS = [LEAF_DOMAIN_PATH, DOCS_DOMAIN_PATH, ...NON_LEAF_ORDER.map(domainPath)];
+
 const UNPORTED_RULES = ['no-circular', 'no-unresolvable'] as const;
 
 const PATH_RULES: readonly PathRule[] = [
@@ -88,16 +96,22 @@ const PATH_RULES: readonly PathRule[] = [
       pathNot: '^src/lib/domains/$1/',
     },
   },
-  {
-    name: 'non-leaves-import-only-leaves',
-    from: {
-      path: '^src/lib/domains/([^/]+)/',
-      pathNot: [LEAF_DOMAIN_PATH, DOCS_DOMAIN_PATH],
-    },
+  ...NON_LEAF_ORDER.map((domain, position) => ({
+    name: 'non-leaves-import-in-order',
+    from: { path: domainPath(domain) },
     to: {
       path: '^src/lib/domains/',
-      pathNot: ['^src/lib/domains/$1/', LEAF_DOMAIN_PATH],
+      pathNot: [
+        domainPath(domain),
+        LEAF_DOMAIN_PATH,
+        ...NON_LEAF_ORDER.slice(0, position).map(domainPath),
+      ],
     },
+  })),
+  {
+    name: 'every-domain-is-placed',
+    from: { path: '^src/lib/domains/', pathNot: PLACED_DOMAIN_PATHS },
+    to: { path: '^src/lib/domains/' },
   },
   {
     name: 'domains-know-no-wiring-or-routes',
@@ -154,6 +168,10 @@ const PATH_RULES: readonly PathRule[] = [
     },
     to: { path: '(^|/)node_modules/(pdfjs-dist|.*/pdfjs-dist)/' },
   },
+];
+
+const RULE_NAMES: readonly string[] = [
+  ...new Set([...PATH_RULES.map((rule) => rule.name), ...UNPORTED_RULES]),
 ];
 
 function joinedPattern(pattern: RulePattern): string {
@@ -216,7 +234,9 @@ export {
   DOCS_DOMAIN_PATH,
   LEAF_DOMAINS,
   LEAF_DOMAIN_PATH,
+  NON_LEAF_ORDER,
   PATH_RULES,
+  RULE_NAMES,
   UNPORTED_RULES,
   dependencyTypes,
   refusingRules,

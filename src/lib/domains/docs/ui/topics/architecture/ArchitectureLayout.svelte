@@ -7,7 +7,7 @@
   import TableHeader from '$lib/ui/components/TableHeader.svelte';
   import TableHeaderCell from '$lib/ui/components/TableHeaderCell.svelte';
   import TableRow from '$lib/ui/components/TableRow.svelte';
-  import { PATH_RULES, UNPORTED_RULES } from '../../../domain/import-rules';
+  import { RULE_NAMES } from '../../../domain/import-rules';
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
   import { DOMAIN_GRAPH, LAYERS } from './architecture-diagrams';
@@ -60,8 +60,6 @@
       rule: 'routes-are-thin',
     },
   ] as const;
-
-  const RULE_NAMES = [...PATH_RULES.map((rule) => rule.name), ...UNPORTED_RULES];
 </script>
 
 <DocsSection title={ARCHITECTURE_SECTIONS.tree}>
@@ -162,7 +160,7 @@
 
 <DocsSection title={ARCHITECTURE_SECTIONS.graph}>
   <p>
-    Dokseo has six domains. Four are leaves, named once at the top of
+    Dokseo has seven domains besides <code>docs</code>. Four are leaves, named once at the top of
     <code>.dependency-cruiser.cjs</code>:
   </p>
   <DocsCode label={LEAF_LIST.label} code={LEAF_LIST.code} />
@@ -172,8 +170,15 @@
   </p>
   <DocsCode label={LEAF_RULE.label} code={LEAF_RULE.code} />
   <p>
-    Any domain folder not in the list is a non-leaf, and <code>non-leaves-import-only-leaves</code>
-    lets it import its own folders and the leaves, nothing else.
+    The other three are non-leaves, ordered once in <code>NON_LEAF_ORDER</code> beside the leaf
+    list. <code>non-leaves-import-in-order</code> lets a non-leaf import its own folders, the
+    leaves, and the non-leaves earlier in that list, nothing else. <code>catalog</code> may import
+    only leaves,
+    <code>storage</code> may also import <code>catalog</code>, and <code>sync</code> may import
+    both, while <code>storage</code> importing <code>sync</code> or <code>catalog</code> importing
+    <code>storage</code> fails. <code>every-domain-is-placed</code> fails any other folder under
+    <code>src/lib/domains/</code> that imports a domain, so a new domain has to be added to one of
+    the two lists first.
     <code>storage</code> reports what the origin holds and owns operations that span two leaves:
     removing a book with its captures composes the library's <code>removeBook</code> and
     recognition's
@@ -187,14 +192,14 @@
     <Diagram {...DOMAIN_GRAPH} />
     {#snippet caption()}
       The domain imports that exist today, apart from <code>docs</code>, which may import every
-      domain and is imported by none. No arrow leaves a leaf and none ends at a non-leaf, so no path
-      can return to where it started.
+      domain and is imported by none. No arrow leaves a leaf and none runs from a non-leaf back to
+      an earlier one, so no path can return to where it started.
     {/snippet}
   </Figure>
   <p>
-    Two non-leaves cannot import each other either. When a screen needs two domains, the route
-    composes them and passes one into the other as a snippet: the read route composes the readers
-    with the capture panel, as the EPUB page describes for
+    Two non-leaves cannot import each other either, because the order runs one way. When a screen
+    needs two domains, the route composes them and passes one into the other as a snippet: the read
+    route composes the readers with the capture panel, as the EPUB page describes for
     <a href={EPUB_FLOWING_HREF}>the flowing domain</a>. The docs pages need no such route, because
     <code>docs</code> imports the storage domain's components directly to show the real storage
     account; see <a href={STORAGE_ACCOUNT_HREF}>The storage account</a>.

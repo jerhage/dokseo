@@ -5,7 +5,7 @@ import { dirname, join, posix, resolve } from 'node:path';
 import { cruise } from 'dependency-cruiser';
 import type { ICruiseResult, IRegularForbiddenRuleType } from 'dependency-cruiser';
 import { describe, expect, it } from 'vitest';
-import { PATH_RULES, UNPORTED_RULES, refusingRules, sourcePath } from './import-rules';
+import { PATH_RULES, RULE_NAMES, UNPORTED_RULES, refusingRules, sourcePath } from './import-rules';
 import type { ImportKind } from './import-rules';
 
 type CruiserConfig = {
@@ -19,7 +19,15 @@ const config = requireFromRoot('./.dependency-cruiser.cjs') as CruiserConfig;
 
 const DOMAIN_FOLDERS = ['domain', 'use-cases', 'adapters', 'queries', 'ui'] as const;
 
-const DOMAINS = ['library', 'recognition', 'viewing', 'storage', 'docs', 'sync'] as const;
+const DOMAINS = [
+  'library',
+  'recognition',
+  'viewing',
+  'catalog',
+  'storage',
+  'docs',
+  'sync',
+] as const;
 
 const SAMPLE_PATHS = [
   'src/routes/+page.svelte',
@@ -183,14 +191,50 @@ describe('the ported path rules', () => {
     expect(refusingRules(from, to, 'value')).toEqual(['queries-call-use-cases-they-are-handed']);
   });
 
-  it('refuses one non-leaf importing another', () => {
+  it('refuses a non-leaf importing one later in the order', () => {
     expect(
       refusingRules(
-        'src/lib/domains/sync/ui/SyncPanel.svelte',
+        'src/lib/domains/storage/use-cases/read-storage-account.ts',
+        'src/lib/domains/sync/use-cases/book-data.ts',
+        'value',
+      ),
+    ).toEqual(['non-leaves-import-in-order']);
+    expect(
+      refusingRules(
+        'src/lib/domains/catalog/use-cases/browse-catalog.ts',
         'src/lib/domains/storage/domain/storage-parts.ts',
         'value',
       ),
-    ).toEqual(['non-leaves-import-only-leaves']);
+    ).toEqual(['non-leaves-import-in-order']);
+  });
+
+  it('passes a non-leaf importing a leaf or an earlier non-leaf', () => {
+    const from = 'src/lib/domains/sync/use-cases/book-data.ts';
+
+    for (const to of [
+      'src/lib/domains/catalog/domain/catalog.ts',
+      'src/lib/domains/storage/domain/storage-parts.ts',
+      'src/lib/domains/library/use-cases/sample.ts',
+    ]) {
+      expect(refusingRules(from, to, 'value')).toEqual([]);
+    }
+    expect(
+      refusingRules(
+        'src/lib/domains/storage/use-cases/sample.ts',
+        'src/lib/domains/catalog/domain/catalog.ts',
+        'value',
+      ),
+    ).toEqual([]);
+  });
+
+  it('refuses a domain folder that is not placed in any list', () => {
+    expect(
+      refusingRules(
+        'src/lib/domains/newcomer/use-cases/sample.ts',
+        'src/lib/domains/library/domain/sample.ts',
+        'value',
+      ),
+    ).toEqual(['every-domain-is-placed']);
   });
 
   it('passes docs importing an adapter, the container and another domain ui', () => {
@@ -212,7 +256,7 @@ describe('the ported path rules', () => {
     const to = 'src/lib/domains/docs/domain/sample.ts';
 
     expect(refusingRules('src/lib/domains/storage/ui/StorageSummary.svelte', to, 'value')).toEqual([
-      'non-leaves-import-only-leaves',
+      'non-leaves-import-in-order',
       'nothing-imports-docs',
     ]);
     expect(refusingRules('src/routes/+page.svelte', to, 'type-only')).toEqual([
@@ -237,5 +281,11 @@ describe('sourcePath', () => {
     expect(sourcePath(' $lib/shared/ids.ts ')).toBe('src/lib/shared/ids.ts');
     expect(sourcePath('$workers/ocr.worker.ts')).toBe('src/workers/ocr.worker.ts');
     expect(sourcePath('./src/routes/+page.svelte')).toBe('src/routes/+page.svelte');
+  });
+
+  it('lists each rule name once although one rule is generated per non-leaf', () => {
+    expect(new Set(RULE_NAMES).size).toBe(RULE_NAMES.length);
+    expect(RULE_NAMES.filter((name) => name === 'non-leaves-import-in-order')).toHaveLength(1);
+    expect(PATH_RULES.filter((rule) => rule.name === 'non-leaves-import-in-order')).toHaveLength(3);
   });
 });
