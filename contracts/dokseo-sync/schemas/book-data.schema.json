@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "book-data.schema.json",
+  "title": "Book data",
+  "description": "Identity of a book and where it came from. The file itself is never synced. recordId is the sync key, equal to contentHash.",
+  "type": "object",
+  "required": [
+    "contentHash",
+    "fileName",
+    "title",
+    "alias",
+    "language",
+    "direction",
+    "layoutKind",
+    "sourceKind",
+    "imageCount"
+  ],
+  "properties": {
+    "contentHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "fileName": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "alias": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "seriesId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "volume": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "language": {
+      "enum": [
+        "ja",
+        "ko",
+        "en"
+      ]
+    },
+    "direction": {
+      "enum": [
+        "rtl",
+        "ltr"
+      ]
+    },
+    "layoutKind": {
+      "enum": [
+        "paged",
+        "continuous",
+        "flow"
+      ]
+    },
+    "sourceKind": {
+      "enum": [
+        "images",
+        "pdf",
+        "archive",
+        "epub"
+      ]
+    },
+    "imageCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "origin": {
+      "type": "object",
+      "description": "Catalog origin of the book. The book is named by the enclosing change, so there is no bookId.",
+      "required": [
+        "catalogId",
+        "entryId",
+        "acquisition",
+        "updated",
+        "feedPath",
+        "feedPosition",
+        "downloadedAt"
+      ],
+      "properties": {
+        "catalogId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "recordId of a catalog record."
+        },
+        "entryId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "acquisition": {
+          "type": "object",
+          "required": [
+            "href",
+            "format",
+            "mediaType",
+            "length"
+          ],
+          "properties": {
+            "href": {
+              "type": "string",
+              "minLength": 1
+            },
+            "format": {
+              "enum": [
+                "epub",
+                "pdf",
+                "cbz"
+              ]
+            },
+            "mediaType": {
+              "type": "string"
+            },
+            "length": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        },
+        "updated": {
+          "type": "string"
+        },
+        "feedPath": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "title",
+              "href"
+            ],
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "href": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "feedPosition": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "downloadedAt": {
+          "type": "number"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pull-response.schema.json",
+  "title": "Pull response",
+  "description": "Result of GET /v1/changes.",
+  "type": "object",
+  "required": [
+    "changes",
+    "next",
+    "more"
+  ],
+  "properties": {
+    "changes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/StoredChange"
+      }
+    },
+    "next": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Last seq returned, or the after value when no change was returned."
+    },
+    "more": {
+      "type": "boolean",
+      "description": "True when changes with a higher seq remain."
+    }
+  },
+  "$defs": {
+    "StoredChange": {
+      "title": "Stored change",
+      "description": "A change plus the fields the server assigns.",
+      "allOf": [
+        {
+          "$ref": "change.schema.json"
+        },
+        {
+          "type": "object",
+          "required": [
+            "seq",
+            "receivedAt"
+          ],
+          "properties": {
+            "seq": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Server-assigned, strictly increasing, starts at 1."
+            },
+            "receivedAt": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Unix milliseconds on the server when the change was stored."
+            }
+          }
+        }
+      ]
+    }
+  }
+}

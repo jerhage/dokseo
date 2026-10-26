@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tag-data.schema.json",
+  "title": "Tag data",
+  "description": "A tag. recordId is the tag id.",
+  "type": "object",
+  "required": [
+    "name",
+    "colour",
+    "createdAt"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "colour": {
+      "enum": [
+        "slate",
+        "clay",
+        "sage",
+        "plum",
+        "rose",
+        "ice",
+        "ruby",
+        "copper",
+        "olive",
+        "fern",
+        "cyan",
+        "sky",
+        "indigo",
+        "violet",
+        "magenta",
+        "stone"
+      ]
+    },
+    "createdAt": {
+      "type": "number"
+    }
+  }
+}

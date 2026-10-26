@@ -1,0 +1,13 @@
+{
+  "id": "00000000-0000-4000-8000-000000000013",
+  "kind": "position",
+  "recordId": "0123456789abcdef0123456789abcdef",
+  "data": {
+    "kind": "image",
+    "index": 12,
+    "shownThrough": 13,
+    "offset": 0.4
+  },
+  "updatedAt": 1772445000000,
+  "deviceId": "00000000-0000-4000-8000-000000000002"
+}

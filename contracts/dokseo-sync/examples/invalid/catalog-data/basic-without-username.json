@@ -1,0 +1,8 @@
+{
+  "title": "Home library",
+  "protocol": "opds1",
+  "rootUrl": "https://books.example.net/opds",
+  "auth": {
+    "kind": "basic"
+  }
+}

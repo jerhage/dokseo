@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "change.schema.json",
+  "title": "Change",
+  "description": "One record change sent by a device. data null is a tombstone.",
+  "type": "object",
+  "required": [
+    "id",
+    "kind",
+    "recordId",
+    "data",
+    "updatedAt",
+    "deviceId"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "Client-chosen id of this change. The server stores a given id once."
+    },
+    "kind": {
+      "enum": [
+        "book",
+        "capture",
+        "tag",
+        "position",
+        "catalog"
+      ]
+    },
+    "recordId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Book sync key (32 lowercase hex) for book and position; uuid for capture, tag and catalog."
+    },
+    "data": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The whole record as the device holds it, or null when the record was deleted."
+    },
+    "updatedAt": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "description": "Unix milliseconds on the device when the record last changed."
+    },
+    "deviceId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "Device that made the change. Must equal the device of the bearer token."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "book"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "recordId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "book-data.schema.json"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "position"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "recordId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "position-data.schema.json"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "capture"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "recordId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "capture-data.schema.json"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "tag"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "recordId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "tag-data.schema.json"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "catalog"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "recordId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "catalog-data.schema.json"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

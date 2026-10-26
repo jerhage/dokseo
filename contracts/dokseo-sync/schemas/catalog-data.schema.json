@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "catalog-data.schema.json",
+  "title": "Catalog data",
+  "description": "A catalog connection. recordId is the catalog id. A password or any other credential is never part of it.",
+  "type": "object",
+  "required": [
+    "title",
+    "protocol",
+    "rootUrl",
+    "auth"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "protocol": {
+      "enum": [
+        "opds1"
+      ]
+    },
+    "rootUrl": {
+      "type": "string",
+      "minLength": 1
+    },
+    "password": false,
+    "auth": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "none"
+            },
+            "password": false
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "username"
+          ],
+          "properties": {
+            "kind": {
+              "const": "basic"
+            },
+            "username": {
+              "type": "string",
+              "minLength": 1
+            },
+            "password": false
+          }
+        }
+      ]
+    }
+  }
+}

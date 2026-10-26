@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "position-data.schema.json",
+  "title": "Position data",
+  "description": "Where the reader is in a book. recordId is the book sync key.",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "enum": [
+        "image",
+        "text"
+      ]
+    },
+    "lastReadAt": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "finishedAt": {
+      "type": [
+        "number",
+        "null"
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "kind",
+        "index",
+        "shownThrough",
+        "offset"
+      ],
+      "properties": {
+        "kind": {
+          "const": "image"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "shownThrough": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "offset": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "kind",
+        "cfi",
+        "fraction"
+      ],
+      "properties": {
+        "kind": {
+          "const": "text"
+        },
+        "cfi": {
+          "type": "string"
+        },
+        "fraction": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  ]
+}

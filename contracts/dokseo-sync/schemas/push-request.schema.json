@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "push-request.schema.json",
+  "title": "Push request",
+  "description": "Body of POST /v1/changes.",
+  "type": "object",
+  "required": [
+    "changes"
+  ],
+  "properties": {
+    "changes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "items": {
+        "$ref": "change.schema.json"
+      }
+    }
+  }
+}

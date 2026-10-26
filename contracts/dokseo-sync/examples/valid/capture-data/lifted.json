@@ -1,0 +1,19 @@
+{
+  "bookKey": "fedcba9876543210fedcba9876543210",
+  "anchor": {
+    "kind": "text",
+    "cfi": "epubcfi(/6/8!/4/2/1:0)",
+    "quote": {
+      "exact": "吾輩は猫である",
+      "prefix": "",
+      "suffix": "。名前はまだ無い"
+    },
+    "chapter": "Chapter 1"
+  },
+  "text": "吾輩は猫である",
+  "origin": "lifted",
+  "createdAt": 1772445700000,
+  "editedAt": null,
+  "tagIds": [],
+  "note": "opening line"
+}

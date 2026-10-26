@@ -1,0 +1,7 @@
+{
+  "server": "dokseo-sync",
+  "version": "0.1.0",
+  "apiVersions": [
+    1
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "title": "Open shelf",
+  "protocol": "opds1",
+  "rootUrl": "https://open.example.org/opds",
+  "auth": {
+    "kind": "none"
+  }
+}

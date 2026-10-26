@@ -1,0 +1,16 @@
+{
+  "bookKey": "0123456789abcdef0123456789abcdef",
+  "anchor": {
+    "kind": "point",
+    "x": 0.1
+  },
+  "text": "よつば",
+  "origin": "recognized",
+  "createdAt": 1772445700000,
+  "editedAt": null,
+  "tagIds": [
+    "00000000-0000-4000-8000-000000000005"
+  ],
+  "note": null,
+  "confidence": 0.93
+}
