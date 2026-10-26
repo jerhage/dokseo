@@ -29,7 +29,12 @@ type GoldenCount = {
 
 const STORE_ONLY_ROWS = new Set(['model-consent', 'recognizer-setup']);
 
-const SYNC_BOOKKEEPING_STORES = new Set([OUTBOX_STORE, RECORD_VERSION_STORE, 'settings']);
+const SYNC_BOOKKEEPING_STORES = new Set([
+  OUTBOX_STORE,
+  RECORD_VERSION_STORE,
+  'settings',
+  'held-changes',
+]);
 
 const FLOWING_STORE: StoreRow = {
   database: 'flowing',

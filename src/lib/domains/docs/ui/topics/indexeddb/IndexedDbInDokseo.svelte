@@ -49,7 +49,7 @@
       steps:
         '1 catalogs · origins and its catalogId and entry indexes · 2 outbox and record-versions',
     },
-    { database: 'sync', steps: '1 settings' },
+    { database: 'sync', steps: '1 settings · 2 held-changes' },
   ] as const;
 </script>
 
