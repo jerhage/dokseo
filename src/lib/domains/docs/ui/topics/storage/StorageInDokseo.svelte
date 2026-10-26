@@ -108,6 +108,13 @@
       holds:
         'Changes pulled from the server that wait for their book to arrive on this device, one per record',
     },
+    {
+      database: `${SYNC_DATABASE.name} v${SYNC_DATABASE.version}`,
+      store: 'tried-downloads',
+      key: 'contentHash',
+      holds:
+        'Books whose catalog file came out different from the one on the other device, so automatic download skips them',
+    },
   ] as const;
 
   const patienceSeconds = BLOCKED_PATIENCE_MS / 1000;
