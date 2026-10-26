@@ -4,7 +4,8 @@ import { isChange } from '$lib/domains/sync/domain/change';
 
 const EXAMPLES = new URL('../../../../../contracts/dokseo-sync/examples/', import.meta.url);
 
-const DATA_RULE_ONLY = new Set([
+const SERVER_RULE_ONLY = new Set([
+  'id-not-uuid.json',
   'book-record-id-uppercase.json',
   'capture-record-id-not-uuid.json',
   'data-does-not-match-kind.json',
@@ -30,7 +31,9 @@ describe('isChange', () => {
   });
 
   it('rejects every invalid contract example that breaks the envelope', () => {
-    const envelopeBreaks = readExamples('invalid').filter(({ name }) => !DATA_RULE_ONLY.has(name));
+    const envelopeBreaks = readExamples('invalid').filter(
+      ({ name }) => !SERVER_RULE_ONLY.has(name),
+    );
     expect(envelopeBreaks.length).toBeGreaterThan(0);
     for (const { name, value } of envelopeBreaks) expect(isChange(value), name).toBe(false);
   });
