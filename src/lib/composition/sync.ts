@@ -6,6 +6,7 @@ import { createTagRepository } from '../domains/recognition/adapters/tag/indexed
 import { createCaptureRepository } from '../domains/recognition/adapters/capture/indexeddb-captures.repo';
 import type { CaptureRepository } from '../domains/recognition/domain/capture/capture-repository';
 import { createHeldChangeStore } from '../domains/sync/adapters/indexeddb-held-changes';
+import { createTriedDownloadStore } from '../domains/sync/adapters/indexeddb-tried-downloads';
 import { createSyncStateStore } from '../domains/sync/adapters/indexeddb-sync-state';
 import type { DownloadProgress } from '../domains/catalog/domain/catalog-source';
 import type { SyncServer } from '../domains/sync/domain/sync-server';
@@ -113,6 +114,7 @@ function buildSync(
     captures: { captures: createCaptureRepository('unmarked') },
     catalogs: { catalogs: unmarkedCatalogs },
     held: createHeldChangeStore(),
+    tried: createTriedDownloadStore(),
   };
   const downloading = { ...applying, downloadPublication: catalog.downloadPublication };
   const everything = {

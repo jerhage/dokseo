@@ -58,7 +58,7 @@ async function autoDownload(deps: SyncNowDeps, choices: DownloadChoices): Promis
   let downloaded = 0;
   let downloadFailed = 0;
   for (const book of listed.books) {
-    if (book.availability.kind !== 'downloadable') continue;
+    if (book.availability.kind !== 'downloadable' || book.fileDiffers) continue;
     const fetched = await fetchRemoteBook(deps, book, choices, NO_PROGRESS);
     if (fetched.kind === 'success') downloaded += 1;
     else downloadFailed += 1;

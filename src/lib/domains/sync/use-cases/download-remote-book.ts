@@ -4,8 +4,11 @@ import type { RemotePublication } from '$lib/domains/catalog/domain/remote-publi
 import type { DownloadPublicationResult } from '$lib/domains/catalog/use-cases/download-publication';
 import type { BookMatching } from '$lib/domains/library/domain/book/book-matching';
 import type { ReadingDefaults } from '$lib/domains/library/domain/book/reading-defaults';
+import type { LibraryRepository } from '$lib/domains/library/domain/book/library-repository';
+import { listBooks } from '$lib/domains/library/use-cases/list-books';
 import type { BookId, CatalogId } from '$lib/shared/ids';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
+import type { TriedDownloadStore } from '../domain/tried-downloads';
 import { applyHeldChanges } from './apply-held-changes';
 import type { ApplyHeldChangesDeps } from './apply-held-changes';
 import { listRemoteBooks } from './list-remote-books';
@@ -36,6 +39,7 @@ type RemoteBookFailure =
   | { readonly kind: 'aborted' }
   | { readonly kind: 'catalog-unavailable' }
   | { readonly kind: 'unreadable-file' }
+  | { readonly kind: 'different-file' }
   | StorageUnavailable;
 
 type FetchRemoteBookResult =
@@ -53,7 +57,11 @@ type DownloadRemoteBookResult =
   | { readonly kind: 'not-connected' }
   | RemoteBookFailure;
 
-type FetchRemoteBookDeps = { readonly downloadPublication: DownloadPublication };
+type FetchRemoteBookDeps = {
+  readonly downloadPublication: DownloadPublication;
+  readonly shelf: { readonly repository: LibraryRepository };
+  readonly tried: TriedDownloadStore;
+};
 
 type DownloadRemoteBookDeps = FetchRemoteBookDeps & ListRemoteBooksDeps & ApplyHeldChangesDeps;
 
@@ -121,6 +129,15 @@ async function fetchRemoteBook(
     signal,
   );
   if (downloaded.kind !== 'success') return failureOf(origin.catalogId, downloaded);
+
+  const shelf = await listBooks(deps.shelf);
+  if (shelf.kind !== 'success') return shelf;
+  const arrived = shelf.books.find((candidate) => candidate.id === downloaded.bookId);
+  if (arrived !== undefined && arrived.contentHash !== book.contentHash) {
+    const remembered = await deps.tried.add(book.contentHash);
+    if (remembered.kind !== 'success') return remembered;
+    return { kind: 'different-file' };
+  }
   return { kind: 'success', bookId: downloaded.bookId };
 }
 

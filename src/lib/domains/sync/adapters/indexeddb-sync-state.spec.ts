@@ -103,7 +103,7 @@ describe('the sync state store', () => {
     expect(await states.clear()).toEqual(STORAGE_UNAVAILABLE);
   });
 
-  it('declares the sync database at version 2 with the settings and held-changes stores', async () => {
+  it('declares the sync database at version 3 with the settings, held-changes and tried-downloads stores', async () => {
     vi.resetModules();
     const fresh = await import('./indexeddb-sync-state');
     await fresh.createSyncStateStore().read();

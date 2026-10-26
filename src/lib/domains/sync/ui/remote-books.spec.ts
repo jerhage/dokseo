@@ -20,6 +20,7 @@ const DOWNLOADABLE: RemoteBook = {
   title: 'Yotsuba&!',
   alias: 'Yotsuba',
   language: 'ja',
+  fileDiffers: false,
   availability: { kind: 'downloadable', origin: ORIGIN },
 };
 
@@ -46,6 +47,18 @@ describe('remoteBookRow', () => {
       status: 'You are offline.',
       action: 'Try again',
     });
+  });
+
+  it('says the catalog file differs while keeping the download offered, until a download is running or has failed', () => {
+    const differs = { ...DOWNLOADABLE, fileDiffers: true };
+
+    expect(remoteBookRow(differs, { kind: 'idle' })).toEqual({
+      title: 'Yotsuba',
+      status: "The catalog's file is not the one on your other device.",
+      downloadable: true,
+      action: 'Download',
+    });
+    expect(remoteBookRow(differs, { kind: 'running', progress: null }).status).toBe('Downloading…');
   });
 
   it('offers no download for a book that is not on this device and says how to get it', () => {

@@ -29,6 +29,15 @@ type DisconnectOutcome = {
   readonly text: string;
 };
 
+const DIFFERENT_FILE_TEXT = "The catalog's file is not the one on your other device.";
+
+const SIGNED_OUT_NOTICE_TITLE = 'Sync signed out';
+
+const SIGNED_OUT_NOTICE_TEXT =
+  'The server signed this device out, so syncing has stopped. Open Settings, Sync to connect again.';
+
+const OPEN_SYNC_SETTINGS_LABEL = 'Open Settings';
+
 const OFFLINE_TEXT =
   'Could not reach the server. Check the address and that this device can reach it.';
 
@@ -255,7 +264,11 @@ export {
   AUTO_DOWNLOAD_FAILED,
   AUTO_DOWNLOAD_HINT,
   AUTO_DOWNLOAD_LABEL,
+  DIFFERENT_FILE_TEXT,
   OFFLINE_TEXT,
+  OPEN_SYNC_SETTINGS_LABEL,
+  SIGNED_OUT_NOTICE_TEXT,
+  SIGNED_OUT_NOTICE_TITLE,
   STORAGE_TEXT,
   connectFailureText,
   devicesFailureText,

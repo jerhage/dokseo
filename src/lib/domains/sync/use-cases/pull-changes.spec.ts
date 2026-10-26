@@ -18,6 +18,7 @@ import { imagePlace } from '$lib/shared/reading-place';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { Change, ChangeData, StoredChange, SyncKind } from '../domain/change';
 import type { HeldChangeStore } from '../domain/held-changes';
+import type { TriedDownloadStore } from '../domain/tried-downloads';
 import type { PullPage, PullResult, SyncServer } from '../domain/sync-server';
 import type { SyncConnection, SyncStateStore } from '../domain/sync-state';
 import { applyHeldChanges } from './apply-held-changes';
@@ -135,6 +136,7 @@ function world(start: {
   tags?: readonly Tag[];
   catalogs?: readonly Catalog[];
   autoDownload?: boolean;
+  tried?: readonly string[];
   download?: DownloadPublication;
 }) {
   let books = [...(start.books ?? [])];
@@ -147,6 +149,7 @@ function world(start: {
   const versions = new Map<string, RecordVersion>();
   const held = new Map<string, Change>();
   const cursors: number[] = [];
+  const tried = new Set<string>(start.tried ?? []);
   let connection: SyncConnection = { ...CONNECTION, autoDownload: start.autoDownload ?? false };
   let unavailable = false;
 
@@ -272,6 +275,14 @@ function world(start: {
     },
   };
 
+  const triedStore: TriedDownloadStore = {
+    list: () => Promise.resolve({ kind: 'success', contentHashes: new Set(tried) } as const),
+    add: (hash) => {
+      tried.add(hash);
+      return success();
+    },
+  };
+
   const state: SyncStateStore = {
     read: () =>
       Promise.resolve(
@@ -289,6 +300,7 @@ function world(start: {
     deps: {
       state,
       held: heldStore,
+      tried: triedStore,
       shelf: { repository: shelf, now: () => 99 },
       captures: { captures: captureRepository },
       catalogs: { catalogs: catalogRepository },
@@ -308,6 +320,7 @@ function world(start: {
     markers,
     versions,
     held,
+    tried,
     cursors,
     stored: () => connection,
     arrive: (book: Book) => {
@@ -669,6 +682,21 @@ describe('downloadRemoteBook', () => {
     expect(source.captures.get(CAPTURE_ID)?.bookId).toBe(BOOK.id);
   });
 
+  it('remembers the remote hash as tried when the downloaded file has another hash', async () => {
+    let source: ReturnType<typeof world> | null = null;
+    const download: DownloadPublication = () => {
+      source?.arrive({ ...BOOK, contentHash: OTHER_HASH });
+      return Promise.resolve({ kind: 'success', bookId: BOOK.id });
+    };
+    source = world({ catalogs: [CATALOG], download });
+    await hold(source, BOOK_DATA_WITH_ORIGIN);
+
+    const result = await downloadRemoteBook(source.deps, HASH, CHOICES, () => undefined);
+
+    expect(result).toEqual({ kind: 'different-file' });
+    expect([...source.tried]).toEqual([HASH]);
+  });
+
   it('asks for the catalog password when the catalog is locked', async () => {
     const source = world({
       catalogs: [CATALOG],
@@ -760,6 +788,29 @@ describe('syncNow', () => {
     expect(order).toEqual(['urn:uuid:5d1c', 'urn:uuid:other']);
     expect(result).toMatchObject({ kind: 'success', downloaded: 1, downloadFailed: 1, held: 1 });
     expect(source.captures.get(CAPTURE_ID)?.bookId).toBe(BOOK.id);
+  });
+
+  it('skips a tried record in automatic download and flags it in the list', async () => {
+    let downloads = 0;
+    const source = world({
+      catalogs: [CATALOG],
+      autoDownload: true,
+      tried: [HASH],
+      download: () => {
+        downloads += 1;
+        return Promise.reject(new Error('must not download'));
+      },
+    });
+    await hold(source, BOOK_DATA_WITH_ORIGIN);
+    const server = serving(page([], 1)).server;
+
+    const result = await syncNow({ ...source.deps, server }, CHOICES);
+
+    expect(downloads).toBe(0);
+    expect(result).toMatchObject({ kind: 'success', downloaded: 0, downloadFailed: 0 });
+    expect(await listRemoteBooks(source.deps)).toMatchObject({
+      books: [{ contentHash: HASH, fileDiffers: true }],
+    });
   });
 
   it('stops at a failed push and stores no sync time', async () => {

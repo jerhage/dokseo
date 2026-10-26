@@ -3,6 +3,7 @@ import type { ReadState } from '$lib/shared/read-state';
 import { shownTitle } from '$lib/shared/shown-title';
 import type { ListRemoteBooksResult, RemoteBook } from '../use-cases/list-remote-books';
 import type { RemoteDownload } from './remote-downloads';
+import { DIFFERENT_FILE_TEXT } from './sync-texts';
 
 type RemoteBooksView =
   | { readonly kind: 'hidden' }
@@ -28,10 +29,10 @@ function remoteBooksView(state: ReadState<ListRemoteBooksResult>): RemoteBooksVi
   return { kind: 'listed', books: value.books };
 }
 
-function downloadStatus(download: RemoteDownload): string {
+function downloadStatus(download: RemoteDownload, fileDiffers: boolean): string {
   return match(download)
     .returnType<string>()
-    .with({ kind: 'idle' }, () => NOT_DOWNLOADED_TEXT)
+    .with({ kind: 'idle' }, () => (fileDiffers ? DIFFERENT_FILE_TEXT : NOT_DOWNLOADED_TEXT))
     .with({ kind: 'running' }, ({ progress }) =>
       progress === null ? 'Downloading…' : `Downloading ${Math.round(progress * 100)}%`,
     )
@@ -44,7 +45,7 @@ function remoteBookRow(book: RemoteBook, download: RemoteDownload): RemoteBookRo
     .returnType<RemoteBookRow>()
     .with({ kind: 'downloadable' }, () => ({
       title: shownTitle(book),
-      status: downloadStatus(download),
+      status: downloadStatus(download, book.fileDiffers),
       downloadable: true,
       action: download.kind === 'failed' ? 'Try again' : 'Download',
     }))

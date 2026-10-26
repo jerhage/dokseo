@@ -390,6 +390,31 @@ function MARKER_OF(recordId: string) {
 describe('change markers', () => {
   const MARKER = { kind: 'tag', recordId: 't', deleted: false, at: 1, changeId: 'c1' } as const;
 
+  it('announces a local change once a marked write commits, and announces nothing for an unmarked write', async () => {
+    const posts: unknown[] = [];
+    vi.stubGlobal(
+      'BroadcastChannel',
+      class {
+        postMessage(message: unknown): void {
+          posts.push(message);
+        }
+        close(): void {}
+      },
+    );
+    const db = new RecordingDatabase();
+
+    await writeRecords(recordingConnection(db), [
+      { kind: 'put', store: 'tags', record: { id: 't' } },
+    ]);
+    expect(posts).toEqual([]);
+
+    await writeRecords(recordingConnection(db), [
+      { kind: 'put', store: 'tags', record: { id: 't' } },
+      { kind: 'mark', marker: MARKER },
+    ]);
+    expect(posts).toHaveLength(1);
+  });
+
   it('places a marker write in the outbox store of the same transaction as the record', async () => {
     const db = new RecordingDatabase();
 

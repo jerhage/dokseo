@@ -6,6 +6,7 @@ import { shownTitle } from '$lib/shared/shown-title';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { HeldChangeStore } from '../domain/held-changes';
 import type { SyncStateStore } from '../domain/sync-state';
+import type { TriedDownloadStore } from '../domain/tried-downloads';
 import { fromSyncBookData } from './book-data';
 import type { SyncedOrigin } from './book-data';
 
@@ -18,6 +19,7 @@ type RemoteBook = {
   readonly title: string;
   readonly alias: string | null;
   readonly language: Language;
+  readonly fileDiffers: boolean;
   readonly availability: RemoteAvailability;
 };
 
@@ -29,6 +31,7 @@ type ListRemoteBooksResult =
 type ListRemoteBooksDeps = {
   readonly state: SyncStateStore;
   readonly held: HeldChangeStore;
+  readonly tried: TriedDownloadStore;
   readonly shelf: { readonly repository: LibraryRepository };
   readonly catalogs: { readonly catalogs: CatalogRepository };
 };
@@ -53,6 +56,8 @@ async function listRemoteBooks(deps: ListRemoteBooksDeps): Promise<ListRemoteBoo
 
   const held = await deps.held.list();
   if (held.kind !== 'success') return held;
+  const tried = await deps.tried.list();
+  if (tried.kind !== 'success') return tried;
   const shelf = await listBooks(deps.shelf);
   if (shelf.kind !== 'success') return shelf;
   const onShelf = new Set<string>(shelf.books.map((book) => book.contentHash));
@@ -70,6 +75,7 @@ async function listRemoteBooks(deps: ListRemoteBooksDeps): Promise<ListRemoteBoo
       title: data.book.title,
       alias: data.book.alias,
       language: data.book.language,
+      fileDiffers: tried.contentHashes.has(change.recordId),
       availability,
     });
   }
