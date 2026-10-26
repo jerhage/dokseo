@@ -34,6 +34,7 @@ const SYNC_BOOKKEEPING_STORES = new Set([
   RECORD_VERSION_STORE,
   'settings',
   'held-changes',
+  'tried-downloads',
 ]);
 
 const FLOWING_STORE: StoreRow = {
