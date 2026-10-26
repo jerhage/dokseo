@@ -31,6 +31,7 @@ describe('SettingsShell', () => {
     expect(navCurrent(markup({ current: 'appearance' }))).toEqual(['/settings/appearance']);
     expect(navCurrent(markup({ current: 'library' }))).toEqual(['/settings/library']);
     expect(navCurrent(markup({ current: 'catalogs' }))).toEqual(['/settings/catalogs']);
+    expect(navCurrent(markup({ current: 'sync' }))).toEqual(['/settings/sync']);
     expect(navCurrent(markup({ current: 'reading' }))).toEqual(['/settings/reading']);
     expect(navCurrent(markup({ current: 'app' }))).toEqual(['/settings/app']);
   });
@@ -102,6 +103,7 @@ describe('SettingsShell', () => {
       'Theme and color scheme',
       'How a file finds its book',
       'OPDS servers to download from',
+      'Keep devices the same',
       'How each language reads',
       'Version and updates',
     ]);

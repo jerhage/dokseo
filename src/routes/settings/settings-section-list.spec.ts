@@ -26,6 +26,7 @@ describe('SettingsSectionList', () => {
       '/settings/appearance',
       '/settings/library',
       '/settings/catalogs',
+      '/settings/sync',
       '/settings/reading',
       '/settings/app',
     ]);
@@ -34,7 +35,7 @@ describe('SettingsSectionList', () => {
   it('draws every section link in the full text colour and marks none as current', () => {
     const links = listLinks(markup());
 
-    expect(links).toHaveLength(8);
+    expect(links).toHaveLength(9);
     expect(links.every((link) => /class="nav-link nav-link-strong\b/u.test(link))).toBe(true);
     expect(links.some((link) => link.includes('aria-current'))).toBe(false);
   });
