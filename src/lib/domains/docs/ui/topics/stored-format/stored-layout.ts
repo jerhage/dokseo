@@ -6,6 +6,7 @@ import {
   CATALOG_ORIGINS_DATABASE,
   READER_DATABASE,
   RECOGNITION_DATABASE,
+  SYNC_DATABASE,
 } from '$lib/shared/testing/stored-format/database-layout';
 import type { DatabaseLayout } from '$lib/shared/testing/stored-format/database-layout';
 
@@ -28,7 +29,7 @@ type GoldenCount = {
 
 const STORE_ONLY_ROWS = new Set(['model-consent', 'recognizer-setup']);
 
-const SYNC_BOOKKEEPING_STORES = new Set([OUTBOX_STORE, RECORD_VERSION_STORE]);
+const SYNC_BOOKKEEPING_STORES = new Set([OUTBOX_STORE, RECORD_VERSION_STORE, 'settings']);
 
 const FLOWING_STORE: StoreRow = {
   database: 'flowing',
@@ -80,6 +81,7 @@ const STORE_ROWS: readonly StoreRow[] = [
   ...storeRows(RECOGNITION_DATABASE),
   FLOWING_STORE,
   ...storeRows(CATALOG_ORIGINS_DATABASE),
+  ...storeRows(SYNC_DATABASE),
 ];
 
 function goldenCounts(text: string): readonly GoldenCount[] {
