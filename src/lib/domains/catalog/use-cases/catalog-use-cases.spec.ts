@@ -53,6 +53,8 @@ function fakes(fault: Fault = 'none') {
   const log: string[] = [];
 
   const catalogs: CatalogRepository = {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     list: () =>
       Promise.resolve(
         fault === 'unavailable'

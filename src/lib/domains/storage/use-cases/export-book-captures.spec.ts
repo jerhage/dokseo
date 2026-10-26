@@ -127,6 +127,8 @@ type Holdings = {
 
 function deps(holdings: Holdings = {}): ExportBookCapturesDeps {
   const repository: LibraryRepository = {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     list: () =>
       Promise.resolve(
         holdings.unavailable === 'shelf'
@@ -174,6 +176,8 @@ function deps(holdings: Holdings = {}): ExportBookCapturesDeps {
     capture('capture-3', 'gone-1', [GRAMMAR]),
   ];
   const captures: CaptureRepository = {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     listForBook: (book: BookId) =>
       Promise.resolve(
         holdings.unavailable === 'captures'

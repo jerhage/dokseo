@@ -973,8 +973,8 @@ describe('the change markers of createLibraryRepository', () => {
     );
 
     expect(outbox()).toEqual([
-      { kind: 'book', recordId: HASH, deleted: false, at: 42 },
-      { kind: 'position', recordId: HASH, deleted: false, at: 42 },
+      { kind: 'book', recordId: HASH, deleted: false, at: 42, changeId: expect.any(String) },
+      { kind: 'position', recordId: HASH, deleted: false, at: 42, changeId: expect.any(String) },
     ]);
   });
 
@@ -1018,7 +1018,9 @@ describe('the change markers of createLibraryRepository', () => {
 
     await repository.update(SHELVED.id, { lastReadAt: 6 });
 
-    expect(outbox()).toEqual([{ kind: 'position', recordId: HASH, deleted: false, at: 43 }]);
+    expect(outbox()).toEqual([
+      { kind: 'position', recordId: HASH, deleted: false, at: 43, changeId: expect.any(String) },
+    ]);
   });
 
   it('writes no marker when an edit changes only device-local fields', async () => {

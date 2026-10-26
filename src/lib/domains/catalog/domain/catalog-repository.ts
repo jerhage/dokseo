@@ -1,3 +1,4 @@
+import type { PendingMarkers, SettledMarker } from '$lib/shared/change-marker';
 import type { CatalogId } from '$lib/shared/ids';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Catalog } from './catalog';
@@ -23,6 +24,8 @@ interface CatalogRepository {
   get(id: CatalogId): Promise<CatalogLookup>;
   save(catalog: Catalog): Promise<CatalogWrite>;
   remove(id: CatalogId): Promise<CatalogWrite>;
+  pendingChanges(): Promise<PendingMarkers>;
+  settleChanges(settled: readonly SettledMarker[]): Promise<CatalogWrite>;
 }
 
 export type { CatalogListing, CatalogLookup, CatalogRepository, CatalogWrite };

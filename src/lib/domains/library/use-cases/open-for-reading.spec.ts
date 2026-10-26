@@ -79,6 +79,8 @@ function fakeRepository(
   source: FileLookup = file(new Blob(['source bytes'])),
 ): LibraryRepository {
   return {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     list: () => Promise.resolve({ kind: 'success', books: [], unreadable: [] }),
     get: () => Promise.resolve(record),
     add: () => Promise.resolve(WRITTEN),

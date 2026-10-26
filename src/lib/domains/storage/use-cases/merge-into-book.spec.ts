@@ -26,6 +26,8 @@ type Outcomes = {
 
 function captureRepository(moveBook: CaptureRepository['moveBook']): CaptureRepository {
   return {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     listForBook: notUsed,
     listEverything: notUsed,
     save: notUsed,
@@ -40,6 +42,8 @@ function libraryRepository(
   writes: Pick<LibraryRepository, 'remove' | 'forgetRemoved' | 'erase'>,
 ): LibraryRepository {
   return {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     list: notUsed,
     get: notUsed,
     add: notUsed,

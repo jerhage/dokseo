@@ -77,7 +77,7 @@ describe('createTagRepository', () => {
     await createTagRepository().save(tagFromStored(SFX));
 
     expect([...held.outbox.values()]).toEqual([
-      { kind: 'tag', recordId: 'sfx', deleted: false, at: 1000 },
+      { kind: 'tag', recordId: 'sfx', deleted: false, at: 1000, changeId: expect.any(String) },
     ]);
   });
 
@@ -89,7 +89,7 @@ describe('createTagRepository', () => {
     await repository.save(tagFromStored(SFX));
 
     expect([...held.outbox.values()]).toEqual([
-      { kind: 'tag', recordId: 'sfx', deleted: false, at: 2000 },
+      { kind: 'tag', recordId: 'sfx', deleted: false, at: 2000, changeId: expect.any(String) },
     ]);
   });
 
@@ -100,7 +100,7 @@ describe('createTagRepository', () => {
     await repository.remove(tagId('sfx'));
 
     expect([...held.outbox.values()]).toEqual([
-      { kind: 'tag', recordId: 'sfx', deleted: true, at: 1000 },
+      { kind: 'tag', recordId: 'sfx', deleted: true, at: 1000, changeId: expect.any(String) },
     ]);
   });
 

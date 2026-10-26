@@ -26,6 +26,8 @@ const removed: Capture = {
 function repository(outcome: CaptureWrite) {
   const saved: Capture[] = [];
   const captures: CaptureRepository = {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     listForBook: () => Promise.resolve({ kind: 'success' as const, captures: [], unreadable: [] }),
     listEverything: () =>
       Promise.resolve({ kind: 'success' as const, captures: [], unreadable: [] }),

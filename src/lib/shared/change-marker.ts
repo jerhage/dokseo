@@ -1,3 +1,5 @@
+import type { StorageUnavailable } from './storage-unavailable';
+
 const OUTBOX_STORE = 'outbox';
 
 const RECORD_VERSION_STORE = 'record-versions';
@@ -11,6 +13,7 @@ type ChangeMarker = {
   readonly recordId: string;
   readonly deleted: boolean;
   readonly at: number;
+  readonly changeId: string;
 };
 
 type RecordVersion = {
@@ -20,6 +23,17 @@ type RecordVersion = {
   readonly deviceId: string;
 };
 
+type HeldVersion = Pick<RecordVersion, 'updatedAt' | 'deviceId'>;
+
+type SettledMarker = {
+  readonly marker: ChangeMarker;
+  readonly version: HeldVersion;
+};
+
+type PendingMarkers =
+  | { readonly kind: 'success'; readonly markers: readonly ChangeMarker[] }
+  | StorageUnavailable;
+
 type ChangeTracking = 'marked' | 'unmarked';
 
 function changeMarker(
@@ -28,7 +42,7 @@ function changeMarker(
   deleted: boolean,
   at: number,
 ): ChangeMarker {
-  return { kind, recordId, deleted, at };
+  return { kind, recordId, deleted, at, changeId: crypto.randomUUID() };
 }
 
 function markChanged(transaction: IDBTransaction, marker: ChangeMarker): void {
@@ -51,4 +65,12 @@ export {
   createChangeStores,
   markChanged,
 };
-export type { ChangeKind, ChangeMarker, ChangeTracking, RecordVersion };
+export type {
+  ChangeKind,
+  ChangeMarker,
+  ChangeTracking,
+  HeldVersion,
+  PendingMarkers,
+  RecordVersion,
+  SettledMarker,
+};

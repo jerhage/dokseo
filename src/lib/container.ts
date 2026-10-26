@@ -70,7 +70,7 @@ function buildContainer(): Container {
       ...buildCapturesExports(repository, captures),
       ...buildCapturesImports(repository, captures),
     },
-    sync: buildSync(),
+    sync: buildSync(repository, captures),
   };
 }
 

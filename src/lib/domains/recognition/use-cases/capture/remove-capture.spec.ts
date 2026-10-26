@@ -28,6 +28,8 @@ function stored(id: string): Capture {
 function repository(broken = false) {
   let rows: Capture[] = [stored('a'), stored('b')];
   const captures: CaptureRepository = {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     listForBook: () =>
       Promise.resolve({ kind: 'success' as const, captures: rows, unreadable: [] }),
     listEverything: () =>

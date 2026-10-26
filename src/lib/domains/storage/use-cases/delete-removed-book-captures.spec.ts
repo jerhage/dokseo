@@ -23,6 +23,8 @@ type Outcomes = { readonly clearing?: CaptureWrite; readonly forgetting?: Librar
 function world(outcomes: Outcomes = {}) {
   const steps: string[] = [];
   const captures: CaptureRepository = {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     listForBook: notUsed,
     listEverything: notUsed,
     save: notUsed,
@@ -35,6 +37,8 @@ function world(outcomes: Outcomes = {}) {
     },
   };
   const repository: LibraryRepository = {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     list: notUsed,
     get: notUsed,
     add: notUsed,

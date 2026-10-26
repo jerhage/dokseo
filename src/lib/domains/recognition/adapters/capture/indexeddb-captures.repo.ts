@@ -3,10 +3,17 @@ import {
   listByIndex,
   listRecords,
   rewriteByIndex,
+  settleMarkers,
   writeRecords,
 } from '$lib/platform/idb/connection';
 import { markingWrites } from '$lib/platform/idb/marking-writes';
-import type { ChangeMarker, ChangeTracking } from '$lib/shared/change-marker';
+import { OUTBOX_STORE } from '$lib/shared/change-marker';
+import type {
+  ChangeMarker,
+  ChangeTracking,
+  PendingMarkers,
+  SettledMarker,
+} from '$lib/shared/change-marker';
 import { isText } from '$lib/shared/corrupt-row';
 import { captureId } from '$lib/shared/ids';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
@@ -131,6 +138,18 @@ function createCaptureRepository(tracking: ChangeTracking = 'marked'): CaptureRe
           : undefined,
       );
       return { kind: 'success', untagged };
+    },
+
+    async pendingChanges(): Promise<PendingMarkers> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      const markers = await listRecords<ChangeMarker>(await recognitionDatabase(), OUTBOX_STORE);
+      return { kind: 'success', markers };
+    },
+
+    async settleChanges(settled: readonly SettledMarker[]): Promise<CaptureWrite> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      await settleMarkers(await recognitionDatabase(), settled);
+      return WRITTEN;
     },
   };
 }

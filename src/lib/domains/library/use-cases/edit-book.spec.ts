@@ -33,6 +33,8 @@ const stored: Book = {
 function fakeRepository(outcome: BookLookup) {
   const updates: UpdateCall[] = [];
   const repository: LibraryRepository = {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     list: () => Promise.resolve({ kind: 'success', books: [], unreadable: [] }),
     get: () => Promise.resolve({ kind: 'success', book: null }),
     add: () => Promise.resolve({ kind: 'success' }),

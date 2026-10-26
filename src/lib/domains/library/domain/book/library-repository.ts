@@ -1,3 +1,4 @@
+import type { PendingMarkers, SettledMarker } from '$lib/shared/change-marker';
 import type { BookId } from '$lib/shared/ids';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Book, BookEdit } from './book';
@@ -76,6 +77,8 @@ interface LibraryRepository {
   readSource(id: BookId): Promise<FileLookup>;
   readCover(id: BookId): Promise<FileLookup>;
   storedBytes(): Promise<ByteCount>;
+  pendingChanges(): Promise<PendingMarkers>;
+  settleChanges(settled: readonly SettledMarker[]): Promise<LibraryWrite>;
 }
 
 export type {

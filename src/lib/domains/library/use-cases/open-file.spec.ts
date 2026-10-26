@@ -125,6 +125,8 @@ function fakeRepository(
 ) {
   const added: AddCall[] = [];
   const repository: LibraryRepository = {
+    pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
+    settleChanges: () => Promise.resolve({ kind: 'success' }),
     list: () => Promise.resolve(held),
     get: () => Promise.resolve({ kind: 'success', book: null }),
     add: (book, source, cover, order, report) => {
