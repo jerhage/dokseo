@@ -61,17 +61,19 @@ function layoutOf(opened: OpenedDatabase): DatabaseLayout {
 
 const READER_DATABASE: DatabaseLayout = {
   name: 'reader',
-  version: 3,
+  version: 4,
   stores: {
     books: { options: { keyPath: 'id' }, indexes: {} },
     'page-lists': { options: { keyPath: 'id' }, indexes: {} },
     'removed-books': { options: { keyPath: 'id' }, indexes: {} },
+    outbox: { options: { keyPath: ['kind', 'recordId'] }, indexes: {} },
+    'record-versions': { options: { keyPath: ['kind', 'recordId'] }, indexes: {} },
   },
 };
 
 const RECOGNITION_DATABASE: DatabaseLayout = {
   name: 'recognition',
-  version: 5,
+  version: 6,
   stores: {
     'model-consent': { options: { keyPath: 'language' }, indexes: {} },
     captures: {
@@ -83,12 +85,14 @@ const RECOGNITION_DATABASE: DatabaseLayout = {
     },
     'recognizer-setup': { options: { keyPath: 'language' }, indexes: {} },
     tags: { options: { keyPath: 'id' }, indexes: {} },
+    outbox: { options: { keyPath: ['kind', 'recordId'] }, indexes: {} },
+    'record-versions': { options: { keyPath: ['kind', 'recordId'] }, indexes: {} },
   },
 };
 
 const CATALOG_ORIGINS_DATABASE: DatabaseLayout = {
   name: 'catalog-origins',
-  version: 1,
+  version: 2,
   stores: {
     catalogs: { options: { keyPath: 'id' }, indexes: {} },
     origins: {
@@ -98,6 +102,8 @@ const CATALOG_ORIGINS_DATABASE: DatabaseLayout = {
         entry: { keyPath: ['catalogId', 'entryId'], options: { unique: true } },
       },
     },
+    outbox: { options: { keyPath: ['kind', 'recordId'] }, indexes: {} },
+    'record-versions': { options: { keyPath: ['kind', 'recordId'] }, indexes: {} },
   },
 };
 

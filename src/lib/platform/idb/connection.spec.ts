@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   BLOCKED_PATIENCE_MS,
+  deleteByIndex,
   getRecord,
   openDatabase,
+  rewriteByIndex,
   writeAfterRead,
   writeRecords,
 } from './connection';
@@ -312,7 +314,17 @@ class RecordingTransaction {
         this.placed.push({ store, kind: 'put', value });
       },
       delete: (value: unknown) => this.placed.push({ store, kind: 'delete', value }),
+      index: () => ({
+        getAllKeys: (key: string) => this.#indexRequest(`${store}/by/${key}/keys`),
+        getAll: (key: string) => this.#indexRequest(`${store}/by/${key}/rows`),
+      }),
     };
+  }
+
+  #indexRequest(row: string) {
+    const request = { result: this.#rows.get(row), onsuccess: null as Handler };
+    queueMicrotask(() => request.onsuccess?.());
+    return request;
   }
 
   abort(): void {
@@ -367,6 +379,67 @@ describe('writeRecords', () => {
     await expect(writing).rejects.toThrow('are not usable');
     expect(db.transactions[0]?.placed).toHaveLength(1);
     expect(db.transactions[0]?.aborted).toBe(true);
+  });
+});
+
+describe('change markers', () => {
+  const MARKER = { kind: 'tag', recordId: 't', deleted: false, at: 1 } as const;
+
+  it('places a marker write in the outbox store of the same transaction as the record', async () => {
+    const db = new RecordingDatabase();
+
+    await writeRecords(recordingConnection(db), [
+      { kind: 'put', store: 'tags', record: { id: 't' } },
+      { kind: 'mark', marker: MARKER },
+    ]);
+
+    expect(db.opened).toEqual([{ stores: ['tags', 'outbox'], mode: 'readwrite' }]);
+    expect(db.transactions[0]?.placed).toEqual([
+      { store: 'tags', kind: 'put', value: { id: 't' } },
+      { store: 'outbox', kind: 'put', value: MARKER },
+    ]);
+  });
+
+  it('marks each record a delete by index removes in the same transaction', async () => {
+    const db = new RecordingDatabase();
+    db.rows.set('captures/by/b/keys', ['c1', 'c2']);
+
+    await deleteByIndex(recordingConnection(db), 'captures', 'bookId', 'b', (primary) => ({
+      ...MARKER,
+      kind: 'capture',
+      recordId: String(primary),
+      deleted: true,
+    }));
+
+    expect(db.opened).toEqual([{ stores: ['captures', 'outbox'], mode: 'readwrite' }]);
+    expect(db.transactions[0]?.placed.map((placed) => [placed.store, placed.kind])).toEqual([
+      ['captures', 'delete'],
+      ['outbox', 'put'],
+      ['captures', 'delete'],
+      ['outbox', 'put'],
+    ]);
+  });
+
+  it('marks each record a rewrite by index puts back in the same transaction', async () => {
+    const db = new RecordingDatabase();
+    db.rows.set('captures/by/b/rows', [{ id: 'c1' }, { id: 'c2' }]);
+
+    await rewriteByIndex<{ id: string }>(
+      recordingConnection(db),
+      'captures',
+      'bookId',
+      'b',
+      (row) => ({ id: `${row.id}!` }),
+      (_before, after) => ({ ...MARKER, kind: 'capture', recordId: after.id }),
+    );
+
+    expect(db.opened).toEqual([{ stores: ['captures', 'outbox'], mode: 'readwrite' }]);
+    expect(db.transactions[0]?.placed.map((placed) => [placed.store, placed.kind])).toEqual([
+      ['captures', 'put'],
+      ['outbox', 'put'],
+      ['captures', 'put'],
+      ['outbox', 'put'],
+    ]);
   });
 });
 
