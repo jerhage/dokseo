@@ -1,4 +1,5 @@
 import type { Component } from 'svelte';
+import ArrowUpDown from '$lib/ui/components/icons/ArrowUpDown.svelte';
 import BookOpen from '$lib/ui/components/icons/BookOpen.svelte';
 import Database from '$lib/ui/components/icons/Database.svelte';
 import File from '$lib/ui/components/icons/File.svelte';
@@ -16,6 +17,7 @@ type SettingsSection =
   | 'appearance'
   | 'library'
   | 'catalogs'
+  | 'sync'
   | 'reading'
   | 'app';
 
@@ -77,6 +79,14 @@ function settingsSections(root: string): readonly SectionLink[] {
       icon: LayoutGrid,
       href: `${root}/catalogs`,
       pageHref: `${root}/catalogs`,
+    },
+    {
+      id: 'sync',
+      name: 'Sync',
+      summary: 'Keep devices the same',
+      icon: ArrowUpDown,
+      href: `${root}/sync`,
+      pageHref: `${root}/sync`,
     },
     {
       id: 'reading',
