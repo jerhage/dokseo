@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ChangeMarker } from '$lib/shared/change-marker';
 import { CAPTURE_ORIGINS, isCaptureOrigin } from '$lib/shared/capture-origin';
 import { bookId, tagId } from '$lib/shared/ids';
 import { layoutOf, RECOGNITION_DATABASE } from '$lib/shared/testing/stored-format/database-layout';
@@ -21,9 +22,15 @@ import { createCaptureRepository } from './indexeddb-captures.repo';
 
 type HeldRow = { readonly id: unknown; readonly bookId?: unknown; readonly tagIds?: unknown };
 
+type HeldWrite =
+  | { readonly kind: 'put'; readonly store: string; readonly record: HeldRow }
+  | { readonly kind: 'delete'; readonly store: string; readonly key: unknown }
+  | { readonly kind: 'mark'; readonly marker: ChangeMarker };
+
 const held = vi.hoisted(() => ({
   opened: [] as OpenedDatabase[],
   rows: new Map<unknown, HeldRow>(),
+  outbox: new Map<string, ChangeMarker>(),
 }));
 
 vi.mock('$lib/platform/idb/connection', () => ({
@@ -32,8 +39,13 @@ vi.mock('$lib/platform/idb/connection', () => ({
     return Promise.resolve({});
   },
   listRecords: () => Promise.resolve([...held.rows.values()]),
-  putRecord: (_db: unknown, _store: string, row: HeldRow) => {
-    held.rows.set(row.id, row);
+  writeRecords: (_db: unknown, writes: readonly HeldWrite[]) => {
+    for (const write of writes) {
+      if (write.kind === 'mark') {
+        held.outbox.set(`${write.marker.kind}:${write.marker.recordId}`, write.marker);
+      } else if (write.kind === 'put') held.rows.set(write.record.id, write.record);
+      else held.rows.delete(write.key);
+    }
     return Promise.resolve();
   },
   rewriteByIndex: (

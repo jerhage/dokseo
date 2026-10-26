@@ -1,19 +1,30 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ChangeMarker } from '$lib/shared/change-marker';
 import { tagId } from '$lib/shared/ids';
+import { tagFromStored } from '../../domain/tag/tag';
 import type { StoredTag } from '../../domain/tag/tag';
 import { createTagRepository } from './indexeddb-tags.repo';
 
-const held = vi.hoisted(() => ({ rows: new Map<unknown, { id?: unknown }>() }));
+type HeldWrite =
+  | { readonly kind: 'put'; readonly store: string; readonly record: { readonly id: unknown } }
+  | { readonly kind: 'delete'; readonly store: string; readonly key: unknown }
+  | { readonly kind: 'mark'; readonly marker: ChangeMarker };
+
+const held = vi.hoisted(() => ({
+  rows: new Map<unknown, { id?: unknown }>(),
+  outbox: new Map<string, ChangeMarker>(),
+}));
 
 vi.mock('$lib/platform/idb/connection', () => ({
   openDatabase: () => Promise.resolve({}),
   listRecords: () => Promise.resolve([...held.rows.values()]),
-  putRecord: (_db: unknown, _store: string, row: { id: unknown }) => {
-    held.rows.set(row.id, row);
-    return Promise.resolve();
-  },
-  deleteRecord: (_db: unknown, _store: string, key: unknown) => {
-    held.rows.delete(key);
+  writeRecords: (_db: unknown, writes: readonly HeldWrite[]) => {
+    for (const write of writes) {
+      if (write.kind === 'mark') {
+        held.outbox.set(`${write.marker.kind}:${write.marker.recordId}`, write.marker);
+      } else if (write.kind === 'put') held.rows.set(write.record.id, write.record);
+      else held.rows.delete(write.key);
+    }
     return Promise.resolve();
   },
 }));
@@ -26,11 +37,15 @@ const NAMELESS: StoredTag = { id: 'nameless', colour: 'sage', createdAt: 3 };
 
 beforeEach(() => {
   held.rows.clear();
+  held.outbox.clear();
   vi.stubGlobal('indexedDB', {});
+  vi.useFakeTimers();
+  vi.setSystemTime(1000);
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe('createTagRepository', () => {
@@ -56,5 +71,45 @@ describe('createTagRepository', () => {
 
     expect(removed).toEqual({ kind: 'success' });
     expect(await repository.list()).toEqual({ kind: 'success', tags: [], unreadable: [] });
+  });
+
+  it('marks a saved tag in the outbox under its id', async () => {
+    await createTagRepository().save(tagFromStored(SFX));
+
+    expect([...held.outbox.values()]).toEqual([
+      { kind: 'tag', recordId: 'sfx', deleted: false, at: 1000 },
+    ]);
+  });
+
+  it('overwrites the marker of a tag saved twice so one marker remains', async () => {
+    const repository = createTagRepository();
+    await repository.save(tagFromStored(SFX));
+    vi.setSystemTime(2000);
+
+    await repository.save(tagFromStored(SFX));
+
+    expect([...held.outbox.values()]).toEqual([
+      { kind: 'tag', recordId: 'sfx', deleted: false, at: 2000 },
+    ]);
+  });
+
+  it('leaves a deleted marker when a tag is removed', async () => {
+    const repository = createTagRepository();
+    await repository.save(tagFromStored(SFX));
+
+    await repository.remove(tagId('sfx'));
+
+    expect([...held.outbox.values()]).toEqual([
+      { kind: 'tag', recordId: 'sfx', deleted: true, at: 1000 },
+    ]);
+  });
+
+  it('writes no marker when the repository is built unmarked', async () => {
+    const repository = createTagRepository('unmarked');
+
+    await repository.save(tagFromStored(SFX));
+    await repository.remove(tagId('sfx'));
+
+    expect(held.outbox.size).toBe(0);
   });
 });

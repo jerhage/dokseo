@@ -1,15 +1,19 @@
 import {
   deleteByIndex,
-  deleteRecord,
   listByIndex,
   listRecords,
-  putRecord,
   rewriteByIndex,
+  writeRecords,
 } from '$lib/platform/idb/connection';
+import { markingWrites } from '$lib/platform/idb/marking-writes';
+import type { ChangeMarker, ChangeTracking } from '$lib/shared/change-marker';
+import { isText } from '$lib/shared/corrupt-row';
+import { captureId } from '$lib/shared/ids';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { capturesFromStored, movedCapture, oldestFirst } from '../../domain/capture/capture';
 import type { Capture, StoredCapture } from '../../domain/capture/capture';
+import { captureMarker } from '../../domain/capture/capture-marker';
 import type {
   CaptureListing,
   CaptureRepository,
@@ -32,7 +36,16 @@ function listed(records: readonly StoredCapture[]): CaptureListing {
   return { kind: 'success', captures: oldestFirst(read.captures), unreadable: read.unreadable };
 }
 
-function createCaptureRepository(): CaptureRepository {
+function rowMarker(row: StoredCapture): ChangeMarker | null {
+  return isText(row.id) ? captureMarker(captureId(row.id), false, Date.now()) : null;
+}
+
+function createCaptureRepository(tracking: ChangeTracking = 'marked'): CaptureRepository {
+  const rewriteMarker =
+    tracking === 'marked'
+      ? (_before: StoredCapture, after: StoredCapture) => rowMarker(after)
+      : undefined;
+
   return {
     async listForBook(book: BookId): Promise<CaptureListing> {
       if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
@@ -53,19 +66,36 @@ function createCaptureRepository(): CaptureRepository {
 
     async save(capture: Capture): Promise<CaptureWrite> {
       if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
-      await putRecord(await recognitionDatabase(), CAPTURE_STORE, capture);
+      await writeRecords(await recognitionDatabase(), [
+        { kind: 'put', store: CAPTURE_STORE, record: capture },
+        ...markingWrites(tracking, [captureMarker(capture.id, false, Date.now())]),
+      ]);
       return WRITTEN;
     },
 
     async remove(capture: CaptureId): Promise<CaptureWrite> {
       if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
-      await deleteRecord(await recognitionDatabase(), CAPTURE_STORE, capture);
+      await writeRecords(await recognitionDatabase(), [
+        { kind: 'delete', store: CAPTURE_STORE, key: capture },
+        ...markingWrites(tracking, [captureMarker(capture, true, Date.now())]),
+      ]);
       return WRITTEN;
     },
 
     async clearBook(book: BookId): Promise<CaptureWrite> {
       if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
-      await deleteByIndex(await recognitionDatabase(), CAPTURE_STORE, CAPTURE_BOOK_INDEX, book);
+      await deleteByIndex(
+        await recognitionDatabase(),
+        CAPTURE_STORE,
+        CAPTURE_BOOK_INDEX,
+        book,
+        tracking === 'marked'
+          ? (primary) =>
+              typeof primary === 'string'
+                ? captureMarker(captureId(primary), true, Date.now())
+                : null
+          : undefined,
+      );
       return WRITTEN;
     },
 
@@ -77,6 +107,7 @@ function createCaptureRepository(): CaptureRepository {
         CAPTURE_BOOK_INDEX,
         from,
         (row) => movedCapture(row, to),
+        rewriteMarker,
       );
       return WRITTEN;
     },
@@ -95,6 +126,9 @@ function createCaptureRepository(): CaptureRepository {
           untagged += 1;
           return rewritten;
         },
+        tracking === 'marked'
+          ? (before, after) => (before === after ? null : rowMarker(after))
+          : undefined,
       );
       return { kind: 'success', untagged };
     },

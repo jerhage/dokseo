@@ -4,6 +4,7 @@ import {
   layoutOf,
 } from '$lib/shared/testing/stored-format/database-layout';
 import type { OpenedDatabase, Upgrade } from '$lib/shared/testing/stored-format/database-layout';
+import type { ChangeMarker } from '$lib/shared/change-marker';
 import { bookId, catalogId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { BookOrigin } from '../domain/book-origin';
@@ -14,11 +15,13 @@ type Row = { readonly [field: string]: unknown };
 
 type FakeWrite =
   | { readonly kind: 'put'; readonly store: string; readonly record: Row }
-  | { readonly kind: 'delete'; readonly store: string; readonly key: unknown };
+  | { readonly kind: 'delete'; readonly store: string; readonly key: unknown }
+  | { readonly kind: 'mark'; readonly marker: ChangeMarker };
 
 const fake = vi.hoisted(() => ({
   opened: [] as OpenedDatabase[],
   stores: new Map<string, Map<unknown, Row>>(),
+  outbox: new Map<string, ChangeMarker>(),
 }));
 
 function store(name: string): Map<unknown, Row> {
@@ -76,7 +79,9 @@ vi.mock('$lib/platform/idb/connection', () => ({
   },
   writeRecords: (_db: unknown, writes: readonly FakeWrite[]) => {
     for (const write of writes) {
-      if (write.kind === 'put') putChecked(write.store, write.record);
+      if (write.kind === 'mark') {
+        fake.outbox.set(`${write.marker.kind}:${write.marker.recordId}`, write.marker);
+      } else if (write.kind === 'put') putChecked(write.store, write.record);
       else store(write.store).delete(write.key);
     }
     return Promise.resolve();
@@ -116,10 +121,12 @@ function origin(book: string, owner: string, entry: string): BookOrigin {
 beforeEach(() => {
   fake.opened.length = 0;
   fake.stores.clear();
+  fake.outbox.clear();
   vi.stubGlobal('indexedDB', {});
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -143,6 +150,30 @@ describe('createCatalogOriginsRepository', () => {
       kind: 'success',
       catalog: null,
     });
+  });
+
+  it('marks a saved catalog and a removed catalog in the outbox under its id', async () => {
+    vi.spyOn(Date, 'now').mockReturnValueOnce(7).mockReturnValueOnce(8);
+    const repository = createCatalogOriginsRepository();
+
+    await repository.save(catalog('calibre'));
+    expect([...fake.outbox.values()]).toEqual([
+      { kind: 'catalog', recordId: 'calibre', deleted: false, at: 7 },
+    ]);
+
+    await repository.remove(catalogId('calibre'));
+    expect([...fake.outbox.values()]).toEqual([
+      { kind: 'catalog', recordId: 'calibre', deleted: true, at: 8 },
+    ]);
+  });
+
+  it('writes no marker for an origin write', async () => {
+    const repository = createCatalogOriginsRepository();
+
+    await repository.put(origin('book-1', 'calibre', 'urn:uuid:1'));
+    await repository.deleteByBook(bookId('book-1'));
+
+    expect(fake.outbox.size).toBe(0);
   });
 
   it('writes no password into a catalog row', async () => {
@@ -272,7 +303,7 @@ describe('createCatalogOriginsRepository', () => {
     expect(await repository.deleteByCatalog(catalogId('calibre'))).toEqual(STORAGE_UNAVAILABLE);
   });
 
-  it('declares catalog-origins at version 1 with the two stores and both origin indexes', async () => {
+  it('declares catalog-origins at version 2 with the two stores, both origin indexes and the change stores', async () => {
     vi.resetModules();
     const fresh = await import('./indexeddb-catalog-origins.repo');
     await fresh.createCatalogOriginsRepository().list();

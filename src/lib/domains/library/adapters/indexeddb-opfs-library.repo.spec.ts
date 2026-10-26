@@ -5,13 +5,15 @@ import type { PageOrder } from '../domain/book/page-list';
 import { imagePlace } from '$lib/shared/reading-place';
 import { bookFromStored } from '../domain/book/stored-book';
 import type { StoredBook } from '../domain/book/stored-book';
+import type { ChangeMarker } from '$lib/shared/change-marker';
 import { PRIVATE_WINDOW } from '$lib/platform/opfs/directory';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { createLibraryRepository } from './indexeddb-opfs-library.repo';
 
 type FakeWrite =
   | { readonly kind: 'put'; readonly store: string; readonly record: { readonly id: unknown } }
-  | { readonly kind: 'delete'; readonly store: string; readonly key: unknown };
+  | { readonly kind: 'delete'; readonly store: string; readonly key: unknown }
+  | { readonly kind: 'mark'; readonly marker: ChangeMarker };
 
 type FakeRead = { readonly store: string; readonly key: unknown };
 
@@ -49,10 +51,12 @@ function attempt(stores: readonly string[], write: () => void): Promise<void> {
 
 function commit(writes: readonly FakeWrite[]): Promise<void> {
   return attempt(
-    writes.map((write) => write.store),
+    writes.map((write) => (write.kind === 'mark' ? 'outbox' : write.store)),
     () => {
       for (const write of writes) {
-        if (write.kind === 'put') store(write.store).set(write.record.id, write.record);
+        if (write.kind === 'mark') {
+          store('outbox').set(`${write.marker.kind}:${write.marker.recordId}`, write.marker);
+        } else if (write.kind === 'put') store(write.store).set(write.record.id, write.record);
         else store(write.store).delete(write.key);
       }
     },
@@ -927,5 +931,150 @@ describe('replaceFile', () => {
     await expect(replace()).rejects.toThrow('locked');
 
     expectUntouched();
+  });
+});
+
+describe('the change markers of createLibraryRepository', () => {
+  const NEW_HASH = contentHash('0123456789abcdef0123456789abcdef');
+
+  const SHELVED = bookFromStored(GOOD);
+
+  const ARRIVING = bookFromStored({ ...GOOD, id: 'new-1' });
+
+  function outbox(): readonly ChangeMarker[] {
+    return [...store('outbox').values()].map((marker) => marker as ChangeMarker);
+  }
+
+  function summary(): readonly string[] {
+    return outbox().map(
+      (marker) => `${marker.kind} ${marker.recordId} ${marker.deleted ? 'deleted' : 'live'}`,
+    );
+  }
+
+  function shelve(): void {
+    store('books').set(GOOD.id, GOOD);
+  }
+
+  beforeEach(() => {
+    vi.spyOn(Date, 'now').mockReturnValue(42);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('marks the book and its position under the content hash when it adds a book', async () => {
+    await createLibraryRepository().add(
+      ARRIVING,
+      new Blob(['s']),
+      null,
+      INTRINSIC_ORDER,
+      () => undefined,
+    );
+
+    expect(outbox()).toEqual([
+      { kind: 'book', recordId: HASH, deleted: false, at: 42 },
+      { kind: 'position', recordId: HASH, deleted: false, at: 42 },
+    ]);
+  });
+
+  it('leaves no marker when the transaction that adds the book fails', async () => {
+    held.failingStore = 'books';
+
+    await expect(
+      createLibraryRepository().add(
+        ARRIVING,
+        new Blob(['s']),
+        null,
+        INTRINSIC_ORDER,
+        () => undefined,
+      ),
+    ).rejects.toThrow('books');
+
+    expect(outbox()).toEqual([]);
+  });
+
+  it('marks only the book when an edit changes an identity field', async () => {
+    shelve();
+
+    await createLibraryRepository().update(SHELVED.id, { alias: 'Mine' });
+
+    expect(summary()).toEqual([`book ${HASH} live`]);
+  });
+
+  it('marks only the position when an edit changes where the book is read', async () => {
+    shelve();
+
+    await createLibraryRepository().update(SHELVED.id, { lastReadAt: 5 });
+
+    expect(summary()).toEqual([`position ${HASH} live`]);
+  });
+
+  it('overwrites the marker of a record written twice so one marker remains', async () => {
+    shelve();
+    const repository = createLibraryRepository();
+    await repository.update(SHELVED.id, { lastReadAt: 5 });
+    vi.spyOn(Date, 'now').mockReturnValue(43);
+
+    await repository.update(SHELVED.id, { lastReadAt: 6 });
+
+    expect(outbox()).toEqual([{ kind: 'position', recordId: HASH, deleted: false, at: 43 }]);
+  });
+
+  it('writes no marker when an edit changes only device-local fields', async () => {
+    shelve();
+
+    await createLibraryRepository().update(SHELVED.id, {
+      pageFit: 'height',
+      pagePairing: 'single',
+    });
+
+    expect(outbox()).toEqual([]);
+  });
+
+  it('marks the book and its position deleted when it removes a book', async () => {
+    shelve();
+
+    await createLibraryRepository().remove(SHELVED.id, REMOVED_AT);
+
+    expect(summary()).toEqual([`book ${HASH} deleted`, `position ${HASH} deleted`]);
+  });
+
+  it('marks the book and its position deleted when it erases a book', async () => {
+    shelve();
+
+    await createLibraryRepository().erase(SHELVED.id);
+
+    expect(summary()).toEqual([`book ${HASH} deleted`, `position ${HASH} deleted`]);
+  });
+
+  it('marks the old content hash deleted and the new one live when a file replaces the old', async () => {
+    shelve();
+
+    await createLibraryRepository().replaceFile(
+      { ...SHELVED, contentHash: NEW_HASH },
+      new Blob(['s']),
+      null,
+      INTRINSIC_ORDER,
+      () => undefined,
+    );
+
+    expect(summary()).toEqual([
+      `book ${HASH} deleted`,
+      `position ${HASH} deleted`,
+      `book ${NEW_HASH} live`,
+      `position ${NEW_HASH} live`,
+    ]);
+  });
+
+  it('writes no marker when the repository is built unmarked', async () => {
+    shelve();
+    const repository = createLibraryRepository('unmarked');
+
+    await repository.update(SHELVED.id, { alias: 'Mine' });
+    await repository.add(ARRIVING, new Blob(['s']), null, INTRINSIC_ORDER, () => undefined);
+    await repository.remove(SHELVED.id, REMOVED_AT);
+
+    expect(outbox()).toEqual([]);
   });
 });

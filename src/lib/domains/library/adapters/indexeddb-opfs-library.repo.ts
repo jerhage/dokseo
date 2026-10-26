@@ -8,15 +8,24 @@ import {
   writeRecords,
 } from '$lib/platform/idb/connection';
 import type { RecordWrite } from '$lib/platform/idb/connection';
+import { markingWrites } from '$lib/platform/idb/marking-writes';
 import { holdingLock, holdingLockIfFree } from '$lib/platform/locks/web-locks';
 import * as blobs from '$lib/platform/opfs/blob-store';
 import { isPrivateWindowRefusal } from '$lib/platform/opfs/directory';
+import { OUTBOX_STORE, createChangeStores } from '$lib/shared/change-marker';
+import type { ChangeTracking } from '$lib/shared/change-marker';
 import { parsedBookId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { applyEdit } from '../domain/book/book';
 import type { Book, BookEdit } from '../domain/book/book';
+import {
+  bookMarkers,
+  editMarkers,
+  heldBookMarkers,
+  replacementMarkers,
+} from '../domain/book/book-markers';
 import type {
   BookListing,
   BookLookup,
@@ -44,7 +53,7 @@ import type { SourceWriteReport } from '../domain/ingest/upload-progress';
 
 const DATABASE_NAME = 'reader';
 
-const DATABASE_VERSION = 3;
+const DATABASE_VERSION = 4;
 
 const BOOK_STORE = 'books';
 
@@ -52,7 +61,7 @@ const PAGE_LIST_STORE = 'page-lists';
 
 const REMOVED_BOOK_STORE = 'removed-books';
 
-const BOOK_RECORD_STORES = [BOOK_STORE, PAGE_LIST_STORE, REMOVED_BOOK_STORE];
+const BOOK_RECORD_STORES = [BOOK_STORE, PAGE_LIST_STORE, REMOVED_BOOK_STORE, OUTBOX_STORE];
 
 const WRITTEN: LibraryWrite = { kind: 'success' };
 
@@ -87,6 +96,7 @@ function upgrade(db: IDBDatabase): void {
   if (!db.objectStoreNames.contains(REMOVED_BOOK_STORE)) {
     db.createObjectStore(REMOVED_BOOK_STORE, { keyPath: 'id' });
   }
+  createChangeStores(db);
 }
 
 function retired(row: StoredBook, removedAt: number): StoredRemovedBook {
@@ -159,7 +169,7 @@ function fileOwner(name: string): BookId | null {
   return name === keys.source || name === keys.cover ? id : null;
 }
 
-function createLibraryRepository(): LibraryRepository {
+function createLibraryRepository(tracking: ChangeTracking = 'marked'): LibraryRepository {
   let connection: Promise<IDBDatabase> | null = null;
 
   const database = (): Promise<IDBDatabase> => {
@@ -232,7 +242,10 @@ function createLibraryRepository(): LibraryRepository {
     const written = await writeBlobs(keys, source, cover, report);
     if (written.kind !== 'success') return written;
     try {
-      await writeRecords(await database(), additionWrites(book, order));
+      await writeRecords(await database(), [
+        ...additionWrites(book, order),
+        ...markingWrites(tracking, bookMarkers(book.contentHash, false, Date.now())),
+      ]);
     } catch (cause) {
       await discard(keys);
       throw cause;
@@ -301,7 +314,15 @@ function createLibraryRepository(): LibraryRepository {
       return holdingLock(fileLock(book.id), async () => {
         const swapped = await swapBlobs(blobKeys(book.id), source, cover, report);
         if (swapped.kind !== 'success') return swapped;
-        await writeRecords(await database(), additionWrites(book, order));
+        await writeAfterRead<StoredBook>(
+          await database(),
+          BOOK_RECORD_STORES,
+          { store: BOOK_STORE, key: book.id },
+          (row) => [
+            ...additionWrites(book, order),
+            ...markingWrites(tracking, replacementMarkers(book, row?.contentHash, Date.now())),
+          ],
+        );
         return WRITTEN;
       });
     },
@@ -314,7 +335,10 @@ function createLibraryRepository(): LibraryRepository {
         await database(),
         BOOK_RECORD_STORES,
         { store: BOOK_STORE, key: id },
-        (row) => removalWrites(id, row, removedAt),
+        (row) => [
+          ...removalWrites(id, row, removedAt),
+          ...markingWrites(tracking, heldBookMarkers(row?.contentHash, true, Date.now())),
+        ],
       );
       return WRITTEN;
     },
@@ -323,7 +347,15 @@ function createLibraryRepository(): LibraryRepository {
       if (!recordsAvailable() || !blobs.isAvailable()) return STORAGE_UNAVAILABLE;
       const filesRemoved = await removeFiles(blobKeys(id));
       if (filesRemoved.kind !== 'success') return filesRemoved;
-      await writeRecords(await database(), erasureWrites(id));
+      await writeAfterRead<StoredBook>(
+        await database(),
+        BOOK_RECORD_STORES,
+        { store: BOOK_STORE, key: id },
+        (row) => [
+          ...erasureWrites(id),
+          ...markingWrites(tracking, heldBookMarkers(row?.contentHash, true, Date.now())),
+        ],
+      );
       return WRITTEN;
     },
 
@@ -372,7 +404,10 @@ function createLibraryRepository(): LibraryRepository {
       const record = await getRecord<StoredBook>(db, BOOK_STORE, id);
       if (record === undefined) return { kind: 'success', book: null };
       const updated = applyEdit(bookFromStored(record), edit);
-      await putRecord(db, BOOK_STORE, updated);
+      await writeRecords(db, [
+        { kind: 'put', store: BOOK_STORE, record: updated },
+        ...markingWrites(tracking, editMarkers(updated, edit, Date.now())),
+      ]);
       return { kind: 'success', book: updated };
     },
 
