@@ -140,6 +140,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
       },
     }),
     catalog: {} as Container['catalog'],
+    sync: {} as Container['sync'],
     library: {
       openFile: unused,
       replaceBookFile: unused,

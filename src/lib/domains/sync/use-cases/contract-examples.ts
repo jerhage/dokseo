@@ -15,6 +15,10 @@ function contractExamples(outcome: 'valid' | 'invalid', kind: string): readonly 
   return readdirSync(dir).map((name) => ({ name, value: readJson(new URL(name, dir)) }));
 }
 
+function contractExample(folder: string, name: string): unknown {
+  return readJson(new URL(`examples/valid/${folder}/${name}.json`, CONTRACT));
+}
+
 function isNames(value: unknown): value is readonly string[] {
   return Array.isArray(value) && value.every((name) => typeof name === 'string');
 }
@@ -30,5 +34,5 @@ function schemaKeys(kind: string): SchemaKeys {
   return { required, properties };
 }
 
-export { contractExamples, schemaKeys };
+export { contractExample, contractExamples, schemaKeys };
 export type { ContractExample, SchemaKeys };
