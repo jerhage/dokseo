@@ -35,6 +35,8 @@ function repository(broken = false) {
   const captures: CaptureRepository = {
     pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
     settleChanges: () => Promise.resolve({ kind: 'success' }),
+    recordVersions: () => Promise.resolve({ kind: 'success', versions: [] }),
+    applyRemote: () => Promise.resolve({ kind: 'success' }),
     listForBook: () =>
       Promise.resolve({ kind: 'success' as const, captures: saved, unreadable: [] }),
     listEverything: () =>

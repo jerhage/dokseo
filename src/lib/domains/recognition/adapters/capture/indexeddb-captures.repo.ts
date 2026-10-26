@@ -1,17 +1,21 @@
+import { match } from 'ts-pattern';
 import {
   deleteByIndex,
   listByIndex,
   listRecords,
   rewriteByIndex,
+  rewriteByIndexAndWrite,
   settleMarkers,
   writeRecords,
 } from '$lib/platform/idb/connection';
-import { markingWrites } from '$lib/platform/idb/marking-writes';
-import { OUTBOX_STORE } from '$lib/shared/change-marker';
+import { acceptedWrites, markingWrites } from '$lib/platform/idb/marking-writes';
+import { OUTBOX_STORE, RECORD_VERSION_STORE } from '$lib/shared/change-marker';
 import type {
   ChangeMarker,
   ChangeTracking,
   PendingMarkers,
+  RecordVersion,
+  RecordVersions,
   SettledMarker,
 } from '$lib/shared/change-marker';
 import { isText } from '$lib/shared/corrupt-row';
@@ -26,12 +30,14 @@ import type {
   CaptureRepository,
   CaptureUntagging,
   CaptureWrite,
+  RemoteRecognitionWrite,
 } from '../../domain/capture/capture-repository';
 import { untaggedRow } from '../../domain/tag/capture-tags';
 import {
   CAPTURE_BOOK_INDEX,
   CAPTURE_STORE,
   CAPTURE_TAG_INDEX,
+  TAG_STORE,
   recognitionDatabase,
   recordsAvailable,
 } from '../recognition-database';
@@ -149,6 +155,52 @@ function createCaptureRepository(tracking: ChangeTracking = 'marked'): CaptureRe
     async settleChanges(settled: readonly SettledMarker[]): Promise<CaptureWrite> {
       if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
       await settleMarkers(await recognitionDatabase(), settled);
+      return WRITTEN;
+    },
+
+    async recordVersions(): Promise<RecordVersions> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      const versions = await listRecords<RecordVersion>(
+        await recognitionDatabase(),
+        RECORD_VERSION_STORE,
+      );
+      return { kind: 'success', versions };
+    },
+
+    async applyRemote(write: RemoteRecognitionWrite): Promise<CaptureWrite> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      const db = await recognitionDatabase();
+      await match(write)
+        .returnType<Promise<void>>()
+        .with({ kind: 'save-capture' }, ({ capture, accepted }) =>
+          writeRecords(db, [
+            { kind: 'put', store: CAPTURE_STORE, record: capture },
+            ...acceptedWrites(accepted),
+          ]),
+        )
+        .with({ kind: 'remove-capture' }, ({ id, accepted }) =>
+          writeRecords(db, [
+            { kind: 'delete', store: CAPTURE_STORE, key: id },
+            ...acceptedWrites(accepted),
+          ]),
+        )
+        .with({ kind: 'save-tag' }, ({ tag, accepted }) =>
+          writeRecords(db, [
+            { kind: 'put', store: TAG_STORE, record: tag },
+            ...acceptedWrites(accepted),
+          ]),
+        )
+        .with({ kind: 'remove-tag' }, ({ id, accepted }) =>
+          rewriteByIndexAndWrite<StoredCapture>(
+            db,
+            CAPTURE_STORE,
+            CAPTURE_TAG_INDEX,
+            id,
+            (row) => untaggedRow(row, id),
+            [{ kind: 'delete', store: TAG_STORE, key: id }, ...acceptedWrites(accepted)],
+          ),
+        )
+        .exhaustive();
       return WRITTEN;
     },
   };

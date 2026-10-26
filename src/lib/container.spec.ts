@@ -43,6 +43,9 @@ vi.mock('./domains/library/adapters/indexeddb-opfs-library.repo', () => ({
   createLibraryRepository: (): LibraryRepository => ({
     pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
     settleChanges: () => Promise.resolve({ kind: 'success' }),
+    recordVersions: () => Promise.resolve({ kind: 'success', versions: [] }),
+    applyRemote: () => Promise.resolve({ kind: 'not-found' }),
+    acceptRemoteVersion: () => Promise.resolve({ kind: 'success' }),
     list: () =>
       Promise.resolve({
         kind: 'success',
@@ -89,6 +92,8 @@ vi.mock('./domains/recognition/adapters/capture/indexeddb-captures.repo', () => 
   createCaptureRepository: (): CaptureRepository => ({
     pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
     settleChanges: () => Promise.resolve({ kind: 'success' }),
+    recordVersions: () => Promise.resolve({ kind: 'success', versions: [] }),
+    applyRemote: () => Promise.resolve({ kind: 'success' }),
     listForBook: notUsed,
     listEverything: notUsed,
     save: notUsed,

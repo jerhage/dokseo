@@ -109,9 +109,10 @@ const CATALOG_ORIGINS_DATABASE: DatabaseLayout = {
 
 const SYNC_DATABASE: DatabaseLayout = {
   name: 'sync',
-  version: 1,
+  version: 2,
   stores: {
     settings: { options: { keyPath: 'id' }, indexes: {} },
+    'held-changes': { options: { keyPath: ['kind', 'recordId'] }, indexes: {} },
   },
 };
 

@@ -61,6 +61,9 @@ function repositoryWith(outcomes: Outcomes): LibraryRepository {
   return {
     pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
     settleChanges: () => Promise.resolve({ kind: 'success' }),
+    recordVersions: () => Promise.resolve({ kind: 'success', versions: [] }),
+    applyRemote: () => Promise.resolve({ kind: 'not-found' }),
+    acceptRemoteVersion: () => Promise.resolve({ kind: 'success' }),
     list: () => Promise.resolve(outcomes.shelf ?? { kind: 'success', books: [], unreadable: [] }),
     listRemoved: () =>
       Promise.resolve(outcomes.removed ?? { kind: 'success', removed: [], unreadable: [] }),

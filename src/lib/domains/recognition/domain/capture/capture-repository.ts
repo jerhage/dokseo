@@ -1,6 +1,12 @@
-import type { PendingMarkers, SettledMarker } from '$lib/shared/change-marker';
+import type {
+  AcceptedVersion,
+  PendingMarkers,
+  RecordVersions,
+  SettledMarker,
+} from '$lib/shared/change-marker';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
+import type { Tag } from '../tag/tag';
 import type { Capture, UnreadableCapture } from './capture';
 
 type CaptureListing =
@@ -17,6 +23,12 @@ type CaptureUntagging =
   | { readonly kind: 'success'; readonly untagged: number }
   | StorageUnavailable;
 
+type RemoteRecognitionWrite =
+  | { readonly kind: 'save-capture'; readonly capture: Capture; readonly accepted: AcceptedVersion }
+  | { readonly kind: 'remove-capture'; readonly id: CaptureId; readonly accepted: AcceptedVersion }
+  | { readonly kind: 'save-tag'; readonly tag: Tag; readonly accepted: AcceptedVersion }
+  | { readonly kind: 'remove-tag'; readonly id: TagId; readonly accepted: AcceptedVersion };
+
 interface CaptureRepository {
   listForBook(book: BookId): Promise<CaptureListing>;
   listEverything(): Promise<CaptureListing>;
@@ -27,6 +39,14 @@ interface CaptureRepository {
   untagEverywhere(tag: TagId): Promise<CaptureUntagging>;
   pendingChanges(): Promise<PendingMarkers>;
   settleChanges(settled: readonly SettledMarker[]): Promise<CaptureWrite>;
+  recordVersions(): Promise<RecordVersions>;
+  applyRemote(write: RemoteRecognitionWrite): Promise<CaptureWrite>;
 }
 
-export type { CaptureListing, CaptureRepository, CaptureUntagging, CaptureWrite };
+export type {
+  CaptureListing,
+  CaptureRepository,
+  CaptureUntagging,
+  CaptureWrite,
+  RemoteRecognitionWrite,
+};

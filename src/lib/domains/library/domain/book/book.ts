@@ -103,6 +103,10 @@ function placeToStart(layoutKind: LayoutKind): ReadingPlace {
     .exhaustive();
 }
 
+function placeFitsLayout(layoutKind: LayoutKind, place: ReadingPlace): boolean {
+  return (layoutKind === 'flow') === (place.kind === 'text');
+}
+
 function startingPlace(book: Book): ReadingPlace {
   return placeToStart(book.layoutKind);
 }
@@ -113,6 +117,7 @@ export {
   defaultPageFit,
   applyEdit,
   isSourceKind,
+  placeFitsLayout,
   placeToStart,
   sourceFitsLayout,
   startingPlace,

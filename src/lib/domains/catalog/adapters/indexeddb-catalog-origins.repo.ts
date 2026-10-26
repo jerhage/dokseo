@@ -1,5 +1,7 @@
+import { match } from 'ts-pattern';
 import {
   deleteByIndex,
+  deleteByIndexAndWrite,
   deleteRecord,
   getRecord,
   listByIndex,
@@ -8,12 +10,14 @@ import {
   writeRecords,
 } from '$lib/platform/idb/connection';
 import type { RecordWrite } from '$lib/platform/idb/connection';
-import { markingWrites } from '$lib/platform/idb/marking-writes';
-import { OUTBOX_STORE } from '$lib/shared/change-marker';
+import { acceptedWrites, markingWrites } from '$lib/platform/idb/marking-writes';
+import { OUTBOX_STORE, RECORD_VERSION_STORE } from '$lib/shared/change-marker';
 import type {
   ChangeMarker,
   ChangeTracking,
   PendingMarkers,
+  RecordVersion,
+  RecordVersions,
   SettledMarker,
 } from '$lib/shared/change-marker';
 import { isText } from '$lib/shared/corrupt-row';
@@ -28,6 +32,7 @@ import type {
   CatalogLookup,
   CatalogRepository,
   CatalogWrite,
+  RemoteCatalogWrite,
 } from '../domain/catalog-repository';
 import type { BookOrigin } from '../domain/book-origin';
 import type {
@@ -136,6 +141,38 @@ function createCatalogOriginsRepository(
     settleChanges(settled: readonly SettledMarker[]): Promise<CatalogWrite> {
       return unlessUnavailable(async (): Promise<CatalogWrite> => {
         await settleMarkers(await catalogOriginsDatabase(), settled);
+        return WRITTEN;
+      });
+    },
+
+    recordVersions(): Promise<RecordVersions> {
+      return unlessUnavailable(async (): Promise<RecordVersions> => {
+        const versions = await listRecords<RecordVersion>(
+          await catalogOriginsDatabase(),
+          RECORD_VERSION_STORE,
+        );
+        return { kind: 'success', versions };
+      });
+    },
+
+    applyRemote(write: RemoteCatalogWrite): Promise<CatalogWrite> {
+      return unlessUnavailable(async (): Promise<CatalogWrite> => {
+        const db = await catalogOriginsDatabase();
+        await match(write)
+          .returnType<Promise<void>>()
+          .with({ kind: 'save-catalog' }, ({ catalog, accepted }) =>
+            writeRecords(db, [
+              { kind: 'put', store: CATALOG_STORE, record: storedCatalogRow(catalog) },
+              ...acceptedWrites(accepted),
+            ]),
+          )
+          .with({ kind: 'remove-catalog' }, ({ id, accepted }) =>
+            deleteByIndexAndWrite(db, ORIGIN_STORE, ORIGIN_CATALOG_INDEX, id, [
+              { kind: 'delete', store: CATALOG_STORE, key: id },
+              ...acceptedWrites(accepted),
+            ]),
+          )
+          .exhaustive();
         return WRITTEN;
       });
     },

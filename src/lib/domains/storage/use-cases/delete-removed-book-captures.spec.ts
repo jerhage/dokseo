@@ -25,6 +25,8 @@ function world(outcomes: Outcomes = {}) {
   const captures: CaptureRepository = {
     pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
     settleChanges: () => Promise.resolve({ kind: 'success' }),
+    recordVersions: () => Promise.resolve({ kind: 'success', versions: [] }),
+    applyRemote: () => Promise.resolve({ kind: 'success' }),
     listForBook: notUsed,
     listEverything: notUsed,
     save: notUsed,
@@ -39,6 +41,9 @@ function world(outcomes: Outcomes = {}) {
   const repository: LibraryRepository = {
     pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
     settleChanges: () => Promise.resolve({ kind: 'success' }),
+    recordVersions: () => Promise.resolve({ kind: 'success', versions: [] }),
+    applyRemote: () => Promise.resolve({ kind: 'not-found' }),
+    acceptRemoteVersion: () => Promise.resolve({ kind: 'success' }),
     list: notUsed,
     get: notUsed,
     add: notUsed,

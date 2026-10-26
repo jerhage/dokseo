@@ -2,13 +2,18 @@ import { openDatabase } from '$lib/platform/idb/connection';
 
 const DATABASE_NAME = 'sync';
 
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 
 const SETTINGS_STORE = 'settings';
+
+const HELD_CHANGES_STORE = 'held-changes';
 
 function upgrade(db: IDBDatabase): void {
   if (!db.objectStoreNames.contains(SETTINGS_STORE)) {
     db.createObjectStore(SETTINGS_STORE, { keyPath: 'id' });
+  }
+  if (!db.objectStoreNames.contains(HELD_CHANGES_STORE)) {
+    db.createObjectStore(HELD_CHANGES_STORE, { keyPath: ['kind', 'recordId'] });
   }
 }
 
@@ -29,4 +34,12 @@ function syncDatabase(): Promise<IDBDatabase> {
   return connection;
 }
 
-export { DATABASE_NAME, DATABASE_VERSION, SETTINGS_STORE, recordsAvailable, syncDatabase, upgrade };
+export {
+  DATABASE_NAME,
+  DATABASE_VERSION,
+  HELD_CHANGES_STORE,
+  SETTINGS_STORE,
+  recordsAvailable,
+  syncDatabase,
+  upgrade,
+};

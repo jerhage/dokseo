@@ -130,6 +130,8 @@ function setup(feed: ReadFeedResult = { kind: 'success', page: SHELF_FICTION_FEE
   const catalogs: CatalogRepository = {
     pendingChanges: () => Promise.resolve({ kind: 'success', markers: [] }),
     settleChanges: () => Promise.resolve({ kind: 'success' }),
+    recordVersions: () => Promise.resolve({ kind: 'success', versions: [] }),
+    applyRemote: () => Promise.resolve({ kind: 'success' }),
     list: () =>
       Promise.resolve({ kind: 'success', catalogs: [...CATALOGS.values()], unreadable: [] }),
     get: (id) => Promise.resolve({ kind: 'success', catalog: CATALOGS.get(id) ?? null }),

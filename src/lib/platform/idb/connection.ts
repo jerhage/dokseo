@@ -315,6 +315,46 @@ async function deleteByIndex(
   });
 }
 
+async function deleteByIndexAndWrite(
+  db: IDBDatabase,
+  store: string,
+  index: string,
+  key: IDBValidKey,
+  writes: readonly RecordWrite[],
+): Promise<void> {
+  const stores = [...new Set([store, ...writes.map(storeOf)])];
+  await transactAcross(db, stores, (transaction) => {
+    const objectStore = transaction.objectStore(store);
+    const matching = objectStore.index(index).getAllKeys(key);
+    matching.onsuccess = () => {
+      for (const primary of matching.result) objectStore.delete(primary);
+    };
+    for (const write of writes) place(transaction, write);
+  });
+}
+
+async function rewriteByIndexAndWrite<T>(
+  db: IDBDatabase,
+  store: string,
+  index: string,
+  key: IDBValidKey,
+  rewrite: (record: T) => T | null,
+  writes: readonly RecordWrite[],
+): Promise<void> {
+  const stores = [...new Set([store, ...writes.map(storeOf)])];
+  await transactAcross(db, stores, (transaction) => {
+    const objectStore = transaction.objectStore(store);
+    const matching = objectStore.index(index).getAll(key);
+    matching.onsuccess = () => {
+      for (const before of matching.result) {
+        const after = rewrite(before);
+        if (after !== null) objectStore.put(after);
+      }
+    };
+    for (const write of writes) place(transaction, write);
+  });
+}
+
 async function rewriteByIndex<T>(
   db: IDBDatabase,
   store: string,
@@ -356,7 +396,9 @@ export {
   listRecords,
   listByIndex,
   deleteByIndex,
+  deleteByIndexAndWrite,
   rewriteByIndex,
+  rewriteByIndexAndWrite,
   writeRecords,
   writeAfterRead,
   settleMarkers,
