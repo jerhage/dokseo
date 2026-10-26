@@ -1,7 +1,12 @@
+import type { DownloadProgress } from '$lib/domains/catalog/domain/catalog-source';
+import type { BookMatching } from '$lib/domains/library/domain/book/book-matching';
+import type { ReadingDefaults } from '$lib/domains/library/domain/book/reading-defaults';
 import type { SyncReads } from '../queries/sync-queries';
 import type { ConnectSyncResult } from '../use-cases/connect-sync';
+import type { DownloadChoices, DownloadRemoteBookResult } from '../use-cases/download-remote-book';
 import type { DisconnectSyncResult } from '../use-cases/disconnect-sync';
 import type { RevokeSyncDeviceResult } from '../use-cases/revoke-sync-device';
+import type { SetAutoDownloadResult } from '../use-cases/set-auto-download';
 import type { SyncNowResult } from '../use-cases/sync-now';
 
 type ConnectSync = (
@@ -11,11 +16,25 @@ type ConnectSync = (
   deviceName: string,
 ) => Promise<ConnectSyncResult>;
 
+type DownloadChoiceSource = {
+  readonly matching: () => BookMatching;
+  readonly defaults: () => ReadingDefaults;
+};
+
+type RemoteBooksUseCases = Pick<SyncReads, 'remoteBooks'> & {
+  readonly downloadRemoteBook: (
+    contentHash: string,
+    choices: DownloadChoices,
+    onProgress: DownloadProgress,
+  ) => Promise<DownloadRemoteBookResult>;
+};
+
 type SyncSettingsUseCases = SyncReads & {
   readonly connectSync: ConnectSync;
   readonly disconnectSync: () => Promise<DisconnectSyncResult>;
   readonly revokeSyncDevice: (deviceId: string) => Promise<RevokeSyncDeviceResult>;
-  readonly syncNow: () => Promise<SyncNowResult>;
+  readonly syncNow: (choices: DownloadChoices) => Promise<SyncNowResult>;
+  readonly setAutoDownload: (autoDownload: boolean) => Promise<SetAutoDownloadResult>;
 };
 
-export type { ConnectSync, SyncSettingsUseCases };
+export type { ConnectSync, DownloadChoiceSource, RemoteBooksUseCases, SyncSettingsUseCases };

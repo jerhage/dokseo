@@ -44,12 +44,23 @@ const STORAGE_TEXT = 'This browser cannot store the connection. A private window
 
 const NOT_CONNECTED_TEXT = 'This device is not connected to a server.';
 
+const AUTO_DOWNLOAD_LABEL = 'Download books from catalogs automatically';
+
+const AUTO_DOWNLOAD_HINT =
+  'When you sync, books your other devices hold are downloaded from the catalog they came from, if this device has that catalog. Only on this device.';
+
+const AUTO_DOWNLOAD_FAILED = 'This browser could not store the setting.';
+
 function serverErrorText(status: number): string {
   return `The server answered with an error (status ${status}).`;
 }
 
 function changeCount(count: number): string {
   return count === 1 ? '1 change' : `${count} changes`;
+}
+
+function bookCount(count: number): string {
+  return count === 1 ? '1 book' : `${count} books`;
 }
 
 function connectFailureText(failure: ConnectFailure): string {
@@ -90,7 +101,7 @@ function rejectionText(code: RejectionCode): string {
 }
 
 function syncDoneText(result: Extract<SyncNowResult, { readonly kind: 'success' }>): string {
-  const { pushed, applied, waiting, held, skipped } = result;
+  const { pushed, applied, waiting, held, skipped, downloaded, downloadFailed } = result;
   const parts = [`Sent ${changeCount(pushed)}, received ${applied}.`];
   const waits = waiting + held;
   if (waits > 0) {
@@ -103,6 +114,8 @@ function syncDoneText(result: Extract<SyncNowResult, { readonly kind: 'success' 
       `${changeCount(skipped)} could not be read and ${skipped === 1 ? 'was' : 'were'} skipped.`,
     );
   }
+  if (downloaded > 0) parts.push(`Downloaded ${bookCount(downloaded)}.`);
+  if (downloadFailed > 0) parts.push(`${bookCount(downloadFailed)} could not be downloaded.`);
   return parts.join(' ');
 }
 
@@ -239,6 +252,9 @@ function disconnectOutcome(result: DisconnectSyncResult): DisconnectOutcome {
 }
 
 export {
+  AUTO_DOWNLOAD_FAILED,
+  AUTO_DOWNLOAD_HINT,
+  AUTO_DOWNLOAD_LABEL,
   OFFLINE_TEXT,
   STORAGE_TEXT,
   connectFailureText,

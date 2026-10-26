@@ -1,3 +1,4 @@
+import type { CatalogUseCases } from './catalog';
 import { createCatalogOriginsRepository } from '../domains/catalog/adapters/indexeddb-catalog-origins.repo';
 import { createLibraryRepository } from '../domains/library/adapters/indexeddb-opfs-library.repo';
 import type { LibraryRepository } from '../domains/library/domain/book/library-repository';
@@ -6,19 +7,29 @@ import { createCaptureRepository } from '../domains/recognition/adapters/capture
 import type { CaptureRepository } from '../domains/recognition/domain/capture/capture-repository';
 import { createHeldChangeStore } from '../domains/sync/adapters/indexeddb-held-changes';
 import { createSyncStateStore } from '../domains/sync/adapters/indexeddb-sync-state';
+import type { DownloadProgress } from '../domains/catalog/domain/catalog-source';
 import type { SyncServer } from '../domains/sync/domain/sync-server';
 import { applyHeldChanges } from '../domains/sync/use-cases/apply-held-changes';
 import type { ApplyHeldChangesResult } from '../domains/sync/use-cases/apply-held-changes';
+import { downloadRemoteBook } from '../domains/sync/use-cases/download-remote-book';
+import type {
+  DownloadChoices,
+  DownloadRemoteBookResult,
+} from '../domains/sync/use-cases/download-remote-book';
 import { connectSync } from '../domains/sync/use-cases/connect-sync';
 import type { ConnectSyncResult } from '../domains/sync/use-cases/connect-sync';
 import { disconnectSync } from '../domains/sync/use-cases/disconnect-sync';
 import type { DisconnectSyncResult } from '../domains/sync/use-cases/disconnect-sync';
+import { listRemoteBooks } from '../domains/sync/use-cases/list-remote-books';
+import type { ListRemoteBooksResult } from '../domains/sync/use-cases/list-remote-books';
 import { pullChanges } from '../domains/sync/use-cases/pull-changes';
 import type { PullChangesResult } from '../domains/sync/use-cases/pull-changes';
 import { pushChanges } from '../domains/sync/use-cases/push-changes';
 import type { PushChangesResult } from '../domains/sync/use-cases/push-changes';
 import { revokeSyncDevice } from '../domains/sync/use-cases/revoke-sync-device';
 import type { RevokeSyncDeviceResult } from '../domains/sync/use-cases/revoke-sync-device';
+import { setAutoDownload } from '../domains/sync/use-cases/set-auto-download';
+import type { SetAutoDownloadResult } from '../domains/sync/use-cases/set-auto-download';
 import { syncDevices } from '../domains/sync/use-cases/sync-devices';
 import type { SyncDevicesResult } from '../domains/sync/use-cases/sync-devices';
 import { syncNow } from '../domains/sync/use-cases/sync-now';
@@ -40,7 +51,15 @@ type SyncUseCases = {
   readonly pushChanges: () => Promise<PushChangesResult>;
   readonly pullChanges: () => Promise<PullChangesResult>;
   readonly applyHeldChanges: () => Promise<ApplyHeldChangesResult>;
-  readonly syncNow: () => Promise<SyncNowResult>;
+  readonly syncNow: (choices: DownloadChoices) => Promise<SyncNowResult>;
+  readonly remoteBooks: () => Promise<ListRemoteBooksResult>;
+  readonly downloadRemoteBook: (
+    contentHash: string,
+    choices: DownloadChoices,
+    onProgress: DownloadProgress,
+    signal?: AbortSignal,
+  ) => Promise<DownloadRemoteBookResult>;
+  readonly setAutoDownload: (autoDownload: boolean) => Promise<SetAutoDownloadResult>;
 };
 
 let server: Promise<SyncServer> | null = null;
@@ -60,7 +79,11 @@ function loadSyncServer(): Promise<SyncServer> {
   return loading;
 }
 
-function buildSync(shelf: LibraryRepository, captures: CaptureRepository): SyncUseCases {
+function buildSync(
+  shelf: LibraryRepository,
+  captures: CaptureRepository,
+  catalog: Pick<CatalogUseCases, 'downloadPublication'>,
+): SyncUseCases {
   const state = createSyncStateStore();
   const catalogs = createCatalogOriginsRepository();
   const remote: SyncServer = {
@@ -91,8 +114,9 @@ function buildSync(shelf: LibraryRepository, captures: CaptureRepository): SyncU
     catalogs: { catalogs: unmarkedCatalogs },
     held: createHeldChangeStore(),
   };
+  const downloading = { ...applying, downloadPublication: catalog.downloadPublication };
   const everything = {
-    ...applying,
+    ...downloading,
     origins: { origins: unmarkedCatalogs },
     tags: { tags },
     now: Date.now,
@@ -108,7 +132,11 @@ function buildSync(shelf: LibraryRepository, captures: CaptureRepository): SyncU
     pushChanges: () => pushChanges(holdings),
     pullChanges: () => pullChanges(applying),
     applyHeldChanges: () => applyHeldChanges(applying),
-    syncNow: () => syncNow(everything),
+    syncNow: (choices) => syncNow(everything, choices),
+    remoteBooks: () => listRemoteBooks(applying),
+    downloadRemoteBook: (contentHash, choices, onProgress, signal) =>
+      downloadRemoteBook(downloading, contentHash, choices, onProgress, signal),
+    setAutoDownload: (autoDownload) => setAutoDownload(deps, autoDownload),
   };
 }
 

@@ -75,6 +75,7 @@
     readonly bookFilter?: ((id: BookId) => boolean) | undefined;
     readonly filterControls?: Snippet | undefined;
     readonly headerSearch?: HeaderSearch | undefined;
+    readonly remoteBooks?: Snippet | undefined;
     query?: string;
   };
 
@@ -93,6 +94,7 @@
     bookFilter,
     filterControls,
     headerSearch,
+    remoteBooks,
     query = $bindable(''),
   }: Props = $props();
 
@@ -255,6 +257,10 @@
       </div>
     {/snippet}
   </LibraryBooksData>
+
+  {#if remoteBooks !== undefined}
+    {@render remoteBooks()}
+  {/if}
 
   {#if shelfRead.removed.length > 0 || shelfRead.unreadableRemoved.length > 0}
     <RemovedBooks

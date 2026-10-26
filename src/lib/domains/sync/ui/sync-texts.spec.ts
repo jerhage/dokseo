@@ -37,9 +37,35 @@ describe('connectFailureText', () => {
 });
 
 describe('syncNowLine', () => {
+  it('words the books downloaded and the ones that failed', () => {
+    const line = syncNowLine({
+      kind: 'success',
+      pushed: 0,
+      waiting: 0,
+      applied: 0,
+      held: 0,
+      skipped: 0,
+      downloaded: 2,
+      downloadFailed: 1,
+    });
+
+    expect(line.text).toBe(
+      'Sent 0 changes, received 0. Downloaded 2 books. 1 book could not be downloaded.',
+    );
+  });
+
   it('counts what was sent and received', () => {
     expect(
-      syncNowLine({ kind: 'success', pushed: 1, waiting: 0, applied: 0, held: 0, skipped: 0 }),
+      syncNowLine({
+        kind: 'success',
+        pushed: 1,
+        waiting: 0,
+        applied: 0,
+        held: 0,
+        skipped: 0,
+        downloaded: 0,
+        downloadFailed: 0,
+      }),
     ).toEqual({ variant: 'success', text: 'Sent 1 change, received 0.', signedOut: false });
   });
 
@@ -51,6 +77,8 @@ describe('syncNowLine', () => {
       applied: 5,
       held: 1,
       skipped: 0,
+      downloaded: 0,
+      downloadFailed: 0,
     });
 
     expect(line.text).toBe('Sent 3 changes, received 5. 2 changes wait for their books.');
@@ -64,6 +92,8 @@ describe('syncNowLine', () => {
       applied: 0,
       held: 1,
       skipped: 2,
+      downloaded: 0,
+      downloadFailed: 0,
     });
 
     expect(line.text).toBe(

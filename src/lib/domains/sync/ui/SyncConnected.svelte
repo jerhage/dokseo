@@ -2,11 +2,13 @@
   import type { Notify } from '$lib/shared/notice';
   import Alert from '$lib/ui/components/Alert.svelte';
   import Button from '$lib/ui/components/Button.svelte';
+  import Checkbox from '$lib/ui/components/Checkbox.svelte';
   import ListGroup from '$lib/ui/components/ListGroup.svelte';
   import ListRow from '$lib/ui/components/ListRow.svelte';
-  import type { SyncSettingsUseCases } from './sync-deps';
+  import type { DownloadChoiceSource, SyncSettingsUseCases } from './sync-deps';
   import { createSyncActions } from './sync-actions.svelte';
   import { lastSyncText } from './sync-time';
+  import { AUTO_DOWNLOAD_FAILED, AUTO_DOWNLOAD_HINT, AUTO_DOWNLOAD_LABEL } from './sync-texts';
   import type { DisconnectOutcome } from './sync-texts';
   import type { Connection } from './sync-view';
   import SyncConfirm from './SyncConfirm.svelte';
@@ -14,19 +16,34 @@
 
   type Props = {
     readonly sync: SyncSettingsUseCases;
+    readonly choices: DownloadChoiceSource;
     readonly notify: Notify;
     readonly connection: Connection;
     readonly onchange: () => void;
     readonly ondisconnected: (outcome: DisconnectOutcome) => void;
   };
 
-  let { sync, notify, connection, onchange, ondisconnected }: Props = $props();
+  let { sync, choices, notify, connection, onchange, ondisconnected }: Props = $props();
 
   const controls = createSyncActions();
   const lastSync = $derived(lastSyncText(connection.lastSyncAt, Date.now()));
 
   async function syncNow(): Promise<void> {
-    await controls.syncNow(() => sync.syncNow());
+    await controls.syncNow(() =>
+      sync.syncNow({ matching: choices.matching(), defaults: choices.defaults() }),
+    );
+    onchange();
+  }
+
+  async function chooseAutoDownload(enabled: boolean): Promise<void> {
+    const saved = await sync.setAutoDownload(enabled);
+    if (saved.kind !== 'success') {
+      notify({
+        tone: 'warning',
+        title: 'Could not save the setting',
+        message: AUTO_DOWNLOAD_FAILED,
+      });
+    }
     onchange();
   }
 
@@ -76,6 +93,14 @@
     {/if}
   {/if}
 </div>
+
+<Checkbox
+  checked={connection.autoDownload}
+  hint={AUTO_DOWNLOAD_HINT}
+  onchange={(event) => void chooseAutoDownload(event.currentTarget.checked)}
+>
+  {AUTO_DOWNLOAD_LABEL}
+</Checkbox>
 
 <SyncDevices {sync} onrevoke={(device) => controls.askRevoke(device)} />
 

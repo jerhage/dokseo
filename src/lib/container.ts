@@ -50,10 +50,11 @@ function buildContainer(): Container {
   const removedBooks = buildRemovedBooks(repository, captures);
   const bookExports = buildBookCapturesExports(repository, captures);
   const library = buildLibrary(repository, removedBooks.mergeIntoBook);
+  const catalog = buildCatalog(library);
 
   return {
     beginTrace,
-    catalog: buildCatalog(library),
+    catalog,
     library: {
       ...library,
       ...removedBooks,
@@ -70,7 +71,7 @@ function buildContainer(): Container {
       ...buildCapturesExports(repository, captures),
       ...buildCapturesImports(repository, captures),
     },
-    sync: buildSync(repository, captures),
+    sync: buildSync(repository, captures, catalog),
   };
 }
 

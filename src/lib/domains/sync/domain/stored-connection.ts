@@ -22,7 +22,16 @@ function connectionFromStored(stored: StoredConnection | undefined): SyncConnect
   if (!isText(serverUrl) || !isText(deviceId) || !isText(deviceName) || !isText(token)) return null;
   if (!isCount(cursor)) return null;
   if (lastSyncAt !== null && !isCount(lastSyncAt)) return null;
-  return { serverUrl, deviceId, deviceName, token, cursor, lastSyncAt };
+  const { autoDownload } = stored;
+  return {
+    serverUrl,
+    deviceId,
+    deviceName,
+    token,
+    cursor,
+    lastSyncAt,
+    autoDownload: autoDownload === true,
+  };
 }
 
 export { CONNECTION_ROW, connectionFromStored, storedConnection };

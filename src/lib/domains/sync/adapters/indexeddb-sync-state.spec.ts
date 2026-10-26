@@ -43,6 +43,7 @@ const CONNECTION: SyncConnection = {
   token: 'dsk_3f9a1c7e5b2d4a60',
   cursor: 12,
   lastSyncAt: 1772446000000,
+  autoDownload: false,
 };
 
 beforeEach(() => {

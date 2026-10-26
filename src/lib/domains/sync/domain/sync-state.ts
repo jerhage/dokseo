@@ -7,6 +7,7 @@ type SyncConnection = {
   readonly token: string;
   readonly cursor: number;
   readonly lastSyncAt: number | null;
+  readonly autoDownload: boolean;
 };
 
 type SyncStateRead =
