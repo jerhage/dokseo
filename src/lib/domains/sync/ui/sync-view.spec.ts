@@ -10,6 +10,7 @@ describe('syncView', () => {
       serverUrl: 'https://sync.example/',
       deviceName: 'Chrome on Mac',
       lastSyncAt: null,
+      autoDownload: false,
     } as const;
 
     expect(syncView(readReady(connected))).toEqual({ kind: 'connected', connection: connected });

@@ -4,6 +4,7 @@ import type { SyncServer } from '../domain/sync-server';
 import type { SyncConnection, SyncStateStore } from '../domain/sync-state';
 import { connectSync } from './connect-sync';
 import { disconnectSync } from './disconnect-sync';
+import { setAutoDownload } from './set-auto-download';
 import { revokeSyncDevice } from './revoke-sync-device';
 import { syncDevices } from './sync-devices';
 import { syncStatus } from './sync-status';
@@ -17,6 +18,7 @@ const CONNECTION: SyncConnection = {
   token: 'dsk_3f9a1c7e5b2d4a60',
   cursor: 5,
   lastSyncAt: 1772446000000,
+  autoDownload: false,
 };
 
 const OTHER_DEVICE = '00000000-0000-4000-8000-000000000003';
@@ -94,6 +96,7 @@ describe('connectSync', () => {
         token: 'dsk_3f9a1c7e5b2d4a60',
         cursor: 0,
         lastSyncAt: null,
+        autoDownload: false,
       },
     ]);
     expect(JSON.stringify(writes)).not.toContain('hunter2');
@@ -131,7 +134,15 @@ describe('connectSync', () => {
     });
   });
 
-  it('answers invalid-url for text that is not an http or https address without calling the server', async () => {
+  it('answers invalid-url for an http address, which the page may not reach, without calling the server', async () => {
+    const { state } = stateHolding(null);
+
+    expect(
+      await connectSync({ server: refusing(), state }, 'http://sync.example/', 'r', 'p', 'Phone'),
+    ).toEqual({ kind: 'invalid-url' });
+  });
+
+  it('answers invalid-url for text that is not an address without calling the server', async () => {
     const { state } = stateHolding(null);
 
     expect(
@@ -239,6 +250,7 @@ describe('syncStatus', () => {
       serverUrl: URL_OF_SERVER,
       deviceName: 'Phone',
       lastSyncAt: 1772446000000,
+      autoDownload: false,
     });
     expect(JSON.stringify(status)).not.toContain(CONNECTION.token);
   });
@@ -318,5 +330,16 @@ describe('revokeSyncDevice', () => {
     expect(await revokeSyncDevice({ server: refusing(), state }, OTHER_DEVICE)).toEqual({
       kind: 'not-connected',
     });
+  });
+});
+
+describe('setAutoDownload', () => {
+  it('stores the choice with the connection and leaves the rest alone', async () => {
+    const { state, held } = stateHolding(CONNECTION);
+
+    const result = await setAutoDownload({ state }, true);
+
+    expect(result).toEqual({ kind: 'success', autoDownload: true });
+    expect(held()).toEqual({ ...CONNECTION, autoDownload: true });
   });
 });

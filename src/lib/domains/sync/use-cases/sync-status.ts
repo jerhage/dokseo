@@ -7,6 +7,7 @@ type SyncStatusResult =
       readonly serverUrl: string;
       readonly deviceName: string;
       readonly lastSyncAt: number | null;
+      readonly autoDownload: boolean;
     }
   | { readonly kind: 'not-connected' }
   | StorageUnavailable;
@@ -23,6 +24,7 @@ async function syncStatus(deps: SyncStatusDeps): Promise<SyncStatusResult> {
     serverUrl: connection.serverUrl,
     deviceName: connection.deviceName,
     lastSyncAt: connection.lastSyncAt,
+    autoDownload: connection.autoDownload,
   };
 }
 

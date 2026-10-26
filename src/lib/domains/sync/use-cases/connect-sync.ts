@@ -20,7 +20,7 @@ const SUPPORTED_API_VERSION = 1;
 function isServerUrl(text: string): boolean {
   if (!URL.canParse(text)) return false;
   const { protocol } = new URL(text);
-  return protocol === 'https:' || protocol === 'http:';
+  return protocol === 'https:';
 }
 
 async function connectSync(
@@ -54,6 +54,7 @@ async function connectSync(
     token: created.device.token,
     cursor: 0,
     lastSyncAt: null,
+    autoDownload: false,
   });
   if (written.kind !== 'success') return written;
   return { kind: 'success', serverUrl: url, deviceName: name };

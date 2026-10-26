@@ -9,6 +9,8 @@ const SENT: SyncNowResult = {
   applied: 5,
   held: 0,
   skipped: 0,
+  downloaded: 0,
+  downloadFailed: 0,
 };
 
 describe('createSyncActions', () => {

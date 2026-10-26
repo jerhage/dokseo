@@ -6,7 +6,7 @@
   import { syncKeys } from '../queries/sync-keys';
   import { syncStatusQuery } from '../queries/sync-queries';
   import { defaultDeviceName } from './device-name';
-  import type { SyncSettingsUseCases } from './sync-deps';
+  import type { DownloadChoiceSource, SyncSettingsUseCases } from './sync-deps';
   import { STORAGE_TEXT } from './sync-texts';
   import type { DisconnectOutcome } from './sync-texts';
   import { syncView } from './sync-view';
@@ -15,11 +15,17 @@
 
   type Props = {
     readonly sync: SyncSettingsUseCases;
+    readonly choices: DownloadChoiceSource;
     readonly notify: Notify;
     readonly userAgent?: string;
   };
 
-  let { sync, notify, userAgent = globalThis.navigator?.userAgent ?? '' }: Props = $props();
+  let {
+    sync,
+    choices,
+    notify,
+    userAgent = globalThis.navigator?.userAgent ?? '',
+  }: Props = $props();
 
   const client = useQueryClient();
   const status = readQuery(() => syncStatusQuery(sync));
@@ -62,6 +68,7 @@
   {:else if view.kind === 'connected'}
     <SyncConnected
       {sync}
+      {choices}
       {notify}
       connection={view.connection}
       onchange={refresh}

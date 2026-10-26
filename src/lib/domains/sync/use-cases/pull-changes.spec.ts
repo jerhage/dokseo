@@ -3,6 +3,7 @@ import type { Catalog } from '$lib/domains/catalog/domain/catalog';
 import type { CatalogRepository } from '$lib/domains/catalog/domain/catalog-repository';
 import type { OriginRepository } from '$lib/domains/catalog/domain/origin-repository';
 import { applyEdit } from '$lib/domains/library/domain/book/book';
+import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/reading-defaults';
 import type { Book } from '$lib/domains/library/domain/book/book';
 import type { LibraryRepository } from '$lib/domains/library/domain/book/library-repository';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
@@ -21,6 +22,9 @@ import type { PullPage, PullResult, SyncServer } from '../domain/sync-server';
 import type { SyncConnection, SyncStateStore } from '../domain/sync-state';
 import { applyHeldChanges } from './apply-held-changes';
 import { contractExample } from './contract-examples';
+import { downloadRemoteBook } from './download-remote-book';
+import type { DownloadPublication } from './download-remote-book';
+import { listRemoteBooks } from './list-remote-books';
 import { pullChanges } from './pull-changes';
 import { syncNow } from './sync-now';
 
@@ -34,6 +38,7 @@ const CONNECTION: SyncConnection = {
   token: 'dsk_3f9a1c7e5b2d4a60',
   cursor: 0,
   lastSyncAt: null,
+  autoDownload: false,
 };
 
 const HASH = contentHash('0123456789abcdef0123456789abcdef');
@@ -88,6 +93,7 @@ function dataOf(folder: string, name: string): ChangeData {
 }
 
 const BOOK_DATA = dataOf('book-data', 'plain');
+const BOOK_DATA_WITH_ORIGIN = dataOf('book-data', 'with-origin');
 const POSITION_DATA = dataOf('position-data', 'image');
 const TAG_DATA = dataOf('tag-data', 'tag');
 const CATALOG_DATA = dataOf('catalog-data', 'basic');
@@ -128,6 +134,8 @@ function world(start: {
   captures?: readonly Capture[];
   tags?: readonly Tag[];
   catalogs?: readonly Catalog[];
+  autoDownload?: boolean;
+  download?: DownloadPublication;
 }) {
   let books = [...(start.books ?? [])];
   const removedBooks: string[] = [];
@@ -139,7 +147,7 @@ function world(start: {
   const versions = new Map<string, RecordVersion>();
   const held = new Map<string, Change>();
   const cursors: number[] = [];
-  let connection: SyncConnection = CONNECTION;
+  let connection: SyncConnection = { ...CONNECTION, autoDownload: start.autoDownload ?? false };
   let unavailable = false;
 
   const accept = ({ kind, recordId, version }: AcceptedVersion): void => {
@@ -241,7 +249,7 @@ function world(start: {
       return success();
     },
     list: notUsed,
-    get: notUsed,
+    get: (id) => Promise.resolve({ kind: 'success', catalog: catalogs.get(id) ?? null } as const),
     save: notUsed,
     remove: notUsed,
     put: notUsed,
@@ -287,6 +295,7 @@ function world(start: {
       origins: { origins: catalogRepository },
       tags: { tags: { list: notUsed, save: notUsed, remove: notUsed } },
       now: () => 1234,
+      downloadPublication: start.download ?? notUsed,
     },
     get books() {
       return books;
@@ -573,6 +582,106 @@ describe('pullChanges paging', () => {
   });
 });
 
+const CHOICES = { matching: 'content', defaults: INITIAL_READING_DEFAULTS } as const;
+
+const OTHER_HASH = contentHash('fedcba9876543210fedcba9876543210');
+
+function hold(
+  source: ReturnType<typeof world>,
+  data: ChangeData,
+  recordId = HASH,
+): Promise<unknown> {
+  return pullFrom(source, page([incoming('book', recordId, data, 2)], 1)).result;
+}
+
+describe('listRemoteBooks', () => {
+  it('names a held book downloadable with its origin, or not on this device without one', async () => {
+    const source = world({ catalogs: [CATALOG] });
+    await hold(source, BOOK_DATA_WITH_ORIGIN);
+    await hold(source, BOOK_DATA, OTHER_HASH);
+
+    const listed = await listRemoteBooks(source.deps);
+
+    expect(listed).toMatchObject({
+      kind: 'success',
+      books: [
+        {
+          contentHash: HASH,
+          availability: { kind: 'downloadable', origin: { entryId: 'urn:uuid:5d1c' } },
+        },
+        { contentHash: OTHER_HASH, availability: { kind: 'not-on-this-device' } },
+      ],
+    });
+  });
+
+  it('names a book not on this device when its catalog is not configured here', async () => {
+    const source = world({});
+    await hold(source, BOOK_DATA_WITH_ORIGIN);
+
+    const listed = await listRemoteBooks(source.deps);
+
+    expect(listed).toMatchObject({
+      kind: 'success',
+      books: [{ contentHash: HASH, availability: { kind: 'not-on-this-device' } }],
+    });
+  });
+
+  it('drops a book when its tombstone arrives', async () => {
+    const source = world({ catalogs: [CATALOG] });
+    await hold(source, BOOK_DATA_WITH_ORIGIN);
+
+    await pullFrom(source, page([incoming('book', HASH, null, 3)], 2)).result;
+
+    expect(await listRemoteBooks(source.deps)).toEqual({ kind: 'success', books: [] });
+    expect(source.held.size).toBe(0);
+  });
+
+  it('drops a book once this device holds the same file and held changes are applied', async () => {
+    const source = world({ catalogs: [CATALOG] });
+    await hold(source, BOOK_DATA_WITH_ORIGIN);
+
+    source.arrive(BOOK);
+
+    expect(await listRemoteBooks(source.deps)).toEqual({ kind: 'success', books: [] });
+    await applyHeldChanges(source.deps);
+    expect(source.held.size).toBe(0);
+  });
+});
+
+describe('downloadRemoteBook', () => {
+  it('downloads from the stored origin, then attaches the held captures', async () => {
+    const asked: string[] = [];
+    let source: ReturnType<typeof world> | null = null;
+    const download: DownloadPublication = (publication, feedPosition) => {
+      asked.push(`${publication.catalogId} ${publication.entryId} ${feedPosition}`);
+      source?.arrive(BOOK);
+      return Promise.resolve({ kind: 'success', bookId: BOOK.id });
+    };
+    source = world({ catalogs: [CATALOG], download });
+    await hold(source, BOOK_DATA_WITH_ORIGIN);
+    await pullFrom(source, page([incoming('capture', CAPTURE_ID, CAPTURE_DATA, 2)], 2)).result;
+    expect(source.captures.size).toBe(0);
+
+    const result = await downloadRemoteBook(source.deps, HASH, CHOICES, () => undefined);
+
+    expect(result).toMatchObject({ kind: 'success', bookId: BOOK.id, applied: 2 });
+    expect(asked).toEqual([`${CATALOG_ID} urn:uuid:5d1c 3`]);
+    expect(source.captures.get(CAPTURE_ID)?.bookId).toBe(BOOK.id);
+  });
+
+  it('asks for the catalog password when the catalog is locked', async () => {
+    const source = world({
+      catalogs: [CATALOG],
+      download: () => Promise.resolve({ kind: 'locked', id: CATALOG_ID }),
+    });
+    await hold(source, BOOK_DATA_WITH_ORIGIN);
+
+    const result = await downloadRemoteBook(source.deps, HASH, CHOICES, () => undefined);
+
+    expect(result).toEqual({ kind: 'locked', catalogId: CATALOG_ID });
+  });
+});
+
 describe('syncNow', () => {
   it('pushes, retries held, pulls, retries held and stores the sync time', async () => {
     const source = world({});
@@ -592,7 +701,7 @@ describe('syncNow', () => {
       },
     };
 
-    const result = await syncNow({ ...source.deps, server });
+    const result = await syncNow({ ...source.deps, server }, CHOICES);
 
     expect(order).toEqual(['push', 'pull']);
     expect(result).toEqual({
@@ -602,8 +711,55 @@ describe('syncNow', () => {
       applied: 1,
       held: 0,
       skipped: 0,
+      downloaded: 0,
+      downloadFailed: 0,
     });
     expect(source.stored().lastSyncAt).toBe(1234);
+  });
+
+  it('downloads nothing while automatic download is off', async () => {
+    let downloads = 0;
+    const source = world({
+      catalogs: [CATALOG],
+      download: () => {
+        downloads += 1;
+        return Promise.reject(new Error('must not download'));
+      },
+    });
+    await hold(source, BOOK_DATA_WITH_ORIGIN);
+    const server = serving(page([], 1)).server;
+
+    const result = await syncNow({ ...source.deps, server }, CHOICES);
+
+    expect(downloads).toBe(0);
+    expect(result).toMatchObject({ kind: 'success', downloaded: 0, downloadFailed: 0 });
+  });
+
+  it('downloads every downloadable book one by one, counts the failures and attaches captures', async () => {
+    let source: ReturnType<typeof world> | null = null;
+    const order: string[] = [];
+    const download: DownloadPublication = (publication) => {
+      order.push(publication.entryId);
+      if (publication.entryId !== 'urn:uuid:5d1c') return Promise.resolve({ kind: 'offline' });
+      source?.arrive(BOOK);
+      return Promise.resolve({ kind: 'success', bookId: BOOK.id });
+    };
+    source = world({ catalogs: [CATALOG], autoDownload: true, download });
+    await hold(source, BOOK_DATA_WITH_ORIGIN);
+    const second = {
+      ...BOOK_DATA_WITH_ORIGIN,
+      contentHash: OTHER_HASH,
+      origin: { ...(BOOK_DATA_WITH_ORIGIN['origin'] as ChangeData), entryId: 'urn:uuid:other' },
+    };
+    await hold(source, second, OTHER_HASH);
+    await pullFrom(source, page([incoming('capture', CAPTURE_ID, CAPTURE_DATA, 2)], 3)).result;
+    const server = serving(page([], 3)).server;
+
+    const result = await syncNow({ ...source.deps, server }, CHOICES);
+
+    expect(order).toEqual(['urn:uuid:5d1c', 'urn:uuid:other']);
+    expect(result).toMatchObject({ kind: 'success', downloaded: 1, downloadFailed: 1, held: 1 });
+    expect(source.captures.get(CAPTURE_ID)?.bookId).toBe(BOOK.id);
   });
 
   it('stops at a failed push and stores no sync time', async () => {
@@ -614,7 +770,7 @@ describe('syncNow', () => {
       push: () => Promise.resolve({ kind: 'offline' }),
     };
 
-    const result = await syncNow({ ...source.deps, server });
+    const result = await syncNow({ ...source.deps, server }, CHOICES);
 
     expect(result).toEqual({ kind: 'offline' });
     expect(source.stored().lastSyncAt).toBeNull();

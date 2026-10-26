@@ -33,6 +33,7 @@ const CONNECTION: SyncConnection = {
   token: 'dsk_3f9a1c7e5b2d4a60',
   cursor: 0,
   lastSyncAt: null,
+  autoDownload: false,
 };
 
 const HASH = contentHash('0123456789abcdef0123456789abcdef');

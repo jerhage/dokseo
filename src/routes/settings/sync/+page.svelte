@@ -1,5 +1,6 @@
 <script lang="ts">
   import { useContainer } from '$lib/context';
+  import { CATALOG_NEEDS } from '$lib/domains/library/ui/catalog-needs';
   import SyncSettings from '$lib/domains/sync/ui/SyncSettings.svelte';
   import { toastNotify } from '$lib/shared/notice-toast';
   import { getToaster } from '$lib/ui/components/toast-context';
@@ -10,5 +11,5 @@
 </script>
 
 <SettingsShell current="sync">
-  <SyncSettings sync={container.sync} {notify} />
+  <SyncSettings sync={container.sync} choices={CATALOG_NEEDS} {notify} />
 </SettingsShell>

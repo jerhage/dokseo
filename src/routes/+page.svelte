@@ -1,13 +1,16 @@
 <script lang="ts">
   import type { Snapshot } from '@sveltejs/kit';
+  import { useQueryClient } from '@tanstack/svelte-query';
   import { afterNavigate, replaceState } from '$app/navigation';
   import { page } from '$app/state';
   import { getToaster } from '$lib/ui/components/toast-context';
   import { useContainer } from '$lib/context';
   import { createDeviceDetails } from '$lib/domains/catalog/ui/device-details.svelte';
+  import CatalogUnlockPrompt from '$lib/domains/catalog/ui/CatalogUnlockPrompt.svelte';
   import LibraryWithCatalogs from '$lib/domains/catalog/ui/LibraryWithCatalogs.svelte';
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
   import { CATALOG_NEEDS } from '$lib/domains/library/ui/catalog-needs';
+  import { refreshLibrary } from '$lib/domains/library/ui/library-refresh';
   import LibraryScreen from '$lib/domains/library/ui/LibraryScreen.svelte';
   import LibraryShelfData from '$lib/domains/library/ui/LibraryShelfData.svelte';
   import { BookChanges } from '$lib/domains/library/ui/book-changes.svelte';
@@ -18,11 +21,14 @@
   import CaptureFindData from '$lib/domains/recognition/ui/capture/CaptureFindData.svelte';
   import UnreadableCaptures from '$lib/domains/recognition/ui/capture/UnreadableCaptures.svelte';
   import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
+  import RemoteBooks from '$lib/domains/sync/ui/RemoteBooks.svelte';
+  import type { UnlockRequest } from '$lib/domains/sync/ui/remote-downloads';
   import PageTitle from '$lib/shared/PageTitle.svelte';
   import { missingBookArrival } from '$lib/shared/reader-location';
   import { toastNotify } from '$lib/shared/notice-toast';
 
   const container = useContainer();
+  const queryClient = useQueryClient();
   const notify = toastNotify(getToaster());
   const deviceDetails = createDeviceDetails();
   const details = createBookDetails(deviceDetails.hooks);
@@ -50,6 +56,20 @@
 
 <PageTitle screen="Library" />
 
+{#snippet unlock(request: UnlockRequest)}
+  <CatalogUnlockPrompt catalog={container.catalog} {...request} />
+{/snippet}
+
+{#snippet remoteBooks()}
+  <RemoteBooks
+    sync={container.sync}
+    choices={CATALOG_NEEDS}
+    {notify}
+    {unlock}
+    ondownloaded={() => void refreshLibrary(queryClient)}
+  />
+{/snippet}
+
 <LibraryWithCatalogs catalog={container.catalog} needs={CATALOG_NEEDS} {deviceDetails} {details}>
   {#snippet content(extras)}
     <LibraryShelfData library={container.library}>
@@ -69,6 +89,7 @@
           bookFilter={extras.bookFilter}
           filterControls={extras.filterControls}
           headerSearch={extras.headerSearch}
+          {remoteBooks}
           bind:query
         />
 
