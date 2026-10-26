@@ -91,6 +91,7 @@ const BUILD_CONTAINER: SourceSnippet = {
       ...buildCapturesExports(repository, captures),
       ...buildCapturesImports(repository, captures),
     },
+    sync: buildSync(),
   };
 }`,
 };

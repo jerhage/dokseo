@@ -20,7 +20,12 @@ describe('the stored layout on the page', () => {
       'catalog-origins v2 origins',
       'catalog-origins v2 outbox',
       'catalog-origins v2 record-versions',
+      'sync v1 settings',
     ]);
+  });
+
+  it('marks the sync settings store, which holds the device token, as outside the compatibility promise', () => {
+    expect(STORE_ROWS.find((row) => row.store === 'settings')?.coverage).toBe('outside');
   });
 
   it('names a compound index by both of its key paths and marks it unique', () => {
