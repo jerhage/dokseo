@@ -178,6 +178,7 @@ export {
   booksFromStored,
   storedBookRead,
   storedContentHash,
+  storedPlace,
   storedSeriesId,
   storedSourceKind,
 };
