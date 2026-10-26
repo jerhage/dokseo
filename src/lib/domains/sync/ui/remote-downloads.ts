@@ -1,7 +1,7 @@
 import { match } from 'ts-pattern';
 import type { CatalogId } from '$lib/shared/ids';
 import type { DownloadRemoteBookResult } from '../use-cases/download-remote-book';
-import { OFFLINE_TEXT, STORAGE_TEXT } from './sync-texts';
+import { DIFFERENT_FILE_TEXT, OFFLINE_TEXT, STORAGE_TEXT } from './sync-texts';
 
 type DownloadOutcome =
   | { readonly kind: 'done' }
@@ -56,6 +56,7 @@ function downloadOutcome(result: DownloadRemoteBookResult): DownloadOutcome {
       failed('The catalog for this book cannot be used. Check Settings, Catalogs.'),
     )
     .with({ kind: 'unreadable-file' }, () => failed('The downloaded file could not be opened.'))
+    .with({ kind: 'different-file' }, () => failed(DIFFERENT_FILE_TEXT))
     .with({ kind: 'storage-unavailable' }, () => failed(STORAGE_TEXT))
     .exhaustive();
 }

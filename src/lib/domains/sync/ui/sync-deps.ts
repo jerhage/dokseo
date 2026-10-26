@@ -37,4 +37,14 @@ type SyncSettingsUseCases = SyncReads & {
   readonly setAutoDownload: (autoDownload: boolean) => Promise<SetAutoDownloadResult>;
 };
 
-export type { ConnectSync, DownloadChoiceSource, RemoteBooksUseCases, SyncSettingsUseCases };
+type BackgroundSyncUseCases = Pick<SyncReads, 'syncStatus'> & {
+  readonly syncNow: (choices: DownloadChoices) => Promise<SyncNowResult>;
+};
+
+export type {
+  BackgroundSyncUseCases,
+  ConnectSync,
+  DownloadChoiceSource,
+  RemoteBooksUseCases,
+  SyncSettingsUseCases,
+};

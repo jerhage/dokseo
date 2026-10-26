@@ -1,6 +1,7 @@
 import { describeCause } from '$lib/shared/cause';
 import { OUTBOX_STORE, RECORD_VERSION_STORE, markChanged } from '$lib/shared/change-marker';
 import type { ChangeMarker, SettledMarker } from '$lib/shared/change-marker';
+import { announceLocalChange } from '../events/local-change';
 
 function isSupported(): boolean {
   return typeof indexedDB !== 'undefined';
@@ -165,13 +166,20 @@ type MarkerFor = (primaryKey: IDBValidKey) => ChangeMarker | null;
 
 type RecordRead = { readonly store: string; readonly key: IDBValidKey };
 
+const marking = new WeakSet<IDBTransaction>();
+
+function mark(transaction: IDBTransaction, marker: ChangeMarker): void {
+  markChanged(transaction, marker);
+  marking.add(transaction);
+}
+
 function storeOf(write: RecordWrite): string {
   return write.kind === 'mark' ? OUTBOX_STORE : write.store;
 }
 
 function place(transaction: IDBTransaction, write: RecordWrite): void {
   if (write.kind === 'mark') {
-    markChanged(transaction, write.marker);
+    mark(transaction, write.marker);
     return;
   }
   const objectStore = transaction.objectStore(write.store);
@@ -194,7 +202,10 @@ async function transactAcross(
     try {
       const opened = live.transaction([...stores], 'readwrite');
       transaction = opened;
-      opened.oncomplete = () => resolve();
+      opened.oncomplete = () => {
+        if (marking.has(opened)) announceLocalChange();
+        resolve();
+      };
       opened.onabort = () =>
         reject(
           new Error(`Stores "${named}" aborted the transaction: ${describeCause(opened.error)}`),
@@ -300,7 +311,7 @@ async function deleteByIndex(
         for (const primary of matching.result) {
           objectStore.delete(primary);
           const marker = markerFor(primary);
-          if (marker !== null) markChanged(transaction, marker);
+          if (marker !== null) mark(transaction, marker);
         }
       };
     });
@@ -372,7 +383,7 @@ async function rewriteByIndex<T>(
           const after = rewrite(before);
           objectStore.put(after);
           const marker = markerFor(before, after);
-          if (marker !== null) markChanged(transaction, marker);
+          if (marker !== null) mark(transaction, marker);
         }
       };
     });

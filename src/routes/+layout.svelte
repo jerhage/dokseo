@@ -9,19 +9,24 @@
   import { createToaster } from '$lib/ui/components/toaster.svelte';
   import { buildContainer } from '$lib/container';
   import { provideContainer } from '$lib/context';
+  import { CATALOG_NEEDS } from '$lib/domains/library/ui/catalog-needs';
+  import { refreshLibrary } from '$lib/domains/library/ui/library-refresh';
+  import SyncBackground from '$lib/domains/sync/ui/SyncBackground.svelte';
   import { createQueryClient } from '$lib/query-client';
   import {
     UnexpectedFailures,
     logUnexpected,
     unexpectedMessage,
   } from '$lib/shared/unexpected-failure';
+  import { toastNotify } from '$lib/shared/notice-toast';
   import { createShellUpdates, watchShellUpdates } from '$lib/shared/shell-updates';
   import { provideShellUpdates } from '$lib/shared/shell-updates-context';
   import '$lib/ui/core/styles/index.css';
 
   let { children } = $props();
 
-  provideContainer(buildContainer());
+  const container = buildContainer();
+  provideContainer(container);
   const toaster = createToaster();
   setToaster(toaster);
   const failures = new UnexpectedFailures(toaster);
@@ -42,6 +47,12 @@
 />
 
 <QueryClientProvider client={queryClient}>
+  <SyncBackground
+    sync={container.sync}
+    choices={CATALOG_NEEDS}
+    notify={toastNotify(toaster)}
+    onsynced={() => void refreshLibrary(queryClient)}
+  />
   <svelte:boundary onerror={(error) => logUnexpected('render', error)}>
     {@render children()}
 

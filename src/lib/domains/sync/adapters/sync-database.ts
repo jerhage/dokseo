@@ -2,11 +2,13 @@ import { openDatabase } from '$lib/platform/idb/connection';
 
 const DATABASE_NAME = 'sync';
 
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
 
 const SETTINGS_STORE = 'settings';
 
 const HELD_CHANGES_STORE = 'held-changes';
+
+const TRIED_DOWNLOADS_STORE = 'tried-downloads';
 
 function upgrade(db: IDBDatabase): void {
   if (!db.objectStoreNames.contains(SETTINGS_STORE)) {
@@ -14,6 +16,9 @@ function upgrade(db: IDBDatabase): void {
   }
   if (!db.objectStoreNames.contains(HELD_CHANGES_STORE)) {
     db.createObjectStore(HELD_CHANGES_STORE, { keyPath: ['kind', 'recordId'] });
+  }
+  if (!db.objectStoreNames.contains(TRIED_DOWNLOADS_STORE)) {
+    db.createObjectStore(TRIED_DOWNLOADS_STORE, { keyPath: 'contentHash' });
   }
 }
 
@@ -39,6 +44,7 @@ export {
   DATABASE_VERSION,
   HELD_CHANGES_STORE,
   SETTINGS_STORE,
+  TRIED_DOWNLOADS_STORE,
   recordsAvailable,
   syncDatabase,
   upgrade,
