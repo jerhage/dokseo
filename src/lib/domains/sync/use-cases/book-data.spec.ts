@@ -89,4 +89,30 @@ describe('book record data', () => {
     const { bookId: _local, ...synced } = ORIGIN;
     expect(read.origin).toEqual(synced);
   });
+  it('reads the acquisition with its format from a written origin', () => {
+    const read = fromSyncBookData(toSyncBookData(BOOK, ORIGIN));
+    if (read.kind !== 'success') throw new Error(read.reason);
+    expect(read.origin?.acquisition).toEqual(ORIGIN.acquisition);
+    expect(read.origin?.acquisition.format).toBe(ORIGIN.acquisition.format);
+  });
+
+  it('reads the acquisition format from the contract example with an origin', () => {
+    const example = contractExamples('valid', 'book').find(({ name }) =>
+      name.includes('with-origin'),
+    );
+    if (example === undefined) throw new Error('no contract example carries an origin');
+    const read = fromSyncBookData(example.value);
+    if (read.kind !== 'success') throw new Error(read.reason);
+    expect(read.origin?.acquisition.format).toBe('cbz');
+  });
+
+  it('reports an origin whose acquisition has no format as unreadable', () => {
+    const written = toSyncBookData(BOOK, ORIGIN);
+    const { format: _format, ...withoutFormat } = ORIGIN.acquisition;
+    const read = fromSyncBookData({
+      ...written,
+      origin: { ...written.origin, acquisition: withoutFormat },
+    });
+    expect(read.kind).toBe('unreadable');
+  });
 });

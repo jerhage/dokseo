@@ -1,6 +1,9 @@
 import { match } from 'ts-pattern';
 import type { DownloadProgress } from '$lib/domains/catalog/domain/catalog-source';
-import type { RemotePublication } from '$lib/domains/catalog/domain/remote-publication';
+import type {
+  Acquisition,
+  RemotePublication,
+} from '$lib/domains/catalog/domain/remote-publication';
 import type { DownloadPublicationResult } from '$lib/domains/catalog/use-cases/download-publication';
 import type { BookMatching } from '$lib/domains/library/domain/book/book-matching';
 import type { ReadingDefaults } from '$lib/domains/library/domain/book/reading-defaults';
@@ -21,6 +24,7 @@ type DownloadChoices = {
 
 type DownloadPublication = (
   publication: RemotePublication,
+  acquisition: Acquisition,
   feedPosition: number,
   matching: BookMatching,
   defaults: ReadingDefaults,
@@ -77,14 +81,9 @@ function failureOf(catalogId: CatalogId, failure: PublicationFailure): RemoteBoo
     .with({ kind: 'server-error' }, ({ status }) => ({ kind: 'server-error', status }))
     .with({ kind: 'blocked' }, () => ({ kind: 'blocked' }))
     .with({ kind: 'aborted' }, () => ({ kind: 'aborted' }))
-    .with(
-      { kind: 'unsupported' },
-      { kind: 'unknown-catalog' },
-      { kind: 'unreadable-catalog' },
-      () => ({
-        kind: 'catalog-unavailable',
-      }),
-    )
+    .with({ kind: 'unknown-catalog' }, { kind: 'unreadable-catalog' }, () => ({
+      kind: 'catalog-unavailable',
+    }))
     .with(
       { kind: 'source' },
       { kind: 'epub' },
@@ -117,11 +116,12 @@ async function fetchRemoteBook(
     summary: '',
     updated: origin.updated,
     cover: null,
-    acquisition: origin.acquisition,
+    acquisitions: [origin.acquisition],
     feedPath: origin.feedPath,
   };
   const downloaded = await deps.downloadPublication(
     publication,
+    origin.acquisition,
     origin.feedPosition,
     choices.matching,
     choices.defaults,

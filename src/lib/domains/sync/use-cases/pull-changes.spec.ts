@@ -665,8 +665,10 @@ describe('downloadRemoteBook', () => {
   it('downloads from the stored origin, then attaches the held captures', async () => {
     const asked: string[] = [];
     let source: ReturnType<typeof world> | null = null;
-    const download: DownloadPublication = (publication, feedPosition) => {
-      asked.push(`${publication.catalogId} ${publication.entryId} ${feedPosition}`);
+    const download: DownloadPublication = (publication, acquisition, feedPosition) => {
+      asked.push(
+        `${publication.catalogId} ${publication.entryId} ${acquisition.format} ${acquisition.href} ${feedPosition}`,
+      );
       source?.arrive(BOOK);
       return Promise.resolve({ kind: 'success', bookId: BOOK.id });
     };
@@ -678,7 +680,7 @@ describe('downloadRemoteBook', () => {
     const result = await downloadRemoteBook(source.deps, HASH, CHOICES, () => undefined);
 
     expect(result).toMatchObject({ kind: 'success', bookId: BOOK.id, applied: 2 });
-    expect(asked).toEqual([`${CATALOG_ID} urn:uuid:5d1c 3`]);
+    expect(asked).toEqual([`${CATALOG_ID} urn:uuid:5d1c cbz /get/5d1c.cbz 3`]);
     expect(source.captures.get(CAPTURE_ID)?.bookId).toBe(BOOK.id);
   });
 
