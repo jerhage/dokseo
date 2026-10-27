@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.4.0](https://github.com/jerhage/dokseo/compare/v1.3.0...v1.4.0) (2026-10-27)
+
+
+### Features
+
+* **sync:** add Settings, Sync to connect this device, sync now, list and revoke devices, and disconnect ([f8c3273](https://github.com/jerhage/dokseo/commit/f8c32739300e60e1b2c50ee725986dd71d38d94f))
+* **sync:** add the outbox and record-version stores and write a change marker in the same transaction as its record ([0fb1831](https://github.com/jerhage/dokseo/commit/0fb18316307425c8d6e9130a4d26bae5a3829190))
+* **sync:** carry the book's sync key in every reader link, open an old id link by redirecting to it, and show a book from another device ([c45689d](https://github.com/jerhage/dokseo/commit/c45689d4f86b7a6efd14e04a251bceebf26279ff))
+* **sync:** copy the dokseo-sync v0.1.1 contract and add the change types and the merge rule ([0d2618e](https://github.com/jerhage/dokseo/commit/0d2618e151be22a05fcb2c517cfc104e56bb233c))
+* **sync:** list books from other devices in the library, download them from their catalog, and offer automatic download ([f387284](https://github.com/jerhage/dokseo/commit/f38728447fce301fd292b17e26002b7b195d75dc))
+* **sync:** map books, captures, tags and reading places to the contract's record data and back ([7cfac0e](https://github.com/jerhage/dokseo/commit/7cfac0e478299ba8c870f8263c83a5603e100b98))
+* **sync:** map catalogs and a book's catalog origin to the contract's record data and back ([62b4d39](https://github.com/jerhage/dokseo/commit/62b4d39c88bf9fc8114f8d9021fe154c8b5d36ff))
+* **sync:** mark every synced write of books, reading places, captures, tags and catalogs in the outbox ([5907b98](https://github.com/jerhage/dokseo/commit/5907b98a21a7b7f2e7b3877deda9e1d6a28208ef))
+* **sync:** pull changes, apply each winner by the merge rule, hold the ones whose book is absent, and sync now ([2bfc835](https://github.com/jerhage/dokseo/commit/2bfc83596b35ac40cf2d2d64eebaf0d979848a1d))
+* **sync:** push the outbox to the server in batches and settle each accepted marker with the version it sent ([3fc701a](https://github.com/jerhage/dokseo/commit/3fc701a7e97bf19c9ed749033997f439d131dae3))
+* **sync:** sync in the background at start, on return to the page and after local changes, one tab at a time, and stop re-downloading a catalog file with another hash ([fc65c5a](https://github.com/jerhage/dokseo/commit/fc65c5a6a0746ebb5f0546bab9f5965a19aa73c5))
+* **sync:** talk to the sync server, keep this device's connection, and connect, disconnect, list and revoke devices ([4b4a669](https://github.com/jerhage/dokseo/commit/4b4a669665f9f4a4ab8140f26d059f2fb3eec47f))
+
+
+### Fixes
+
+* **sync:** download a remote book with the catalog's acquisition-first download call ([88b6445](https://github.com/jerhage/dokseo/commit/88b644558c8e13f6fda3f78d8399fdb4eef7e96a))
+* **sync:** keep a later held version when a push settles, and run every sync under one lock that manual runs wait for ([a72b8a6](https://github.com/jerhage/dokseo/commit/a72b8a69fe29b6fe84c96cf285c794be9be1fb7a))
+
 ## [1.3.0](https://github.com/jerhage/dokseo/compare/v1.2.0...v1.3.0) (2026-10-17)
 
 
