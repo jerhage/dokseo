@@ -2,10 +2,12 @@ import { match } from 'ts-pattern';
 import { pageRect } from './geometry';
 import type { PageRect } from './geometry';
 import { imageIndex } from './ids';
-import type { BookId, ImageIndex } from './ids';
+import type { BookId, ContentHash, ImageIndex } from './ids';
 import type { ImageRegion } from './image-region';
 import { TOP_OF_THE_IMAGE } from './reading-place';
 import type { ReadingPlace } from './reading-place';
+
+const READER_PATH = '/read';
 
 const IMAGE_PARAMETER = 'image';
 
@@ -183,17 +185,29 @@ function withSearch(href: string, query: string | null): string {
   return `${href}&${FIND_PARAMETER}=${encodeURIComponent(asked)}`;
 }
 
-function readerHref(book: BookId, index: ImageIndex, query: string | null = null): string {
-  return withSearch(`/read/${encodeURIComponent(book)}?${IMAGE_PARAMETER}=${index}`, query);
+function readerPath(key: string): string {
+  return `${READER_PATH}/${encodeURIComponent(key)}`;
 }
 
-function captureHref(book: BookId, region: ImageRegion, query: string | null = null): string {
-  const place = `/read/${encodeURIComponent(book)}?${IMAGE_PARAMETER}=${region.index}`;
+function bookHref(book: ContentHash): string {
+  return readerPath(book);
+}
+
+function bookIdHref(book: BookId): string {
+  return readerPath(book);
+}
+
+function readerHref(book: ContentHash, index: ImageIndex, query: string | null = null): string {
+  return withSearch(`${bookHref(book)}?${IMAGE_PARAMETER}=${index}`, query);
+}
+
+function captureHref(book: ContentHash, region: ImageRegion, query: string | null = null): string {
+  const place = `${bookHref(book)}?${IMAGE_PARAMETER}=${region.index}`;
   return withSearch(`${place}&${REGION_PARAMETER}=${regionValue(region.rect)}`, query);
 }
 
-function passageHref(book: BookId, cfi: string, query: string | null = null): string {
-  const opened = `/read/${encodeURIComponent(book)}`;
+function passageHref(book: ContentHash, cfi: string, query: string | null = null): string {
+  const opened = bookHref(book);
   if (cfi.length === 0) return opened;
 
   return withSearch(`${opened}?${CFI_PARAMETER}=${encodeURIComponent(cfi)}`, query);
@@ -268,6 +282,8 @@ export {
   urlForShownPlace,
   mirroredPlace,
   imageArrivalShows,
+  bookHref,
+  bookIdHref,
   readerHref,
   captureHref,
   passageHref,

@@ -9,6 +9,7 @@
   import Thumbnail from '$lib/ui/components/Thumbnail.svelte';
   import { focusReturnFor } from '$lib/shared/focus-return';
   import type { FocusReturn } from '$lib/shared/focus-return';
+  import { bookHref } from '$lib/shared/reader-location';
   import { shownTitle } from '$lib/shared/shown-title';
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
@@ -40,7 +41,7 @@
     <li class={['col gap-2', { 'is-busy': busy(book.id) }]} aria-busy={busy(book.id)}>
       <ContextMenu label="Actions for {name}">
         {#snippet menu()}
-          <DropdownItem href="/read/{book.id}" target="_blank" rel="noopener"
+          <DropdownItem href={bookHref(book.contentHash)} target="_blank" rel="noopener"
             >Open in new tab</DropdownItem
           >
           <DropdownSeparator />

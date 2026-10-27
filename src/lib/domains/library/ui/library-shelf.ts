@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { BookId } from '$lib/shared/ids';
+import type { BookId, ContentHash } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import { effectiveDirection } from '$lib/shared/layout-kind';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
@@ -21,6 +21,7 @@ type LibraryShelf = {
 
 type ListedBook = {
   readonly id: BookId;
+  readonly contentHash: ContentHash;
   readonly title: string;
   readonly language: Language;
   readonly direction: ReadingDirection;
@@ -95,6 +96,7 @@ function imageCountsOf(books: readonly Book[]): ReadonlyMap<BookId, number> {
 function listedOf(book: Book): ListedBook {
   return {
     id: book.id,
+    contentHash: book.contentHash,
     title: shownTitle(book),
     language: book.language,
     direction: effectiveDirection(book.direction, book.layoutKind),

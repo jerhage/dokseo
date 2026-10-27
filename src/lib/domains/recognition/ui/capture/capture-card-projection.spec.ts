@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import { pageRect } from '$lib/shared/geometry';
-import { bookId, captureId, imageIndex } from '$lib/shared/ids';
+import { captureId, imageIndex } from '$lib/shared/ids';
+import { bookKey } from '$lib/shared/testing/book-key';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import { EMPTY_NOTE } from './capture-card';
 import { cardOf, hitOf } from './capture-card-projection';
@@ -9,9 +10,11 @@ import type { Card, CardPlacing } from './capture-card-projection';
 import type { PanelCapture } from './panel-capture';
 import { NOTHING_READ } from './nothing-read';
 
+const BOOK_KEY = bookKey('book-1');
+
 const PLACING: CardPlacing = {
   tags: [],
-  book: bookId('book-1'),
+  bookKey: BOOK_KEY,
   language: 'ja',
   progress: null,
   seekable: false,
@@ -164,11 +167,11 @@ describe('cardOf', () => {
   });
 
   it('links a card to the image and region it was taken from, naming no capture id', () => {
-    expect(cardFor(read('c1', 'ねこ')).href).toBe('/read/book-1?image=2&region=0,0,0.1,0.1');
+    expect(cardFor(read('c1', 'ねこ')).href).toBe(`/read/${BOOK_KEY}?image=2&region=0,0,0.1,0.1`);
   });
 
   it('links nowhere when no book is open', () => {
-    expect(cardFor(read('c1', 'ねこ'), { book: null }).href).toBeNull();
+    expect(cardFor(read('c1', 'ねこ'), { bookKey: null }).href).toBeNull();
   });
 
   it('links nowhere for a capture lifted from text', () => {

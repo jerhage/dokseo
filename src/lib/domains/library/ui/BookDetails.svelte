@@ -6,6 +6,7 @@
   import Progress from '$lib/ui/components/Progress.svelte';
   import Thumbnail from '$lib/ui/components/Thumbnail.svelte';
   import type { BookId } from '$lib/shared/ids';
+  import { bookHref } from '$lib/shared/reader-location';
   import { unreachable } from '$lib/shared/unreachable';
   import type { Book } from '../domain/book/book';
   import type { BookAction, BookDetails } from './book-details';
@@ -81,7 +82,7 @@
     <p class="text-sm text-muted">{details.facts}</p>
     {@render bookSource?.(book.id)}
     <div class="row items-center gap-2 wrap">
-      <Button variant="primary" href="/read/{book.id}">{details.readLabel}</Button>
+      <Button variant="primary" href={bookHref(book.contentHash)}>{details.readLabel}</Button>
       {#if details.actions.includes('edit')}
         <Button disabled={busy} onclick={() => act('edit')}>{ACTION_NAMES.edit}</Button>
       {/if}

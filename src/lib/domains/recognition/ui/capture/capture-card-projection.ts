@@ -1,7 +1,7 @@
 import { match } from 'ts-pattern';
 import type { Anchor, TextAnchor } from '$lib/shared/anchor';
 import type { CaptureOrigin } from '$lib/shared/capture-origin';
-import type { BookId, CaptureId } from '$lib/shared/ids';
+import type { CaptureId, ContentHash } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import { captureHref } from '$lib/shared/reader-location';
 import type { TextSegment } from '$lib/shared/text-search';
@@ -43,7 +43,7 @@ type Card = {
 
 type CardPlacing = {
   readonly tags: readonly Tag[];
-  readonly book: BookId | null;
+  readonly bookKey: ContentHash | null;
   readonly language: Language | null;
   readonly progress: ModelLoad | null;
   readonly seekable: boolean;
@@ -59,11 +59,11 @@ type Hit = {
 };
 
 function hrefOf(anchor: Anchor, placing: CardPlacing): string | null {
-  const book = placing.book;
+  const key = placing.bookKey;
   const region = firstRegion(anchor);
-  if (book === null || region === null) return null;
+  if (key === null || region === null) return null;
 
-  return captureHref(book, region, placing.carried);
+  return captureHref(key, region, placing.carried);
 }
 
 function passageOf(anchor: Anchor, seekable: boolean): TextAnchor | null {

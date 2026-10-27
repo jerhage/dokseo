@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
+import { bookKey } from '$lib/shared/testing/book-key';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import { at } from '$lib/shared/testing/at';
@@ -62,7 +63,7 @@ function sourceOf(
     captures,
     newestFirst: newestFirstOf(captures),
     tags,
-    book: ONE,
+    bookKey: bookKey('book-one'),
     language: 'ja' as Language | null,
     progress: null,
     direction: 'rtl',

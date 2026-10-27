@@ -1,6 +1,6 @@
 import type { Anchor } from '$lib/shared/anchor';
-import type { BookId } from '$lib/shared/ids';
-import { captureHref, passageHref } from '$lib/shared/reader-location';
+import type { ContentHash } from '$lib/shared/ids';
+import { bookHref, captureHref, passageHref } from '$lib/shared/reader-location';
 import { firstRegion } from '../../domain/capture/capture-arrival';
 import { pageLabel } from './capture-place';
 
@@ -13,11 +13,7 @@ type CaptureLink = {
   readonly jump: string;
 };
 
-function bookHref(id: BookId): string {
-  return `/read/${encodeURIComponent(id)}`;
-}
-
-function captureLink(book: BookId, capture: LinkedCapture, query: string | null): CaptureLink {
+function captureLink(book: ContentHash, capture: LinkedCapture, query: string | null): CaptureLink {
   if (capture.anchor.kind === 'text') {
     return { href: passageHref(book, capture.anchor.cfi, query), jump: 'Jump to the passage' };
   }
@@ -31,5 +27,5 @@ function captureLink(book: BookId, capture: LinkedCapture, query: string | null)
   };
 }
 
-export { bookHref, captureLink };
+export { captureLink };
 export type { CaptureLink, LinkedCapture };

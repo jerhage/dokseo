@@ -3,6 +3,7 @@ import { readFailed, readReady } from '$lib/shared/read-state';
 import { regionAnchor } from '$lib/shared/anchor';
 import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
+import { bookKey } from '$lib/shared/testing/book-key';
 import type { Capture } from '../../domain/capture/capture';
 import type { SearchedBook } from '../../domain/capture/capture-results';
 import { NO_MATCH } from '../../domain/capture/match-stepping';
@@ -22,8 +23,20 @@ const READY: CaptureFind = readReady([]);
 
 const UNREAD: CaptureFind = readFailed('Local storage failed: gone');
 
-const ONE: SearchedBook = { id: bookId('one'), title: '海の本', language: 'ja', direction: 'rtl' };
-const TWO: SearchedBook = { id: bookId('two'), title: '山の本', language: 'ja', direction: 'rtl' };
+const ONE: SearchedBook = {
+  id: bookId('one'),
+  contentHash: bookKey('one'),
+  title: '海の本',
+  language: 'ja',
+  direction: 'rtl',
+};
+const TWO: SearchedBook = {
+  id: bookId('two'),
+  contentHash: bookKey('two'),
+  title: '山の本',
+  language: 'ja',
+  direction: 'rtl',
+};
 
 const SEA = tagId('sea');
 

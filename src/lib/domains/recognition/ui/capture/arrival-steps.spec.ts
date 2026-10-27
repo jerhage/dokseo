@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import { pageRect } from '$lib/shared/geometry';
-import { bookId, captureId, imageIndex } from '$lib/shared/ids';
+import { captureId, imageIndex } from '$lib/shared/ids';
+import { bookKey } from '$lib/shared/testing/book-key';
 import type { ArrivalCapture } from '../../domain/capture/capture-arrival';
 import { arrivalSteps } from './arrival-steps';
 
-const BOOK = bookId('book-1');
+const BOOK = bookKey('book-1');
 
 function onImage(id: string, index: number, x: number): ArrivalCapture {
   return {
@@ -55,10 +56,10 @@ describe('arrivalSteps', () => {
     const steps = arrivalSteps(BOOK, 'ねこ', stepping);
 
     expect(steps.previous).toBe(
-      '/read/book-1?image=1&region=0.04,0.205,0.1,0.30125&find=%E3%81%AD%E3%81%93',
+      `/read/${BOOK}?image=1&region=0.04,0.205,0.1,0.30125&find=%E3%81%AD%E3%81%93`,
     );
     expect(steps.next).toBe(
-      '/read/book-1?image=1&region=0.6,0.205,0.1,0.30125&find=%E3%81%AD%E3%81%93',
+      `/read/${BOOK}?image=1&region=0.6,0.205,0.1,0.30125&find=%E3%81%AD%E3%81%93`,
     );
   });
 
@@ -67,7 +68,7 @@ describe('arrivalSteps', () => {
     const steps = arrivalSteps(BOOK, 'ねこ', stepping);
 
     expect(steps.previous).toBe(
-      '/read/book-1?cfi=epubcfi(%2F6%2F4!%2F4%2F2%2C%2F1%3A0%2C%2F1%3A2)&find=%E3%81%AD%E3%81%93',
+      `/read/${BOOK}?cfi=epubcfi(%2F6%2F4!%2F4%2F2%2C%2F1%3A0%2C%2F1%3A2)&find=%E3%81%AD%E3%81%93`,
     );
     expect(steps.next).toBe(steps.previous);
   });

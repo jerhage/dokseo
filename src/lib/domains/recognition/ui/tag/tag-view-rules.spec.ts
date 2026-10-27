@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
+import { bookKey } from '$lib/shared/testing/book-key';
 import type { TagId } from '$lib/shared/ids';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { readFailed, readReady } from '$lib/shared/read-state';
@@ -28,7 +29,13 @@ type Store = {
 };
 
 function book(id: string, direction: ReadingDirection = 'rtl'): SearchedBook {
-  return { id: bookId(id), title: `Book ${id}`, language: 'ja', direction };
+  return {
+    id: bookId(id),
+    contentHash: bookKey(id),
+    title: `Book ${id}`,
+    language: 'ja',
+    direction,
+  };
 }
 
 function capture(

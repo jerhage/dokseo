@@ -5,6 +5,7 @@ import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { BookId, TagId } from '$lib/shared/ids';
 import { at } from '$lib/shared/testing/at';
+import { bookKey } from '$lib/shared/testing/book-key';
 import type { Capture } from '../../domain/capture/capture';
 import type { SearchedBook } from '../../domain/capture/capture-results';
 import type { QuickFinds } from '../../domain/capture/quick-find';
@@ -12,9 +13,21 @@ import type { Tag } from '../../domain/tag/tag';
 import { effectiveScope, searchRows, searchedBooks } from './search-rows';
 import type { CaptureRow, SearchRowsInput, SearchRow } from './search-rows';
 
-const ONE: SearchedBook = { id: bookId('one'), title: '海の本', language: 'ja', direction: 'rtl' };
+const ONE: SearchedBook = {
+  id: bookId('one'),
+  contentHash: bookKey('one'),
+  title: '海の本',
+  language: 'ja',
+  direction: 'rtl',
+};
 
-const TWO: SearchedBook = { id: bookId('two'), title: '山の本', language: 'ko', direction: 'ltr' };
+const TWO: SearchedBook = {
+  id: bookId('two'),
+  contentHash: bookKey('two'),
+  title: '山の本',
+  language: 'ko',
+  direction: 'ltr',
+};
 
 const IMAGERY: TagId = tagId('imagery');
 
@@ -111,7 +124,7 @@ describe('searchRows', () => {
     expect(row).toEqual({
       kind: 'book',
       key: ONE.id,
-      href: '/read/one',
+      href: `/read/${bookKey('one')}`,
       language: 'ja',
       cover: 'blob:one',
       segments: [
@@ -134,7 +147,7 @@ describe('searchRows', () => {
 
     const row = captureAt(searchRows(input(found)).rows, 0);
 
-    expect(row.href).toBe('/read/two?image=2&region=0,0,0.1,0.1&find=%E6%B5%B7');
+    expect(row.href).toBe(`/read/${bookKey('two')}?image=2&region=0,0,0.1,0.1&find=%E6%B5%B7`);
     expect(row.place).toBe('p.003');
     expect(row.language).toBe('ko');
   });
@@ -154,7 +167,7 @@ describe('searchRows', () => {
 
       const row = captureAt(searchRows(input(found, overrides)).rows, 0);
 
-      expect(row.href).toBe('/read/one?cfi=epubcfi(%2F6%2F2)&find=%E6%B5%B7');
+      expect(row.href).toBe(`/read/${bookKey('one')}?cfi=epubcfi(%2F6%2F2)&find=%E6%B5%B7`);
       expect(row.place).toBe(place);
     },
   );

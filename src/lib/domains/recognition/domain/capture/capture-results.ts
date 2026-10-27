@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 import type { Anchor } from '$lib/shared/anchor';
-import type { BookId, TagId } from '$lib/shared/ids';
+import type { BookId, ContentHash, TagId } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { matchesQuery } from '$lib/shared/text-search';
@@ -9,6 +9,7 @@ import type { PassageOrder } from './capture-order';
 
 type SearchedBook = {
   readonly id: BookId;
+  readonly contentHash: ContentHash;
   readonly title: string;
   readonly language: Language;
   readonly direction: ReadingDirection;

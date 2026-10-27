@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import { pageRect } from '$lib/shared/geometry';
-import { bookId, captureId, imageIndex } from '$lib/shared/ids';
+import { captureId, imageIndex } from '$lib/shared/ids';
+import { bookKey } from '$lib/shared/testing/book-key';
 import type { ImageRegion } from '$lib/shared/image-region';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import type { Card } from './capture-card-projection';
@@ -10,7 +11,7 @@ import type { CardSource } from './capture-card-rules';
 import type { CaptureSort } from './capture-sort';
 import type { PanelCapture } from './panel-capture';
 
-const BOOK = bookId('book-1');
+const BOOK = bookKey('book-1');
 
 function region(index: number, x: number): ImageRegion {
   return { index: imageIndex(index), rect: pageRect(x, 0, 10, 10) };
@@ -68,7 +69,7 @@ function source(captures: readonly PanelCapture[], over: Partial<CardSource> = {
     captures,
     newestFirst: captures.toReversed(),
     tags: [],
-    book: BOOK,
+    bookKey: BOOK,
     language: 'ja',
     progress: null,
     direction: 'rtl',
@@ -126,7 +127,7 @@ describe('card search', () => {
   it('carries the query into the link of a match', () => {
     const cards = shown([read('c1', 'ねこ')], 'ねこ');
 
-    expect(cards[0]?.href).toBe('/read/book-1?image=2&region=0,0,10,10&find=%E3%81%AD%E3%81%93');
+    expect(cards[0]?.href).toBe(`/read/${BOOK}?image=2&region=0,0,10,10&find=%E3%81%AD%E3%81%93`);
   });
 });
 
@@ -190,7 +191,7 @@ describe('card stepping', () => {
 
     expect(jumpAt(cards, 0, -1)).toEqual({
       kind: 'fresh',
-      href: '/read/book-1?image=2&region=0,0,10,10&find=%E3%81%AD%E3%81%93',
+      href: `/read/${BOOK}?image=2&region=0,0,10,10&find=%E3%81%AD%E3%81%93`,
     });
   });
 
@@ -207,7 +208,7 @@ describe('card stepping', () => {
   });
 
   it('steps nowhere when the card links nowhere', () => {
-    const cards = shown([read('c1', 'ねこ')], 'ねこ', 'book', { book: null });
+    const cards = shown([read('c1', 'ねこ')], 'ねこ', 'book', { bookKey: null });
 
     expect(jumpAt(cards, 0, -1)).toEqual({ kind: 'nowhere' });
   });

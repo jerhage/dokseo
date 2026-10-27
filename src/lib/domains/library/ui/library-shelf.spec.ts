@@ -107,8 +107,20 @@ describe('listedBooks', () => {
 describe('listedOf', () => {
   it('lists a book for search with the direction its layout reads in', () => {
     expect([BOOK, { ...BOOK, layoutKind: 'continuous' as const }].map(listedOf)).toEqual([
-      { id: BOOK.id, title: 'one', language: 'ja', direction: 'rtl' },
-      { id: BOOK.id, title: 'one', language: 'ja', direction: 'ltr' },
+      {
+        id: BOOK.id,
+        contentHash: BOOK.contentHash,
+        title: 'one',
+        language: 'ja',
+        direction: 'rtl',
+      },
+      {
+        id: BOOK.id,
+        contentHash: BOOK.contentHash,
+        title: 'one',
+        language: 'ja',
+        direction: 'ltr',
+      },
     ]);
   });
 });
