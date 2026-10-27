@@ -18,6 +18,8 @@ type RemoteBookRow = {
 
 const HIDDEN: RemoteBooksView = { kind: 'hidden' };
 
+const OTHER_DEVICE_TITLE = 'This book is on another device';
+
 const NOT_DOWNLOADED_TEXT = 'Not downloaded';
 
 const NOT_ON_THIS_DEVICE_TEXT = 'Not on this device. Add the file to read it here.';
@@ -27,6 +29,12 @@ function remoteBooksView(state: ReadState<ListRemoteBooksResult>): RemoteBooksVi
   const { value } = state;
   if (value.kind !== 'success' || value.books.length === 0) return HIDDEN;
   return { kind: 'listed', books: value.books };
+}
+
+function remoteListOf(state: ReadState<ListRemoteBooksResult>): readonly RemoteBook[] | null {
+  if (state.kind === 'loading') return null;
+  if (state.kind === 'failed') return [];
+  return state.value.kind === 'success' ? state.value.books : [];
 }
 
 function downloadStatus(download: RemoteDownload, fileDiffers: boolean): string {
@@ -58,5 +66,5 @@ function remoteBookRow(book: RemoteBook, download: RemoteDownload): RemoteBookRo
     .exhaustive();
 }
 
-export { remoteBookRow, remoteBooksView };
+export { OTHER_DEVICE_TITLE, remoteBookRow, remoteBooksView, remoteListOf };
 export type { RemoteBookRow, RemoteBooksView };

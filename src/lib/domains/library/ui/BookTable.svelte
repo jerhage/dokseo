@@ -13,6 +13,7 @@
   import TableRow from '$lib/ui/components/TableRow.svelte';
   import { focusReturnFor } from '$lib/shared/focus-return';
   import type { FocusReturn } from '$lib/shared/focus-return';
+  import { bookHref } from '$lib/shared/reader-location';
   import { shownTitle } from '$lib/shared/shown-title';
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
@@ -59,7 +60,7 @@
         <TableCell>
           <a
             class="weight-medium"
-            href="/read/{book.id}"
+            href={bookHref(book.contentHash)}
             lang={book.language}
             onclick={(event) => {
               if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -89,7 +90,7 @@
 </Table>
 <ContextMenu areas={rows} label={(book) => `Actions for ${shownTitle(book)}`}>
   {#snippet menu(book)}
-    <DropdownItem href="/read/{book.id}" target="_blank" rel="noopener"
+    <DropdownItem href={bookHref(book.contentHash)} target="_blank" rel="noopener"
       >Open in new tab</DropdownItem
     >
     <DropdownSeparator />

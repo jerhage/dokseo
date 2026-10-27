@@ -15,7 +15,8 @@
   import { filesFromDataTransfer } from '$lib/platform/files/dropped-files';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { BookCapturesExporting } from '$lib/shared/book-captures-export.svelte';
-  import type { BookId } from '$lib/shared/ids';
+  import type { BookId, ContentHash } from '$lib/shared/ids';
+  import { bookHref } from '$lib/shared/reader-location';
   import type { BookEdit } from '../domain/book/book';
   import { openedBook } from './book-details';
   import type { BookDetailsHook } from './book-details.svelte';
@@ -125,8 +126,8 @@
     void changes.markUnread(id, arrangement.shelf, shelfRead.books);
   }
 
-  function openBook(id: BookId): void {
-    void goto(`/read/${encodeURIComponent(id)}`);
+  function openBook(key: ContentHash): void {
+    void goto(bookHref(key));
   }
 
   function upload(files: readonly File[]): void {

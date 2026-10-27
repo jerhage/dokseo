@@ -4,6 +4,7 @@ import { pageRect } from '$lib/shared/geometry';
 import { bookId, imageIndex, tagId } from '$lib/shared/ids';
 import type { TagId } from '$lib/shared/ids';
 import { at } from '$lib/shared/testing/at';
+import { bookKey } from '$lib/shared/testing/book-key';
 import type { BookMatches, SearchedBook } from './capture-results';
 import { matchedTagIds, quickFinds } from './quick-find';
 import type { Tag } from '../tag/tag';
@@ -20,6 +21,7 @@ const KEIGO: TagId = tagId('keigo');
 
 const ONE: SearchedBook = {
   id: bookId('one'),
+  contentHash: bookKey('one'),
   title: 'Volume one',
   language: 'ja',
   direction: 'rtl',
@@ -27,6 +29,7 @@ const ONE: SearchedBook = {
 
 const TWO: SearchedBook = {
   id: bookId('two'),
+  contentHash: bookKey('two'),
   title: 'Volume two',
   language: 'ja',
   direction: 'rtl',
@@ -241,6 +244,7 @@ describe('quickFinds', () => {
   it('matches a title through the fold, so case and width do not matter', () => {
     const wide: SearchedBook = {
       id: bookId('wide'),
+      contentHash: bookKey('wide'),
       title: 'ｼｰ-Volume Ｔｈｒｅｅ',
       language: 'ko',
       direction: 'ltr',

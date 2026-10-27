@@ -1,13 +1,13 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import Stepper from '$lib/ui/components/Stepper.svelte';
-  import type { BookId } from '$lib/shared/ids';
+  import type { ContentHash } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
   import type { ArrivalCapture, Stepping } from '../../domain/capture/capture-arrival';
   import { arrivalSteps } from './arrival-steps';
 
   type Props = {
-    readonly book: BookId;
+    readonly book: ContentHash;
     readonly query: string;
     readonly language: Language | null;
     readonly stepping: Stepping<ArrivalCapture>;

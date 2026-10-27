@@ -6,6 +6,7 @@ import { bookId, imageIndex, tagId } from '$lib/shared/ids';
 import type { BookId, TagId } from '$lib/shared/ids';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { at } from '$lib/shared/testing/at';
+import { bookKey } from '$lib/shared/testing/book-key';
 import { captureHolds, matchesByBook, matchTally, taggedByBook } from './capture-results';
 import type { SearchedBook, SearchedCapture } from './capture-results';
 
@@ -23,7 +24,13 @@ function byCfi(earlier: string, later: string): number {
 }
 
 function book(id: string, direction: ReadingDirection = 'rtl'): SearchedBook {
-  return { id: bookId(id), title: `Book ${id}`, language: 'ja', direction };
+  return {
+    id: bookId(id),
+    contentHash: bookKey(id),
+    title: `Book ${id}`,
+    language: 'ja',
+    direction,
+  };
 }
 
 function capture(name: string, id: string, text: string, index = 0, x = 0, y = 0): Found {

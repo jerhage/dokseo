@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { BookId } from '$lib/shared/ids';
+import type { ContentHash } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { inBookOrder } from '../../domain/capture/capture-order';
@@ -16,7 +16,7 @@ type CardSource = {
   readonly captures: readonly PanelCapture[];
   readonly newestFirst: readonly PanelCapture[];
   readonly tags: readonly Tag[];
-  readonly book: BookId | null;
+  readonly bookKey: ContentHash | null;
   readonly language: Language | null;
   readonly progress: ModelLoad | null;
   readonly direction: ReadingDirection;
@@ -57,7 +57,7 @@ function cardsOf(
 ): readonly Card[] {
   const placing: CardPlacing = {
     tags: source.tags,
-    book: source.book,
+    bookKey: source.bookKey,
     language: source.language,
     progress: source.progress,
     seekable: source.seekable,

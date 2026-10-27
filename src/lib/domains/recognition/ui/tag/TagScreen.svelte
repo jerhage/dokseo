@@ -14,6 +14,7 @@
   import Thumbnail from '$lib/ui/components/Thumbnail.svelte';
   import type { BookId, TagId } from '$lib/shared/ids';
   import type { ReadState } from '$lib/shared/read-state';
+  import { bookHref } from '$lib/shared/reader-location';
   import { tagsHref } from '$lib/shared/tag-location';
   import type { PassageOrder } from '../../domain/capture/capture-order';
   import type { SearchedBook } from '../../domain/capture/capture-results';
@@ -207,7 +208,7 @@
                   </h2>
                   <span class="text-xs text-muted">{taggedCount(shelf.rows.length)}</span>
                 </div>
-                <Button href="/read/{shelf.id}" variant="ghost" size="sm" class="shrink-0">
+                <Button href={bookHref(shelf.key)} variant="ghost" size="sm" class="shrink-0">
                   Open document
                 </Button>
               </div>

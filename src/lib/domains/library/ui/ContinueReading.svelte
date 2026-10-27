@@ -3,6 +3,7 @@
   import Progress from '$lib/ui/components/Progress.svelte';
   import Thumbnail from '$lib/ui/components/Thumbnail.svelte';
   import type { BookId } from '$lib/shared/ids';
+  import { bookHref } from '$lib/shared/reader-location';
   import { shownTitle } from '$lib/shared/shown-title';
   import type { Book } from '../domain/book/book';
   import { bookProgress } from '../domain/book/book-progress';
@@ -26,7 +27,7 @@
       {@const name = shownTitle(book)}
       {@const cover = covers.get(book.id) ?? null}
       <li>
-        <Card href="/read/{book.id}" variant="elevated">
+        <Card href={bookHref(book.contentHash)} variant="elevated">
           <div class="row items-center gap-4">
             <Thumbnail src={cover} size="lg" />
             <span class="col gap-2 flex-1">

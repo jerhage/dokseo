@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { pageRect } from './geometry';
-import { bookId, imageIndex } from './ids';
+import { bookId, contentHash, imageIndex } from './ids';
 import {
   IMAGE_ARRIVAL_NONE,
   IMAGE_ARRIVAL_SHOWING,
@@ -9,6 +9,8 @@ import {
   NO_ARRIVAL,
   REGION_TOLERANCE,
   arrivalQuery,
+  bookHref,
+  bookIdHref,
   captureHref,
   imageArrivalShows,
   mirroredPlace,
@@ -26,6 +28,7 @@ import {
 } from './reader-location';
 import type { ShownPlace } from './reader-location';
 import { imagePlace, textPlace } from './reading-place';
+import { bookKey } from './testing/book-key';
 
 describe('readImageIndex', () => {
   it('reads a whole number as an image index', () => {
@@ -244,44 +247,56 @@ describe('mirroredPlace', () => {
   });
 });
 
-describe('readerHref', () => {
-  it('names the book and the image index', () => {
-    expect(readerHref(bookId('one'), imageIndex(13))).toBe('/read/one?image=13');
+const KEY = bookKey('one');
+
+describe('bookHref', () => {
+  it('names the book by its sync key', () => {
+    expect(bookHref(KEY)).toBe(`/read/${KEY}`);
   });
 
-  it('escapes a book id that would otherwise change the path', () => {
-    expect(readerHref(bookId('a/b?c'), imageIndex(0))).toBe('/read/a%2Fb%3Fc?image=0');
+  it('escapes a key that would otherwise change the path', () => {
+    expect(bookHref(contentHash('a/b?c'))).toBe('/read/a%2Fb%3Fc');
+  });
+});
+
+describe('bookIdHref', () => {
+  it('names the book by its id on this device', () => {
+    expect(bookIdHref(bookId('one'))).toBe('/read/one');
+  });
+});
+
+describe('readerHref', () => {
+  it('names the book key and the image index', () => {
+    expect(readerHref(KEY, imageIndex(13))).toBe(`/read/${KEY}?image=13`);
   });
 
   it('carries the search beside the image and names no capture', () => {
-    expect(readerHref(bookId('one'), imageIndex(13), '海が')).toBe(
-      '/read/one?image=13&find=%E6%B5%B7%E3%81%8C',
+    expect(readerHref(KEY, imageIndex(13), '海が')).toBe(
+      `/read/${KEY}?image=13&find=%E6%B5%B7%E3%81%8C`,
     );
   });
 
   it('drops a search of only spaces', () => {
-    expect(readerHref(bookId('one'), imageIndex(1), '  ')).toBe('/read/one?image=1');
+    expect(readerHref(KEY, imageIndex(1), '  ')).toBe(`/read/${KEY}?image=1`);
   });
 });
 
 describe('captureHref', () => {
   const REGION = { index: imageIndex(7), rect: pageRect(0.12345678, 0.0000004, 0.3, 0.088125) };
 
-  it('names the image and the region in fractions of the page to millionths', () => {
-    expect(captureHref(bookId('one'), REGION)).toBe(
-      '/read/one?image=7&region=0.123457,0,0.3,0.088125',
-    );
+  it('names the key, the image and the region in fractions of the page to millionths', () => {
+    expect(captureHref(KEY, REGION)).toBe(`/read/${KEY}?image=7&region=0.123457,0,0.3,0.088125`);
   });
 
   it('carries the search after the region', () => {
-    expect(captureHref(bookId('one'), REGION, '海')).toBe(
-      '/read/one?image=7&region=0.123457,0,0.3,0.088125&find=%E6%B5%B7',
+    expect(captureHref(KEY, REGION, '海')).toBe(
+      `/read/${KEY}?image=7&region=0.123457,0,0.3,0.088125&find=%E6%B5%B7`,
     );
   });
 
   it('reads back as the same image, with the region within a millionth of the page', () => {
     const found = readArrival(
-      new URL(captureHref(bookId('one'), REGION, '海'), 'https://r.test').searchParams,
+      new URL(captureHref(KEY, REGION, '海'), 'https://r.test').searchParams,
     );
 
     if (found.kind !== 'image' || found.region === null) throw new Error('no region read back');
@@ -310,23 +325,23 @@ describe('passageHref', () => {
   const CFI = 'epubcfi(/6/4!/4/2,/1:0,/1:5)';
 
   it('names the book and the passage by its cfi, with no image and no capture', () => {
-    expect(passageHref(bookId('one'), CFI)).toBe(
-      '/read/one?cfi=epubcfi(%2F6%2F4!%2F4%2F2%2C%2F1%3A0%2C%2F1%3A5)',
+    expect(passageHref(KEY, CFI)).toBe(
+      `/read/${KEY}?cfi=epubcfi(%2F6%2F4!%2F4%2F2%2C%2F1%3A0%2C%2F1%3A5)`,
     );
   });
 
   it('carries the search after the cfi', () => {
-    expect(passageHref(bookId('a/b'), CFI, '海')).toBe(
-      '/read/a%2Fb?cfi=epubcfi(%2F6%2F4!%2F4%2F2%2C%2F1%3A0%2C%2F1%3A5)&find=%E6%B5%B7',
+    expect(passageHref(KEY, CFI, '海')).toBe(
+      `/read/${KEY}?cfi=epubcfi(%2F6%2F4!%2F4%2F2%2C%2F1%3A0%2C%2F1%3A5)&find=%E6%B5%B7`,
     );
   });
 
   it('opens the bare book for an empty cfi', () => {
-    expect(passageHref(bookId('one'), '', '海')).toBe('/read/one');
+    expect(passageHref(KEY, '', '海')).toBe(`/read/${KEY}`);
   });
 
   it('reads back as the same passage arrival', () => {
-    const href = passageHref(bookId('one'), CFI, '海が');
+    const href = passageHref(KEY, CFI, '海が');
 
     expect(readArrival(new URL(href, 'https://r.test').searchParams)).toEqual({
       kind: 'passage',

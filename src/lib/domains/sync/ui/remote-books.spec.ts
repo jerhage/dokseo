@@ -3,7 +3,7 @@ import { readFailed, readReady } from '$lib/shared/read-state';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { catalogId } from '$lib/shared/ids';
 import type { RemoteBook } from '../use-cases/list-remote-books';
-import { remoteBookRow, remoteBooksView } from './remote-books';
+import { remoteBookRow, remoteBooksView, remoteListOf } from './remote-books';
 
 const ORIGIN = {
   catalogId: catalogId('00000000-0000-4000-8000-000000000009'),
@@ -81,5 +81,21 @@ describe('remoteBooksView', () => {
       remoteBooksView(readFailed('broken')).kind,
       remoteBooksView({ kind: 'loading' }).kind,
     ]).toEqual(['hidden', 'hidden', 'hidden', 'hidden', 'hidden']);
+  });
+});
+
+describe('remoteListOf', () => {
+  it('reports nothing known while the list is loading', () => {
+    expect(remoteListOf({ kind: 'loading' })).toBeNull();
+  });
+
+  it('lists the remote books of a successful read', () => {
+    expect(remoteListOf(readReady({ kind: 'success', books: [ABSENT] }))).toEqual([ABSENT]);
+  });
+
+  it('lists none when sync is not connected, failed or storage is unavailable', () => {
+    expect(remoteListOf(readReady({ kind: 'not-connected' }))).toEqual([]);
+    expect(remoteListOf(readReady(STORAGE_UNAVAILABLE))).toEqual([]);
+    expect(remoteListOf(readFailed('gone'))).toEqual([]);
   });
 });

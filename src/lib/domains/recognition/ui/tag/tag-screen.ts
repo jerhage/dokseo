@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
+import type { BookId, CaptureId, ContentHash, TagId } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type { Capture } from '../../domain/capture/capture';
 import type { BookMatches } from '../../domain/capture/capture-results';
@@ -35,6 +35,7 @@ type TaggedRow = {
 
 type TaggedShelf = {
   readonly id: BookId;
+  readonly key: ContentHash;
   readonly title: string;
   readonly language: Language;
   readonly cover: string | null;
@@ -103,11 +104,12 @@ function taggedShelves(input: ShelfInput): readonly TaggedShelf[] {
   return input.groups
     .map((group) => ({
       id: group.book.id,
+      key: group.book.contentHash,
       title: group.book.title,
       language: group.book.language,
       cover: input.covers.get(group.book.id) ?? null,
       rows: group.captures.map((capture): TaggedRow => {
-        const link = captureLink(group.book.id, capture, null);
+        const link = captureLink(group.book.contentHash, capture, null);
 
         return {
           id: capture.id,

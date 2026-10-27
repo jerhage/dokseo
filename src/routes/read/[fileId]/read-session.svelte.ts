@@ -34,6 +34,7 @@ import { imageArrivalOf, passageArrivalOf } from './read-arrival';
 
 type ReadAddress = {
   readonly fileId: () => string | undefined;
+  readonly key: () => string | null;
   readonly requested: () => URL;
   readonly shown: () => URL;
   readonly replace: (url: URL) => void;
@@ -168,7 +169,7 @@ class ReadSession {
   }
 
   leaving(fileId: string | undefined): void {
-    if (parsedBookId(fileId ?? '') === this.#id) return;
+    if (fileId === this.#address.key() || parsedBookId(fileId ?? '') === this.#id) return;
 
     this.flow.close();
   }

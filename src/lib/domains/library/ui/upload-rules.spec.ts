@@ -53,8 +53,8 @@ describe('uploadNotice', () => {
   it('announces an added book with an Open action that opens it', () => {
     const opened: string[] = [];
 
-    const notice = uploadNotice({ kind: 'added', book: book('two', 'Blame! 2') }, (id) => {
-      opened.push(id);
+    const notice = uploadNotice({ kind: 'added', book: book('two', 'Blame! 2') }, (key) => {
+      opened.push(key);
     });
     notice.action?.run();
 
@@ -64,7 +64,7 @@ describe('uploadNotice', () => {
       action: { label: 'Open', run: expect.any(Function) },
       duration: ACTION_NOTICE_MS,
     });
-    expect(opened).toEqual(['two']);
+    expect(opened).toEqual(['a1']);
   });
 
   it('tells an upload it already holds apart from a new one, and still offers Open', () => {

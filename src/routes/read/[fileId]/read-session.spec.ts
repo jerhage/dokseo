@@ -4,6 +4,7 @@ import type { Container } from '$lib/container';
 import { bookId, imageIndex } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { LIBRARY_AFTER_MISSING_BOOK } from '$lib/shared/reader-location';
+import { bookKey } from '$lib/shared/testing/book-key';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { ReadSession } from './read-session.svelte';
 
@@ -12,6 +13,8 @@ vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/idle
 const ORIGIN = 'https://reader.test';
 
 const MISSING = bookId('gone');
+
+const KEY = bookKey('one');
 
 type World = {
   readonly session: ReadSession;
@@ -49,6 +52,7 @@ function world(address: string): World {
     () => undefined,
     {
       fileId: () => decodeURIComponent(url.pathname.split('/').at(-1) ?? ''),
+      key: () => KEY,
       requested: () => url,
       shown: () => new URL(held.shown),
       replace: (next) => {
@@ -140,6 +144,7 @@ describe('ReadSession', () => {
     ['closes', 'with no book', undefined, 1],
     ['closes', 'to another book', 'two', 1],
     ['keeps', 'within the book', 'one', 0],
+    ['keeps', 'within the book by its key', KEY, 0],
   ])('%s the ebook reader on a navigation %s', async (_, __, next, closes) => {
     const held = world('/read/one');
     held.session.navigate();

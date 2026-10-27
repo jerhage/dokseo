@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { BookId } from '$lib/shared/ids';
+import type { ContentHash } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notice, NoticeTone } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
@@ -19,7 +19,7 @@ import { describeEpubRefusal } from './epub-refusal-text';
 import { describeLibraryRefusal } from '../queries/library-error-text';
 import type { UploadTally } from './upload-summary';
 
-type OpenBook = (id: BookId) => void;
+type OpenBook = (key: ContentHash) => void;
 
 type UploadFailure = OpenFileFailure | { readonly kind: 'threw'; readonly cause: unknown };
 
@@ -62,7 +62,7 @@ function heldNotice(merge: HeldMerge, title: string): HeldNotice {
 }
 
 function uploadNotice(opened: OpenedUpload, openBook: OpenBook): Notice {
-  const open = { label: 'Open', run: () => openBook(opened.book.id) };
+  const open = { label: 'Open', run: () => openBook(opened.book.contentHash) };
   return match(opened)
     .with({ kind: 'added' }, ({ book }) => ({
       tone: 'success' as const,

@@ -20,7 +20,7 @@
   import { BookCapturesExport } from '$lib/shared/book-captures-export.svelte';
   import BookCapturesExportButton from '$lib/shared/BookCapturesExportButton.svelte';
   import { isComposingKey } from '$lib/shared/composing-key';
-  import type { CaptureId } from '$lib/shared/ids';
+  import type { CaptureId, ContentHash } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
   import { engineMismatch } from '../../domain/engine/ocr-engine';
@@ -56,6 +56,7 @@
 
   type Props = {
     readonly view: CaptureView;
+    readonly bookKey: ContentHash | null;
     readonly listing: CaptureListing;
     readonly environment: PanelEnvironment;
     readonly direction: ReadingDirection;
@@ -69,6 +70,7 @@
 
   let {
     view,
+    bookKey,
     listing,
     environment,
     direction,
@@ -119,7 +121,7 @@
     captures: listed,
     newestFirst: newestFirstOf(listed),
     tags: listing.tags,
-    book: view.book,
+    bookKey,
     language,
     progress: view.warmup.progress,
     direction,
