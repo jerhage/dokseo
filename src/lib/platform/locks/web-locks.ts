@@ -14,4 +14,20 @@ async function holdingLockIfFree(name: string, work: () => Promise<void>): Promi
   });
 }
 
-export { holdingLock, holdingLockIfFree };
+type LockAttempt<T> = { readonly kind: 'held'; readonly value: T } | { readonly kind: 'busy' };
+
+async function tryHoldingLock<T>(name: string, work: () => Promise<T>): Promise<LockAttempt<T>> {
+  if (!locksAvailable()) return { kind: 'busy' };
+  return navigator.locks.request(
+    name,
+    { ifAvailable: true },
+    async (lock): Promise<LockAttempt<T>> => {
+      if (lock === null) return { kind: 'busy' };
+      const value = await work();
+      return { kind: 'held', value };
+    },
+  );
+}
+
+export { holdingLock, holdingLockIfFree, tryHoldingLock };
+export type { LockAttempt };

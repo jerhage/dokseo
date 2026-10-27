@@ -1,3 +1,4 @@
+import { compareText, isLaterVersion } from '$lib/shared/change-marker';
 import type { Change } from '$lib/domains/sync/domain/change';
 
 type MergeDecision =
@@ -5,17 +6,9 @@ type MergeDecision =
   | { readonly kind: 'keep-local' }
   | { readonly kind: 'already-applied' };
 
-function compareText(a: string, b: string): number {
-  const left = a.toLowerCase();
-  const right = b.toLowerCase();
-  if (left === right) return 0;
-  return left > right ? 1 : -1;
-}
-
 function precedence(a: Change, b: Change): number {
-  if (a.updatedAt !== b.updatedAt) return a.updatedAt > b.updatedAt ? 1 : -1;
-  const byDevice = compareText(a.deviceId, b.deviceId);
-  if (byDevice !== 0) return byDevice;
+  if (isLaterVersion(a, b)) return 1;
+  if (isLaterVersion(b, a)) return -1;
   return compareText(a.id, b.id);
 }
 

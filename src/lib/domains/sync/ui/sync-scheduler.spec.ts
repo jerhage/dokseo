@@ -42,13 +42,10 @@ function fixture(
   const env: SchedulerEnv = {
     isConnected: () => Promise.resolve(state.connected),
     isOnline: () => state.online,
-    exclusively: async (work) => {
-      if (start.lockFree === false) return;
-      await work();
-    },
     sync: async () => {
       log.syncs += 1;
       await start.hold;
+      if (start.lockFree === false) return null;
       return start.result ?? SUCCESS;
     },
     synced: () => {
@@ -144,13 +141,13 @@ describe('SyncScheduler', () => {
     expect(log.syncs).toBe(2);
   });
 
-  it('skips the run when another tab holds the lock', async () => {
+  it('skips the run, reporting nothing, when the if-free sync finds the lock held', async () => {
     const { scheduler, log } = fixture({ lockFree: false });
 
     scheduler.start();
     await settle();
 
-    expect(log.syncs).toBe(0);
+    expect([log.syncs, log.synced, log.signedOut, log.failures]).toEqual([1, 0, 0, []]);
   });
 
   it('tells the reader once per session that the sign-in was refused', async () => {

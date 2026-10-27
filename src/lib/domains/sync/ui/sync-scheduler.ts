@@ -13,8 +13,7 @@ import type { RunGate } from './sync-schedule';
 type SchedulerEnv = {
   readonly isConnected: () => Promise<boolean>;
   readonly isOnline: () => boolean;
-  readonly exclusively: (work: () => Promise<void>) => Promise<void>;
-  readonly sync: () => Promise<SyncNowResult>;
+  readonly sync: () => Promise<SyncNowResult | null>;
   readonly synced: () => void;
   readonly signedOut: () => void;
   readonly failed: (cause: unknown) => void;
@@ -84,10 +83,8 @@ class SyncScheduler {
       if (!this.#env.isOnline()) return;
       const connected = await this.#env.isConnected();
       if (!mayRunNow({ connected, online: this.#env.isOnline() })) return;
-      await this.#env.exclusively(async () => {
-        const result = await this.#env.sync();
-        this.#settled(result);
-      });
+      const result = await this.#env.sync();
+      if (result !== null) this.#settled(result);
     } catch (cause) {
       this.#env.failed(cause);
     }

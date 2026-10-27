@@ -3,13 +3,11 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { watchLocalChanges } from '$lib/platform/events/local-change';
-  import { holdingLockIfFree } from '$lib/platform/locks/web-locks';
   import type { Notify } from '$lib/shared/notice';
   import { logUnexpected } from '$lib/shared/unexpected-failure';
   import { syncKeys } from '../queries/sync-keys';
   import type { SyncNowResult } from '../use-cases/sync-now';
   import type { BackgroundSyncUseCases, DownloadChoiceSource } from './sync-deps';
-  import { SYNC_LOCK_NAME } from './sync-schedule';
   import { SyncScheduler } from './sync-scheduler';
   import {
     OPEN_SYNC_SETTINGS_LABEL,
@@ -31,9 +29,8 @@
   const scheduler = new SyncScheduler({
     isConnected: async () => (await sync.syncStatus()).kind === 'connected',
     isOnline: () => navigator.onLine,
-    exclusively: (work) => holdingLockIfFree(SYNC_LOCK_NAME, work),
-    sync: (): Promise<SyncNowResult> =>
-      sync.syncNow({ matching: choices.matching(), defaults: choices.defaults() }),
+    sync: (): Promise<SyncNowResult | null> =>
+      sync.syncNowIfFree({ matching: choices.matching(), defaults: choices.defaults() }),
     synced: () => {
       void client.invalidateQueries({ queryKey: syncKeys.all() });
       onsynced();

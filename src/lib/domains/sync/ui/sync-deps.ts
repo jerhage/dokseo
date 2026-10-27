@@ -38,7 +38,7 @@ type SyncSettingsUseCases = SyncReads & {
 };
 
 type BackgroundSyncUseCases = Pick<SyncReads, 'syncStatus'> & {
-  readonly syncNow: (choices: DownloadChoices) => Promise<SyncNowResult>;
+  readonly syncNowIfFree: (choices: DownloadChoices) => Promise<SyncNowResult | null>;
 };
 
 export type {

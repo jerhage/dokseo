@@ -1,3 +1,4 @@
+import { holdingLock, tryHoldingLock } from '$lib/platform/locks/web-locks';
 import type { CatalogUseCases } from './catalog';
 import { createCatalogOriginsRepository } from '../domains/catalog/adapters/indexeddb-catalog-origins.repo';
 import { createLibraryRepository } from '../domains/library/adapters/indexeddb-opfs-library.repo';
@@ -53,6 +54,7 @@ type SyncUseCases = {
   readonly pullChanges: () => Promise<PullChangesResult>;
   readonly applyHeldChanges: () => Promise<ApplyHeldChangesResult>;
   readonly syncNow: (choices: DownloadChoices) => Promise<SyncNowResult>;
+  readonly syncNowIfFree: (choices: DownloadChoices) => Promise<SyncNowResult | null>;
   readonly remoteBooks: () => Promise<ListRemoteBooksResult>;
   readonly downloadRemoteBook: (
     contentHash: string,
@@ -62,6 +64,8 @@ type SyncUseCases = {
   ) => Promise<DownloadRemoteBookResult>;
   readonly setAutoDownload: (autoDownload: boolean) => Promise<SetAutoDownloadResult>;
 };
+
+const SYNC_LOCK_NAME = 'dokseo-sync';
 
 let server: Promise<SyncServer> | null = null;
 
@@ -133,11 +137,17 @@ function buildSync(
     syncStatus: () => syncStatus({ state }),
     pushChanges: () => pushChanges(holdings),
     pullChanges: () => pullChanges(applying),
-    applyHeldChanges: () => applyHeldChanges(applying),
-    syncNow: (choices) => syncNow(everything, choices),
+    applyHeldChanges: () => holdingLock(SYNC_LOCK_NAME, () => applyHeldChanges(applying)),
+    syncNow: (choices) => holdingLock(SYNC_LOCK_NAME, () => syncNow(everything, choices)),
+    syncNowIfFree: async (choices) => {
+      const attempt = await tryHoldingLock(SYNC_LOCK_NAME, () => syncNow(everything, choices));
+      return attempt.kind === 'held' ? attempt.value : null;
+    },
     remoteBooks: () => listRemoteBooks(applying),
     downloadRemoteBook: (contentHash, choices, onProgress, signal) =>
-      downloadRemoteBook(downloading, contentHash, choices, onProgress, signal),
+      holdingLock(SYNC_LOCK_NAME, () =>
+        downloadRemoteBook(downloading, contentHash, choices, onProgress, signal),
+      ),
     setAutoDownload: (autoDownload) => setAutoDownload(deps, autoDownload),
   };
 }

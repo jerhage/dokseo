@@ -14,8 +14,6 @@ type RunOutcome =
 
 const CHANGE_DEBOUNCE_MS = 5000;
 
-const SYNC_LOCK_NAME = 'dokseo-sync';
-
 const IDLE: RunGate = { kind: 'idle' };
 
 function requestRun(gate: RunGate): GateStep {
@@ -46,14 +44,5 @@ function runOutcome(result: SyncNowResult): RunOutcome {
     .otherwise(() => ({ kind: 'quiet' }));
 }
 
-export {
-  CHANGE_DEBOUNCE_MS,
-  IDLE,
-  SYNC_LOCK_NAME,
-  finishRun,
-  mayRunNow,
-  requestRun,
-  runOutcome,
-  runsOnVisibility,
-};
+export { CHANGE_DEBOUNCE_MS, IDLE, finishRun, mayRunNow, requestRun, runOutcome, runsOnVisibility };
 export type { GateStep, RunConditions, RunGate, RunOutcome };
