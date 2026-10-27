@@ -1,6 +1,11 @@
 import { describeCause } from '$lib/shared/cause';
-import { OUTBOX_STORE, RECORD_VERSION_STORE, markChanged } from '$lib/shared/change-marker';
-import type { ChangeMarker, SettledMarker } from '$lib/shared/change-marker';
+import {
+  OUTBOX_STORE,
+  RECORD_VERSION_STORE,
+  isLaterVersion,
+  markChanged,
+} from '$lib/shared/change-marker';
+import type { ChangeMarker, HeldVersion, SettledMarker } from '$lib/shared/change-marker';
 import { announceLocalChange } from '../events/local-change';
 
 function isSupported(): boolean {
@@ -256,12 +261,17 @@ async function settleMarkers(db: IDBDatabase, settled: readonly SettledMarker[])
         const found: ChangeMarker | undefined = stored.result;
         if (found?.changeId === marker.changeId) outbox.delete(key);
       };
-      versions.put({
-        kind: marker.kind,
-        recordId: marker.recordId,
-        updatedAt: version.updatedAt,
-        deviceId: version.deviceId,
-      });
+      const held = versions.get(key);
+      held.onsuccess = () => {
+        const heldVersion: HeldVersion | undefined = held.result;
+        if (heldVersion !== undefined && !isLaterVersion(version, heldVersion)) return;
+        versions.put({
+          kind: marker.kind,
+          recordId: marker.recordId,
+          updatedAt: version.updatedAt,
+          deviceId: version.deviceId,
+        });
+      };
     }
   });
 }

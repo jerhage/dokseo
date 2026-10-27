@@ -487,6 +487,7 @@ describe('settleMarkers', () => {
 
     expect(db.opened).toEqual([{ stores: ['outbox', 'record-versions'], mode: 'readwrite' }]);
     expect(db.transactions[0]?.placed).toEqual([
+      { store: 'outbox', kind: 'delete', value: ['tag', 'a'] },
       {
         store: 'record-versions',
         kind: 'put',
@@ -497,7 +498,28 @@ describe('settleMarkers', () => {
         kind: 'put',
         value: { kind: 'tag', recordId: 'b', updatedAt: 4, deviceId: 'device' },
       },
-      { store: 'outbox', kind: 'delete', value: ['tag', 'a'] },
+    ]);
+  });
+
+  it('keeps a later held version and replaces an older one', async () => {
+    const db = new RecordingDatabase();
+    db.rows.set('record-versions/tag,later', { updatedAt: 200, deviceId: 'B' });
+    db.rows.set('record-versions/tag,older', { updatedAt: 50, deviceId: 'B' });
+    const version = { updatedAt: 100, deviceId: 'A' };
+
+    await settleMarkers(recordingConnection(db), [
+      { marker: MARKER_OF('later'), version },
+      { marker: MARKER_OF('older'), version },
+    ]);
+
+    expect(
+      db.transactions[0]?.placed.filter((placed) => placed.store === 'record-versions'),
+    ).toEqual([
+      {
+        store: 'record-versions',
+        kind: 'put',
+        value: { kind: 'tag', recordId: 'older', updatedAt: 100, deviceId: 'A' },
+      },
     ]);
   });
 });

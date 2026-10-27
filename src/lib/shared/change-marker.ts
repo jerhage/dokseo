@@ -55,6 +55,18 @@ function changeMarker(
   return { kind, recordId, deleted, at, changeId: crypto.randomUUID() };
 }
 
+function compareText(a: string, b: string): number {
+  const left = a.toLowerCase();
+  const right = b.toLowerCase();
+  if (left === right) return 0;
+  return left > right ? 1 : -1;
+}
+
+function isLaterVersion(candidate: HeldVersion, held: HeldVersion): boolean {
+  if (candidate.updatedAt !== held.updatedAt) return candidate.updatedAt > held.updatedAt;
+  return compareText(candidate.deviceId, held.deviceId) > 0;
+}
+
 function markChanged(transaction: IDBTransaction, marker: ChangeMarker): void {
   transaction.objectStore(OUTBOX_STORE).put(marker);
 }
@@ -72,7 +84,9 @@ export {
   OUTBOX_STORE,
   RECORD_VERSION_STORE,
   changeMarker,
+  compareText,
   createChangeStores,
+  isLaterVersion,
   markChanged,
 };
 export type {
