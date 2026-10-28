@@ -3,6 +3,7 @@ import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Catalog } from '../domain/catalog';
 import type { CatalogPasswords } from '../domain/catalog-passwords';
 import type { CatalogRepository } from '../domain/catalog-repository';
+import type { RememberedPasswords } from '../domain/remembered-passwords';
 import type { CatalogCredentials, CatalogSource, CatalogSourceFor } from '../domain/catalog-source';
 
 type CatalogAccessFailure =
@@ -23,8 +24,22 @@ type CatalogAccess =
 type CatalogAccessDeps = {
   readonly catalogs: CatalogRepository;
   readonly passwords: CatalogPasswords;
+  readonly remembered: RememberedPasswords;
   readonly sourceFor: CatalogSourceFor;
 };
+
+async function heldPassword(deps: CatalogAccessDeps, id: CatalogId): Promise<string | null> {
+  const session = deps.passwords.get(id);
+  if (session !== null) return session;
+  const remembered = await deps.remembered.read(id);
+  if (remembered.kind === 'unreadable') {
+    await deps.remembered.forget(id);
+    return null;
+  }
+  if (remembered.kind !== 'success' || remembered.password === null) return null;
+  deps.passwords.set(id, remembered.password);
+  return remembered.password;
+}
 
 async function catalogAccess(deps: CatalogAccessDeps, id: CatalogId): Promise<CatalogAccess> {
   const found = await deps.catalogs.get(id);
@@ -37,7 +52,7 @@ async function catalogAccess(deps: CatalogAccessDeps, id: CatalogId): Promise<Ca
     return { kind: 'success', catalog, credentials: catalog.auth, source };
   }
 
-  const password = deps.passwords.get(id);
+  const password = await heldPassword(deps, id);
   if (password === null) return { kind: 'locked', id };
   const credentials: CatalogCredentials = {
     kind: 'basic',

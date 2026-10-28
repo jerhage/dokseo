@@ -62,7 +62,7 @@
           {catalog}
           refused={lock.refused}
           onunlock={(password) => {
-            deps.cases.unlockCatalog(catalog.id, password);
+            void deps.cases.unlockCatalog(catalog.id, password, false);
             retry();
           }}
         />

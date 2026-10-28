@@ -15,7 +15,11 @@ type CatalogUseCases = DownloadsUseCases &
   FeedReads &
   CoverReads &
   HeldReads & {
-    readonly unlockCatalog: (id: CatalogId, password: string) => UnlockCatalogResult;
+    readonly unlockCatalog: (
+      id: CatalogId,
+      password: string,
+      remember: boolean,
+    ) => Promise<UnlockCatalogResult>;
     readonly forgetDanglingOrigins: (id: CatalogId) => Promise<ForgetDanglingOriginsResult>;
   };
 

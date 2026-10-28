@@ -3,6 +3,7 @@ import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { CatalogPasswords } from '../domain/catalog-passwords';
 import type { CatalogRepository } from '../domain/catalog-repository';
 import type { OriginRepository } from '../domain/origin-repository';
+import type { RememberedPasswords } from '../domain/remembered-passwords';
 
 type RemoveCatalogResult =
   | { readonly kind: 'success' }
@@ -13,6 +14,7 @@ type RemoveCatalogDeps = {
   readonly catalogs: CatalogRepository;
   readonly origins: OriginRepository;
   readonly passwords: CatalogPasswords;
+  readonly remembered: RememberedPasswords;
 };
 
 async function removeCatalog(deps: RemoveCatalogDeps, id: CatalogId): Promise<RemoveCatalogResult> {
@@ -27,7 +29,7 @@ async function removeCatalog(deps: RemoveCatalogDeps, id: CatalogId): Promise<Re
   if (removed.kind !== 'success') return removed;
 
   deps.passwords.forget(id);
-  return { kind: 'success' };
+  return await deps.remembered.forget(id);
 }
 
 export { removeCatalog };

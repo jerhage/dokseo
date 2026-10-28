@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, catalogId } from '$lib/shared/ids';
+import type { AcceptedVersion } from '$lib/shared/change-marker';
 import type { CatalogId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { BookOrigin } from '../domain/book-origin';
@@ -7,6 +8,7 @@ import type { Catalog } from '../domain/catalog';
 import type { CatalogRepository } from '../domain/catalog-repository';
 import type { OriginRepository } from '../domain/origin-repository';
 import { fakePasswords } from './fake-passwords';
+import { fakeRememberedPasswords } from './fake-remembered-passwords';
 import { addCatalog } from './add-catalog';
 import { editCatalog } from './edit-catalog';
 import { findOrigin } from './find-origin';
@@ -15,6 +17,9 @@ import { listCatalogs } from './list-catalogs';
 import { listOrigins } from './list-origins';
 import { recordOrigin } from './record-origin';
 import { removeCatalog } from './remove-catalog';
+import { forgetCatalogPassword } from './forget-catalog-password';
+import { listRememberedPasswords } from './list-remembered-passwords';
+import { applyRemoteCatalogRemoval } from './apply-remote-catalog-removal';
 import { unlockCatalog } from './unlock-catalog';
 
 type Fault = 'none' | 'unavailable' | 'unreadable';
@@ -238,7 +243,10 @@ describe('removeCatalog', () => {
     catalogRows.set(OTHER, catalog(OTHER));
     originRows.push(origin('book-1', CALIBRE, 'a'), origin('book-2', OTHER, 'a'));
 
-    const removed = await removeCatalog({ catalogs, origins, passwords: fakePasswords() }, CALIBRE);
+    const removed = await removeCatalog(
+      { catalogs, origins, passwords: fakePasswords(), remembered: fakeRememberedPasswords() },
+      CALIBRE,
+    );
 
     expect(removed).toEqual({ kind: 'success' });
     expect(log).toEqual(['clear calibre', 'remove calibre']);
@@ -249,30 +257,39 @@ describe('removeCatalog', () => {
   it('reports not-found and deletes nothing for an id nothing holds', async () => {
     const { catalogs, origins, log } = fakes();
 
-    expect(await removeCatalog({ catalogs, origins, passwords: fakePasswords() }, CALIBRE)).toEqual(
-      {
-        kind: 'not-found',
-        id: CALIBRE,
-      },
-    );
+    expect(
+      await removeCatalog(
+        { catalogs, origins, passwords: fakePasswords(), remembered: fakeRememberedPasswords() },
+        CALIBRE,
+      ),
+    ).toEqual({
+      kind: 'not-found',
+      id: CALIBRE,
+    });
     expect(log).toEqual([]);
   });
 
   it('removes a damaged catalog so it can be cleared', async () => {
     const { catalogs, origins, log } = fakes('unreadable');
 
-    expect(await removeCatalog({ catalogs, origins, passwords: fakePasswords() }, CALIBRE)).toEqual(
-      { kind: 'success' },
-    );
+    expect(
+      await removeCatalog(
+        { catalogs, origins, passwords: fakePasswords(), remembered: fakeRememberedPasswords() },
+        CALIBRE,
+      ),
+    ).toEqual({ kind: 'success' });
     expect(log).toEqual(['clear calibre', 'remove calibre']);
   });
 
   it('passes storage unavailable on', async () => {
     const { catalogs, origins } = fakes('unavailable');
 
-    expect(await removeCatalog({ catalogs, origins, passwords: fakePasswords() }, CALIBRE)).toEqual(
-      STORAGE_UNAVAILABLE,
-    );
+    expect(
+      await removeCatalog(
+        { catalogs, origins, passwords: fakePasswords(), remembered: fakeRememberedPasswords() },
+        CALIBRE,
+      ),
+    ).toEqual(STORAGE_UNAVAILABLE);
   });
 });
 
@@ -359,12 +376,165 @@ describe('unlockCatalog', () => {
     const { catalogs, origins, catalogRows } = fakes();
     catalogRows.set(CALIBRE, catalog(CALIBRE));
     const passwords = fakePasswords();
+    const remembered = fakeRememberedPasswords();
 
-    expect(unlockCatalog({ passwords }, CALIBRE, 'secret')).toEqual({ kind: 'success' });
+    expect(await unlockCatalog({ passwords, remembered }, CALIBRE, 'secret', false)).toEqual({
+      kind: 'success',
+    });
     expect(passwords.get(CALIBRE)).toBe('secret');
 
-    await removeCatalog({ catalogs, origins, passwords }, CALIBRE);
+    await removeCatalog({ catalogs, origins, passwords, remembered }, CALIBRE);
 
     expect(passwords.get(CALIBRE)).toBeNull();
+  });
+
+  it('remembers the password on this device when asked to', async () => {
+    const passwords = fakePasswords();
+    const remembered = fakeRememberedPasswords();
+
+    expect(await unlockCatalog({ passwords, remembered }, CALIBRE, 'secret', true)).toEqual({
+      kind: 'success',
+    });
+    expect(remembered.held.get(CALIBRE)).toBe('secret');
+  });
+
+  it('drops an older remembered password when not asked to remember', async () => {
+    const passwords = fakePasswords();
+    const remembered = fakeRememberedPasswords();
+    remembered.held.set(CALIBRE, 'old');
+
+    expect(await unlockCatalog({ passwords, remembered }, CALIBRE, 'secret', false)).toEqual({
+      kind: 'success',
+    });
+    expect(remembered.held.has(CALIBRE)).toBe(false);
+    expect(passwords.get(CALIBRE)).toBe('secret');
+  });
+
+  it('keeps the session password and reports not-remembered when storage is unavailable', async () => {
+    const passwords = fakePasswords();
+    const remembered = fakeRememberedPasswords();
+    remembered.unavailable = true;
+
+    expect(await unlockCatalog({ passwords, remembered }, CALIBRE, 'secret', true)).toEqual({
+      kind: 'not-remembered',
+    });
+    expect(passwords.get(CALIBRE)).toBe('secret');
+  });
+
+  it('answers success when forgetting an older password finds storage unavailable', async () => {
+    const remembered = fakeRememberedPasswords();
+    remembered.unavailable = true;
+
+    expect(
+      await unlockCatalog({ passwords: fakePasswords(), remembered }, CALIBRE, 'secret', false),
+    ).toEqual({ kind: 'success' });
+  });
+});
+
+describe('forgetCatalogPassword', () => {
+  it('forgets the session and the remembered password', async () => {
+    const passwords = fakePasswords();
+    const remembered = fakeRememberedPasswords();
+    passwords.set(CALIBRE, 'secret');
+    remembered.held.set(CALIBRE, 'secret');
+
+    expect(await forgetCatalogPassword({ passwords, remembered }, CALIBRE)).toEqual({
+      kind: 'success',
+    });
+    expect(passwords.get(CALIBRE)).toBeNull();
+    expect(remembered.held.has(CALIBRE)).toBe(false);
+  });
+
+  it('passes storage unavailable on', async () => {
+    const remembered = fakeRememberedPasswords();
+    remembered.unavailable = true;
+
+    expect(
+      await forgetCatalogPassword({ passwords: fakePasswords(), remembered }, CALIBRE),
+    ).toEqual(STORAGE_UNAVAILABLE);
+  });
+});
+
+describe('listRememberedPasswords', () => {
+  it('lists the catalogs with a remembered password', async () => {
+    const remembered = fakeRememberedPasswords();
+    remembered.held.set(CALIBRE, 'secret');
+
+    expect(await listRememberedPasswords({ remembered })).toEqual({
+      kind: 'success',
+      ids: new Set([CALIBRE]),
+    });
+  });
+});
+
+describe('removeCatalog remembered password', () => {
+  it('forgets the remembered password with the catalog', async () => {
+    const { catalogs, origins, catalogRows } = fakes();
+    catalogRows.set(CALIBRE, catalog(CALIBRE));
+    const remembered = fakeRememberedPasswords();
+    remembered.held.set(CALIBRE, 'secret');
+
+    await removeCatalog({ catalogs, origins, passwords: fakePasswords(), remembered }, CALIBRE);
+
+    expect(remembered.held.has(CALIBRE)).toBe(false);
+  });
+
+  it('passes storage unavailable on when the remembered password cannot be forgotten', async () => {
+    const { catalogs, origins, catalogRows } = fakes();
+    catalogRows.set(CALIBRE, catalog(CALIBRE));
+    const remembered = fakeRememberedPasswords();
+    remembered.unavailable = true;
+
+    expect(
+      await removeCatalog({ catalogs, origins, passwords: fakePasswords(), remembered }, CALIBRE),
+    ).toEqual(STORAGE_UNAVAILABLE);
+  });
+});
+
+describe('applyRemoteCatalogRemoval', () => {
+  const ACCEPTED: AcceptedVersion = {
+    kind: 'catalog',
+    recordId: CALIBRE,
+    version: { updatedAt: 1, deviceId: 'device' },
+  };
+
+  it('forgets the password after the removal applies', async () => {
+    const { catalogs } = fakes();
+    const forgotten: CatalogId[] = [];
+
+    const applied = await applyRemoteCatalogRemoval(
+      {
+        catalogs,
+        forgetPassword: (id) => {
+          forgotten.push(id);
+          return Promise.resolve({ kind: 'success' });
+        },
+      },
+      CALIBRE,
+      ACCEPTED,
+    );
+
+    expect(applied).toEqual({ kind: 'success' });
+    expect(forgotten).toEqual([CALIBRE]);
+  });
+
+  it('forgets nothing when the removal does not apply', async () => {
+    const { catalogs } = fakes();
+    const forgotten: CatalogId[] = [];
+
+    const applied = await applyRemoteCatalogRemoval(
+      {
+        catalogs: { ...catalogs, applyRemote: () => Promise.resolve(STORAGE_UNAVAILABLE) },
+        forgetPassword: (id) => {
+          forgotten.push(id);
+          return Promise.resolve({ kind: 'success' });
+        },
+      },
+      CALIBRE,
+      ACCEPTED,
+    );
+
+    expect(applied).toEqual(STORAGE_UNAVAILABLE);
+    expect(forgotten).toEqual([]);
   });
 });

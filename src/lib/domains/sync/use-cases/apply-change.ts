@@ -1,7 +1,7 @@
 import { match } from 'ts-pattern';
-import type { CatalogRepository } from '$lib/domains/catalog/domain/catalog-repository';
 import { applyRemoteCatalog } from '$lib/domains/catalog/use-cases/apply-remote-catalog';
 import { applyRemoteCatalogRemoval } from '$lib/domains/catalog/use-cases/apply-remote-catalog-removal';
+import type { ApplyRemoteCatalogRemovalDeps } from '$lib/domains/catalog/use-cases/apply-remote-catalog-removal';
 import { placeFitsLayout } from '$lib/domains/library/domain/book/book';
 import type { Book, BookEdit } from '$lib/domains/library/domain/book/book';
 import type { LibraryRepository } from '$lib/domains/library/domain/book/library-repository';
@@ -29,7 +29,7 @@ import { fromSyncTagData } from './tag-data';
 type ApplyDeps = {
   readonly shelf: { readonly repository: LibraryRepository; readonly now: () => number };
   readonly captures: { readonly captures: CaptureRepository };
-  readonly catalogs: { readonly catalogs: CatalogRepository };
+  readonly catalogs: ApplyRemoteCatalogRemovalDeps;
   readonly held: HeldChangeStore;
 };
 

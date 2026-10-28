@@ -27,7 +27,7 @@
       addCatalog: (draft) => catalog.addCatalog(draft),
       editCatalog: (id, draft) => catalog.editCatalog(id, draft),
       removeCatalog: (id) => catalog.removeCatalog(id),
-      unlockCatalog: (id, password) => catalog.unlockCatalog(id, password),
+      unlockCatalog: (id, password, remember) => catalog.unlockCatalog(id, password, remember),
       testCatalogConnection: (draft, password) => catalog.testCatalogConnection(draft, password),
     },
     (notice) => notify(notice),

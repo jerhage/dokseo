@@ -289,6 +289,25 @@ async function putRecord<T>(
   await transact(db, store, 'readwrite', (objectStore) => objectStore.put(value, key));
 }
 
+async function addRecord<T>(
+  db: IDBDatabase,
+  store: string,
+  value: T,
+  key?: IDBValidKey,
+): Promise<'added' | 'exists'> {
+  let taken = false;
+  await transact(db, store, 'readwrite', (objectStore) => {
+    const request = objectStore.add(value, key);
+    request.onerror = (event) => {
+      if (request.error?.name !== 'ConstraintError') return;
+      event.preventDefault();
+      taken = true;
+    };
+    return request;
+  });
+  return taken ? 'exists' : 'added';
+}
+
 async function deleteRecord(db: IDBDatabase, store: string, key: IDBValidKey): Promise<void> {
   await transact(db, store, 'readwrite', (objectStore) => objectStore.delete(key));
 }
@@ -413,6 +432,7 @@ export {
   openDatabase,
   getRecord,
   putRecord,
+  addRecord,
   deleteRecord,
   listRecords,
   listByIndex,

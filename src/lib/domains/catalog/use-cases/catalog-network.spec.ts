@@ -3,6 +3,7 @@ import { bookId, catalogId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { fakePasswords } from './fake-passwords';
+import { fakeRememberedPasswords } from './fake-remembered-passwords';
 import type { BookOrigin } from '../domain/book-origin';
 import type { Catalog } from '../domain/catalog';
 import type { CatalogRepository } from '../domain/catalog-repository';
@@ -170,6 +171,7 @@ function setup(feed: ReadFeedResult = { kind: 'success', page: SHELF_FICTION_FEE
   };
 
   const passwords = fakePasswords();
+  const remembered = fakeRememberedPasswords();
   const liveBooks = new Set<BookId>();
   const readBook: ReadBook = (id) =>
     Promise.resolve(
@@ -182,6 +184,7 @@ function setup(feed: ReadFeedResult = { kind: 'success', page: SHELF_FICTION_FEE
     catalogs,
     origins,
     passwords,
+    remembered,
     readBook,
     rows,
     deleted,
@@ -253,6 +256,33 @@ describe('browseCatalog', () => {
       id: PRIVATE,
     });
     expect(world.requests).toEqual([]);
+  });
+
+  it('unlocks with the remembered password and holds it for the session', async () => {
+    const world = setup();
+    world.remembered.held.set(PRIVATE, 'secret');
+
+    await browseCatalog(world, PRIVATE, null, []);
+
+    expect(world.credentialsSeen).toEqual([{ kind: 'basic', username: 'jo', password: 'secret' }]);
+    expect(world.passwords.get(PRIVATE)).toBe('secret');
+  });
+
+  it('answers locked and forgets a remembered password that cannot be read', async () => {
+    const world = setup();
+    world.remembered.held.set(PRIVATE, 'secret');
+    world.remembered.unreadable.add(PRIVATE);
+
+    expect(await browseCatalog(world, PRIVATE, null, [])).toEqual({ kind: 'locked', id: PRIVATE });
+    expect(world.remembered.unreadable.has(PRIVATE)).toBe(false);
+    expect(world.requests).toEqual([]);
+  });
+
+  it('answers locked when the remembered passwords are unavailable', async () => {
+    const world = setup();
+    world.remembered.unavailable = true;
+
+    expect(await browseCatalog(world, PRIVATE, null, [])).toEqual({ kind: 'locked', id: PRIVATE });
   });
 
   it('sends the unlocked password as basic credentials', async () => {

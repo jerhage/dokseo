@@ -90,7 +90,7 @@ function setup(overrides: Partial<Answers> = {}) {
     },
     unlockCatalog: (id, password) => {
       unlocked.push({ id, password });
-      return { kind: 'success' };
+      return Promise.resolve({ kind: 'success' });
     },
     testCatalogConnection: (draft, password) => {
       tested.push({ draft, password });
