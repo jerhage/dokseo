@@ -118,16 +118,17 @@
   <p>
     HTTP Basic sends the username and password with every request, so the app needs the password
     each time it talks to a catalog. Storing it as plain text in IndexedDB would leave it readable
-    on the device, so Dokseo stores it nowhere. The password lives in memory for the session and no
-    stored type has a field for it.
+    on the device, so by default Dokseo stores it nowhere. The password lives in memory for the
+    session and no catalog row has a field for it. Remembering it is a choice made per catalog,
+    described after this list.
   </p>
   <DocsCode label={PASSWORDS_PORT.label} code={PASSWORDS_PORT.code} />
   <DocsCode label={PASSWORDS_SESSION.label} code={PASSWORDS_SESSION.code} />
   <ul class="col gap-2">
     <li>
       The add or edit form takes the password for the connection test. After a catalog with a
-      <code>basic</code> sign-in is saved, the typed password is kept in that map. The field says "Kept
-      until you close Dokseo".
+      <code>basic</code> sign-in is saved, the typed password is kept in that map. Unless the remember
+      box is checked, the field says "Kept until you close Dokseo".
     </li>
     <li>
       A <code>basic</code> catalog with no password in memory answers <code>locked</code> before any request
@@ -136,12 +137,41 @@
       test.
     </li>
     <li>
-      Removing a catalog forgets its password. Closing Dokseo forgets all of them, and the next
-      visit asks again.
+      Removing a catalog forgets its password. Closing Dokseo forgets every password that was not
+      remembered, and the next visit asks again.
     </li>
     <li>
       The setup I recommend avoids the question: the proxy in front of the server adds the
       credentials, so the app holds none. On a tailnet the server's own password can be off.
+    </li>
+  </ul>
+</DocsSection>
+
+<DocsSection title={REMOTE_SECTIONS.remembering}>
+  <p>
+    A catalog's form and its password modal each have a checkbox, "Remember the password on this
+    device", with a warning while it is checked. It is off for a new catalog, so nothing is saved
+    unless it is chosen. Once a password is remembered, the catalog opens with no prompt, and the
+    catalog's row in Settings offers "Forget password".
+  </p>
+  <ul class="col gap-2">
+    <li>
+      The password is stored in its own IndexedDB database, <code>catalog-passwords</code>. It never
+      syncs and is not in the export file.
+    </li>
+    <li>
+      It is encrypted with AES-GCM. The WebCrypto key is non-extractable and sits in the same
+      database. A copy of the browser profile therefore holds no readable password. Script running
+      on Dokseo's origin could still decrypt it, as any Basic-auth client must, because the app
+      needs the password to sign in.
+    </li>
+    <li>
+      I recommend it only on a device that is yours alone. Anyone who can open Dokseo on that device
+      can browse and download from the catalog with your account.
+    </li>
+    <li>
+      "Forget password" deletes the stored password, and so does removing the catalog. Saving a
+      catalog with the box unchecked and no new password does the same.
     </li>
   </ul>
 </DocsSection>

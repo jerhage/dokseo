@@ -89,12 +89,6 @@
 <DocsSection title={REMOTE_SECTIONS.open}>
   <ul class="col gap-2">
     <li>
-      Remembering a password on this device. It would be stored encrypted with AES-GCM, using a
-      non-extractable WebCrypto key kept in IndexedDB. That protects the data at rest, and the app
-      itself could still decrypt it, as any Basic-auth client must. Today the password is asked for
-      again in each session.
-    </li>
-    <li>
       Series and volume nesting for downloaded books, from file metadata with the feed path as a
       fallback (<a href={remoteHref('series')}>Series: flat for now</a>).
     </li>
