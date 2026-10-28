@@ -11,26 +11,29 @@ import { catalogKeys } from '../queries/catalog-keys';
 import {
   addCatalogMutation,
   editCatalogMutation,
+  forgetCatalogPasswordMutation,
   removeCatalogMutation,
   testConnectionMutation,
+  unlockCatalogMutation,
 } from '../queries/catalog-queries';
-import type { CatalogEdit, CatalogWrites, ConnectionRequest } from '../queries/catalog-queries';
+import type {
+  CatalogEdit,
+  CatalogWrites,
+  ConnectionRequest,
+  UnlockRequest,
+} from '../queries/catalog-queries';
 import type { AddCatalogResult } from '../use-cases/add-catalog';
 import type { EditCatalogResult } from '../use-cases/edit-catalog';
 import type { RemoveCatalogResult } from '../use-cases/remove-catalog';
 import type { TestCatalogConnectionResult } from '../use-cases/test-catalog-connection';
+import type { ForgetCatalogPasswordResult } from '../use-cases/forget-catalog-password';
 import type { UnlockCatalogResult } from '../use-cases/unlock-catalog';
 import type { CatalogDialog, FormTarget, createCatalogDialog } from './catalog-dialog.svelte';
 import { connectionOutcome, fieldRefusal } from './catalog-texts';
+import { passwordChoiceOf } from './password-choice';
 import type { ConnectionOutcome, FormField } from './catalog-texts';
 
-type CatalogSettingsUseCases = CatalogWrites & {
-  readonly unlockCatalog: (
-    id: CatalogId,
-    password: string,
-    remember: boolean,
-  ) => Promise<UnlockCatalogResult>;
-};
+type CatalogSettingsUseCases = CatalogWrites;
 
 type AuthChoice = 'none' | 'basic';
 
@@ -49,6 +52,15 @@ const SAVE_FAILED = 'Could not save that catalog';
 
 const REMOVE_FAILED = 'Could not remove that catalog';
 
+const FORGET_FAILED = 'Could not forget that password';
+
+const NOT_REMEMBERED_TITLE = 'Password not saved';
+
+const NOT_REMEMBERED_MESSAGE =
+  'The password works for this session, but it could not be saved on this device.';
+
+const FORGOTTEN_TITLE = 'Password forgotten on this device.';
+
 const STORAGE_BLOCKED = 'This browser blocks local storage, so catalogs cannot be kept.';
 
 const GONE = 'That catalog no longer exists.';
@@ -61,18 +73,21 @@ class CatalogSettingsView {
   authChoice = $state<AuthChoice>('none');
   username = $state('');
   password = $state('');
+  remember = $state(false);
   connection = $state.raw<ConnectionTest>(IDLE);
   saving = $state(false);
   removeBusy = $state(false);
 
-  #cases: CatalogSettingsUseCases;
   #dialog: ReturnType<typeof createCatalogDialog>;
   #notify: Notify;
+  #wasRemembered = $state(false);
   #generation = 0;
   #adding: WriteQuery<AddCatalogResult, CatalogDraft>;
   #editing: WriteQuery<EditCatalogResult, CatalogEdit>;
   #removal: WriteQuery<RemoveCatalogResult, CatalogId>;
   #testing: WriteQuery<TestCatalogConnectionResult, ConnectionRequest>;
+  #unlocking: WriteQuery<UnlockCatalogResult, UnlockRequest>;
+  #forgetting: WriteQuery<ForgetCatalogPasswordResult, CatalogId>;
 
   constructor(
     cases: CatalogSettingsUseCases,
@@ -80,7 +95,6 @@ class CatalogSettingsView {
     dialog: ReturnType<typeof createCatalogDialog>,
   ) {
     const client = useQueryClient();
-    this.#cases = cases;
     this.#dialog = dialog;
     this.#notify = notify;
     this.#adding = writeQuery(() => ({
@@ -103,10 +117,19 @@ class CatalogSettingsView {
         return Promise.all([
           client.invalidateQueries({ queryKey: catalogKeys.catalogs() }),
           client.invalidateQueries({ queryKey: catalogKeys.origins() }),
+          client.invalidateQueries({ queryKey: catalogKeys.rememberedPasswords() }),
         ]);
       },
     }));
     this.#testing = writeQuery(() => testConnectionMutation(cases));
+    this.#unlocking = writeQuery(() => ({
+      ...unlockCatalogMutation(cases),
+      onSettled: () => client.invalidateQueries({ queryKey: catalogKeys.rememberedPasswords() }),
+    }));
+    this.#forgetting = writeQuery(() => ({
+      ...forgetCatalogPasswordMutation(cases),
+      onSettled: () => client.invalidateQueries({ queryKey: catalogKeys.rememberedPasswords() }),
+    }));
   }
 
   get titleError(): string | undefined {
@@ -125,11 +148,21 @@ class CatalogSettingsView {
     return this.#dialog.dialog;
   }
 
-  startAdd(): void {
-    this.#open({ kind: 'add' }, '', '', 'none', '');
+  get rememberDisabled(): boolean {
+    const { dialog } = this.#dialog;
+    return (
+      dialog.kind === 'editing' &&
+      dialog.target.kind === 'edit' &&
+      this.password.length === 0 &&
+      !this.#wasRemembered
+    );
   }
 
-  startEdit(catalog: Catalog): void {
+  startAdd(): void {
+    this.#open({ kind: 'add' }, '', '', 'none', '', false);
+  }
+
+  startEdit(catalog: Catalog, remembered: boolean): void {
     const username = catalog.auth.kind === 'basic' ? catalog.auth.username : '';
     this.#open(
       { kind: 'edit', id: catalog.id },
@@ -137,6 +170,7 @@ class CatalogSettingsView {
       catalog.rootUrl,
       catalog.auth.kind,
       username,
+      remembered,
     );
   }
 
@@ -209,6 +243,11 @@ class CatalogSettingsView {
     if (this.#dialog.dialog.kind === 'removing') this.#dialog.close();
   }
 
+  async forgetPassword(id: CatalogId): Promise<void> {
+    const forgotten = await this.#forget(id);
+    if (forgotten) this.#notify({ tone: 'success', title: FORGOTTEN_TITLE });
+  }
+
   async confirmRemove(): Promise<void> {
     const { dialog } = this.#dialog;
     if (dialog.kind !== 'removing' || this.removeBusy) return;
@@ -229,9 +268,21 @@ class CatalogSettingsView {
   #saved(result: SavedResult): void {
     match(result)
       .with({ kind: 'success' }, ({ catalog }) => {
-        if (catalog.auth.kind === 'basic' && this.password.length > 0) {
-          void this.#cases.unlockCatalog(catalog.id, this.password, false);
-        }
+        const choice = passwordChoiceOf({
+          authKind: catalog.auth.kind,
+          typed: this.password.length > 0,
+          remember: this.remember,
+          wasRemembered: this.#wasRemembered,
+        });
+        match(choice)
+          .with({ kind: 'unlock' }, ({ remember }) => {
+            void this.#unlock({ id: catalog.id, password: this.password, remember });
+          })
+          .with({ kind: 'forget' }, () => {
+            void this.#forget(catalog.id);
+          })
+          .with({ kind: 'keep' }, () => undefined)
+          .exhaustive();
         this.closeForm();
       })
       .with(
@@ -255,6 +306,26 @@ class CatalogSettingsView {
       .exhaustive();
   }
 
+  async #unlock(request: UnlockRequest): Promise<void> {
+    const result = await this.#unlocking.run(request);
+    if (result.kind === 'not-remembered') {
+      this.#notify({
+        tone: 'warning',
+        title: NOT_REMEMBERED_TITLE,
+        message: NOT_REMEMBERED_MESSAGE,
+      });
+    }
+  }
+
+  async #forget(id: CatalogId): Promise<boolean> {
+    const result = await this.#forgetting.run(id);
+    if (result.kind === 'storage-unavailable') {
+      this.#notify({ tone: 'danger', title: FORGET_FAILED, message: STORAGE_BLOCKED });
+      return false;
+    }
+    return true;
+  }
+
   #refuse(refusal: DraftRefusal): void {
     this.#dialog.refuse(fieldRefusal(refusal));
   }
@@ -265,6 +336,7 @@ class CatalogSettingsView {
     rootUrl: string,
     authChoice: AuthChoice,
     username: string,
+    remembered: boolean,
   ): void {
     this.#generation++;
     this.#dialog.edit(target);
@@ -273,6 +345,8 @@ class CatalogSettingsView {
     this.authChoice = authChoice;
     this.username = username;
     this.password = '';
+    this.remember = remembered;
+    this.#wasRemembered = remembered;
     this.connection = IDLE;
   }
 
@@ -301,5 +375,15 @@ class CatalogSettingsView {
   }
 }
 
-export { CatalogSettingsView, GONE, REMOVE_FAILED, SAVE_FAILED, STORAGE_BLOCKED, UNREADABLE };
+export {
+  CatalogSettingsView,
+  FORGET_FAILED,
+  FORGOTTEN_TITLE,
+  GONE,
+  NOT_REMEMBERED_TITLE,
+  REMOVE_FAILED,
+  SAVE_FAILED,
+  STORAGE_BLOCKED,
+  UNREADABLE,
+};
 export type { AuthChoice, CatalogSettingsUseCases, ConnectionTest };

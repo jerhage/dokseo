@@ -5,8 +5,10 @@
   import ListGroup from '$lib/ui/components/ListGroup.svelte';
   import ListRow from '$lib/ui/components/ListRow.svelte';
   import type { Notify } from '$lib/shared/notice';
+  import { readQuery } from '$lib/shared/read-query.svelte';
+  import { rememberedPasswordsQuery } from '../queries/catalog-queries';
   import type { CatalogReads } from '../queries/catalog-queries';
-  import { catalogListOf } from './catalog-list';
+  import { catalogListOf, rememberedIdsOf } from './catalog-list';
   import { createCatalogDialog } from './catalog-dialog.svelte';
   import { CatalogSettingsView } from './catalog-settings.svelte';
   import type { CatalogSettingsUseCases } from './catalog-settings.svelte';
@@ -16,7 +18,8 @@
   import RemoveCatalog from './RemoveCatalog.svelte';
 
   type Props = {
-    readonly catalog: Pick<CatalogReads, 'listCatalogs'> & CatalogSettingsUseCases;
+    readonly catalog: Pick<CatalogReads, 'listCatalogs' | 'listRememberedPasswords'> &
+      CatalogSettingsUseCases;
     readonly notify: Notify;
   };
 
@@ -28,11 +31,15 @@
       editCatalog: (id, draft) => catalog.editCatalog(id, draft),
       removeCatalog: (id) => catalog.removeCatalog(id),
       unlockCatalog: (id, password, remember) => catalog.unlockCatalog(id, password, remember),
+      forgetCatalogPassword: (id) => catalog.forgetCatalogPassword(id),
       testCatalogConnection: (draft, password) => catalog.testCatalogConnection(draft, password),
     },
     (notice) => notify(notice),
     createCatalogDialog(),
   );
+
+  const remembered = readQuery(() => rememberedPasswordsQuery(catalog));
+  const rememberedIds = $derived(rememberedIdsOf(remembered.state) ?? new Set());
 </script>
 
 <div class="col gap-6 prose">
@@ -64,11 +71,23 @@
         {:else}
           <ListGroup>
             {#each list.catalogs as item (item.id)}
-              <ListRow title={item.title} description={catalogDescription(item)}>
+              <ListRow
+                title={item.title}
+                description={catalogDescription(item, rememberedIds.has(item.id))}
+              >
                 {#snippet actions()}
-                  <Button size="sm" variant="ghost" onclick={() => view.startEdit(item)}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onclick={() => view.startEdit(item, rememberedIds.has(item.id))}
+                  >
                     Edit
                   </Button>
+                  {#if rememberedIds.has(item.id)}
+                    <Button size="sm" variant="ghost" onclick={() => view.forgetPassword(item.id)}>
+                      Forget password
+                    </Button>
+                  {/if}
                   <Button size="sm" variant="ghost-danger" onclick={() => view.askRemove(item)}>
                     Remove
                   </Button>

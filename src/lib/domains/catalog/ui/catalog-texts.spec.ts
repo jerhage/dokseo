@@ -17,6 +17,7 @@ import {
   feedProblemText,
   fieldRefusal,
   needsPickText,
+  passwordHint,
   updateFailureText,
 } from './catalog-texts';
 
@@ -91,13 +92,20 @@ describe('catalogDescription', () => {
 
   it('shows only the host for a catalog without sign-in', () => {
     const catalog: Catalog = { ...base, auth: { kind: 'none' } };
-    expect(catalogDescription(catalog)).toBe('shelf.example:8080');
+    expect(catalogDescription(catalog, false)).toBe('shelf.example:8080');
   });
 
   it('adds the username and the password note for basic', () => {
     const catalog: Catalog = { ...base, auth: { kind: 'basic', username: 'jo' } };
-    expect(catalogDescription(catalog)).toBe(
+    expect(catalogDescription(catalog, false)).toBe(
       'shelf.example:8080 · jo · Password: asked each session',
+    );
+  });
+
+  it('says the password is remembered on this device when it is', () => {
+    const catalog: Catalog = { ...base, auth: { kind: 'basic', username: 'jo' } };
+    expect(catalogDescription(catalog, true)).toBe(
+      'shelf.example:8080 · jo · Password: remembered on this device',
     );
   });
 
@@ -191,5 +199,15 @@ describe('feedProblemText', () => {
     expect(feedProblemText({ kind: 'not-a-catalog' }, 'opds1')).toBe(
       browseFailureText({ kind: 'not-a-catalog' }, 'opds1'),
     );
+  });
+});
+
+describe('passwordHint', () => {
+  it('says the password lasts for the session when it is not remembered', () => {
+    expect(passwordHint(false)).toBe('Kept until you close Dokseo.');
+  });
+
+  it('says the password is kept encrypted on the device when it is remembered', () => {
+    expect(passwordHint(true)).toBe('Kept on this device, encrypted, until you forget it.');
   });
 });

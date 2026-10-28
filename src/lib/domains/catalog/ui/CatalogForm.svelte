@@ -1,11 +1,18 @@
 <script lang="ts">
   import Alert from '$lib/ui/components/Alert.svelte';
   import Button from '$lib/ui/components/Button.svelte';
+  import Checkbox from '$lib/ui/components/Checkbox.svelte';
   import Field from '$lib/ui/components/Field.svelte';
   import Input from '$lib/ui/components/Input.svelte';
   import Modal from '$lib/ui/components/Modal.svelte';
   import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
   import type { AuthChoice, CatalogSettingsView } from './catalog-settings.svelte';
+  import {
+    REMEMBER_PASSWORD_HINT,
+    REMEMBER_PASSWORD_LABEL,
+    REMEMBER_PASSWORD_WARNING,
+    passwordHint,
+  } from './catalog-texts';
 
   type Props = { readonly view: CatalogSettingsView };
 
@@ -97,7 +104,7 @@
         {/snippet}
       </Field>
 
-      <Field label="Password" hint="Kept until you close Dokseo. It is never saved.">
+      <Field label="Password" hint={passwordHint(view.remember)}>
         {#snippet children(control)}
           <Input
             {...control}
@@ -109,6 +116,17 @@
           />
         {/snippet}
       </Field>
+
+      <Checkbox
+        bind:checked={view.remember}
+        hint={REMEMBER_PASSWORD_HINT}
+        disabled={view.saving || view.rememberDisabled}
+      >
+        {REMEMBER_PASSWORD_LABEL}
+      </Checkbox>
+      {#if view.remember}
+        <Alert variant="warning">{REMEMBER_PASSWORD_WARNING}</Alert>
+      {/if}
     {/if}
 
     {#if view.connection.kind === 'done'}

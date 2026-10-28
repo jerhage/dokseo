@@ -6,6 +6,7 @@ const ALL = ['catalog'] as const;
 const catalogKeys = {
   all: () => ALL,
   catalogs: () => [...ALL, 'catalogs'] as const,
+  rememberedPasswords: () => [...ALL, 'remembered-passwords'] as const,
   origins: () => [...ALL, 'origins'] as const,
   held: (catalogId: CatalogId) => [...ALL, 'origins', catalogId] as const,
   anyFeed: () => [...ALL, 'feed'] as const,

@@ -7,12 +7,17 @@ import type { Catalog } from '../domain/catalog';
 import type { CatalogDraft } from '../domain/catalog-draft';
 import type { AddCatalogResult } from '../use-cases/add-catalog';
 import type { EditCatalogResult } from '../use-cases/edit-catalog';
+import type { ForgetCatalogPasswordResult } from '../use-cases/forget-catalog-password';
 import type { RemoveCatalogResult } from '../use-cases/remove-catalog';
 import type { TestCatalogConnectionResult } from '../use-cases/test-catalog-connection';
+import type { UnlockCatalogResult } from '../use-cases/unlock-catalog';
 import { createCatalogDialog } from './catalog-dialog.svelte';
 import {
   CatalogSettingsView,
+  FORGET_FAILED,
+  FORGOTTEN_TITLE,
   GONE,
+  NOT_REMEMBERED_TITLE,
   REMOVE_FAILED,
   SAVE_FAILED,
   STORAGE_BLOCKED,
@@ -61,18 +66,23 @@ type Answers = {
   edit: (id: CatalogId, draft: CatalogDraft) => EditCatalogResult;
   remove: RemoveCatalogResult;
   test: TestCatalogConnectionResult;
+  unlock: UnlockCatalogResult;
+  forget: ForgetCatalogPasswordResult;
 };
 
 function setup(overrides: Partial<Answers> = {}) {
   const notices: Notice[] = [];
   const calls: string[] = (log.calls = []);
-  const unlocked: { id: CatalogId; password: string }[] = [];
+  const unlocked: { id: CatalogId; password: string; remember: boolean }[] = [];
+  const forgotten: CatalogId[] = [];
   const tested: { draft: CatalogDraft; password: string | null }[] = [];
   const answers: Answers = {
     add: (draft) => ({ kind: 'success', catalog: { id: PRIVATE, ...draft } }),
     edit: (id, draft) => ({ kind: 'success', catalog: { id, ...draft } }),
     remove: { kind: 'success' },
     test: { kind: 'success', feedTitle: 'Sample Library', feedKind: 'navigation' },
+    unlock: { kind: 'success' },
+    forget: { kind: 'success' },
     ...overrides,
   };
   const cases: CatalogSettingsUseCases = {
@@ -88,9 +98,13 @@ function setup(overrides: Partial<Answers> = {}) {
       calls.push('remove');
       return Promise.resolve(answers.remove);
     },
-    unlockCatalog: (id, password) => {
-      unlocked.push({ id, password });
-      return Promise.resolve({ kind: 'success' });
+    unlockCatalog: (id, password, remember) => {
+      unlocked.push({ id, password, remember });
+      return Promise.resolve(answers.unlock);
+    },
+    forgetCatalogPassword: (id) => {
+      forgotten.push(id);
+      return Promise.resolve(answers.forget);
     },
     testCatalogConnection: (draft, password) => {
       tested.push({ draft, password });
@@ -102,7 +116,11 @@ function setup(overrides: Partial<Answers> = {}) {
     (notice) => notices.push(notice),
     createCatalogDialog(),
   );
-  return { view, notices, calls, unlocked, tested };
+  return { view, notices, calls, unlocked, forgotten, tested };
+}
+
+async function settled(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 function fill(view: CatalogSettingsView, title: string, rootUrl: string): void {
@@ -205,8 +223,78 @@ describe('CatalogSettingsView save', () => {
     view.username = 'jo';
     view.password = 'secret';
     await view.save();
-    expect(unlocked).toEqual([{ id: PRIVATE, password: 'secret' }]);
+    await settled();
+    expect(unlocked).toEqual([{ id: PRIVATE, password: 'secret', remember: false }]);
     expect(view.password).toBe('');
+  });
+
+  it('unlocks with the remember checkbox and invalidates the remembered passwords', async () => {
+    const { view, unlocked, calls } = setup();
+    view.startAdd();
+    fill(view, 'Mine', 'https://x.example/opds');
+    view.chooseAuth('basic');
+    view.username = 'jo';
+    view.password = 'secret';
+    view.remember = true;
+    await view.save();
+    await settled();
+    expect(unlocked).toEqual([{ id: PRIVATE, password: 'secret', remember: true }]);
+    expect(calls).toContain('invalidate catalog/remembered-passwords');
+  });
+
+  it('notifies that the password works for this session when it could not be saved', async () => {
+    const { view, notices } = setup({ unlock: { kind: 'not-remembered' } });
+    view.startAdd();
+    fill(view, 'Mine', 'https://x.example/opds');
+    view.chooseAuth('basic');
+    view.username = 'jo';
+    view.password = 'secret';
+    view.remember = true;
+    await view.save();
+    await settled();
+    expect(notices.map((notice) => notice.title)).toEqual([NOT_REMEMBERED_TITLE]);
+  });
+
+  it('forgets the remembered password when an edit leaves the password empty and unchecked', async () => {
+    const { view, forgotten, unlocked } = setup();
+    view.startEdit(PRIVATE_CATALOG, true);
+    view.remember = false;
+    await view.save();
+    await settled();
+    expect(forgotten).toEqual([PRIVATE]);
+    expect(unlocked).toEqual([]);
+  });
+
+  it('forgets the remembered password when an edit turns sign-in off', async () => {
+    const { view, forgotten } = setup();
+    view.startEdit(PRIVATE_CATALOG, true);
+    view.chooseAuth('none');
+    await view.save();
+    await settled();
+    expect(forgotten).toEqual([PRIVATE]);
+  });
+
+  it('starts the checkbox checked when the edited catalog has a remembered password', () => {
+    const { view } = setup();
+    view.startEdit(PRIVATE_CATALOG, true);
+    expect(view.remember).toBe(true);
+    expect(view.rememberDisabled).toBe(false);
+  });
+
+  it('disables the checkbox while an edit has nothing to remember and no typed password', () => {
+    const { view } = setup();
+    view.startEdit(PRIVATE_CATALOG, false);
+    expect(view.remember).toBe(false);
+    expect(view.rememberDisabled).toBe(true);
+    view.password = 'secret';
+    expect(view.rememberDisabled).toBe(false);
+  });
+
+  it('leaves the checkbox enabled and unchecked for a new catalog', () => {
+    const { view } = setup();
+    view.startAdd();
+    expect(view.remember).toBe(false);
+    expect(view.rememberDisabled).toBe(false);
   });
 
   it('unlocks nothing when no password was typed', async () => {
@@ -216,6 +304,7 @@ describe('CatalogSettingsView save', () => {
     view.chooseAuth('basic');
     view.username = 'jo';
     await view.save();
+    await settled();
     expect(unlocked).toEqual([]);
   });
 
@@ -225,6 +314,7 @@ describe('CatalogSettingsView save', () => {
     fill(view, 'Mine', 'https://x.example/opds');
     view.password = 'left over';
     await view.save();
+    await settled();
     expect(unlocked).toEqual([]);
   });
 
@@ -262,7 +352,7 @@ describe('CatalogSettingsView save', () => {
 
   it('edits the catalog it was opened on and invalidates the feeds read from it', async () => {
     const { view, calls } = setup();
-    view.startEdit(PRIVATE_CATALOG);
+    view.startEdit(PRIVATE_CATALOG, false);
     expect(view.authChoice).toBe('basic');
     expect(view.username).toBe('jo');
     view.title = 'Renamed';
@@ -277,7 +367,7 @@ describe('CatalogSettingsView save', () => {
 
   it('closes the form and invalidates the list when the edited catalog is gone', async () => {
     const { view, notices, calls } = setup({ edit: (id) => ({ kind: 'not-found', id }) });
-    view.startEdit(OPEN_CATALOG);
+    view.startEdit(OPEN_CATALOG, false);
     await view.save();
     expect(notices).toEqual([{ tone: 'warning', title: SAVE_FAILED, message: GONE }]);
     expect(view.dialog).toEqual({ kind: 'closed' });
@@ -286,7 +376,7 @@ describe('CatalogSettingsView save', () => {
 
   it('tells the reader to remove an unreadable catalog', async () => {
     const { view, notices } = setup({ edit: (id) => ({ kind: 'unreadable', id }) });
-    view.startEdit(OPEN_CATALOG);
+    view.startEdit(OPEN_CATALOG, false);
     await view.save();
     expect(notices).toEqual([{ tone: 'warning', title: SAVE_FAILED, message: UNREADABLE }]);
     expect(view.dialog.kind).toBe('editing');
@@ -317,6 +407,7 @@ describe('CatalogSettingsView remove', () => {
       'remove catalog/cover/open',
       'invalidate catalog/catalogs',
       'invalidate catalog/origins',
+      'invalidate catalog/remembered-passwords',
     ]);
     expect(view.dialog).toEqual({ kind: 'closed' });
   });
@@ -339,6 +430,7 @@ describe('CatalogSettingsView remove', () => {
       'remove catalog/cover/private',
       'invalidate catalog/catalogs',
       'invalidate catalog/origins',
+      'invalidate catalog/remembered-passwords',
     ]);
   });
 
@@ -356,5 +448,21 @@ describe('CatalogSettingsView remove', () => {
     view.askRemove(OPEN_CATALOG);
     await view.confirmRemove();
     expect(view.dialog).toEqual({ kind: 'closed' });
+  });
+});
+
+describe('CatalogSettingsView forgetPassword', () => {
+  it('forgets the password, invalidates the remembered passwords and says so', async () => {
+    const { view, forgotten, calls, notices } = setup();
+    await view.forgetPassword(PRIVATE);
+    expect(forgotten).toEqual([PRIVATE]);
+    expect(calls).toEqual(['invalidate catalog/remembered-passwords']);
+    expect(notices).toEqual([{ tone: 'success', title: FORGOTTEN_TITLE }]);
+  });
+
+  it('notifies when storage is unavailable and does not say it was forgotten', async () => {
+    const { view, notices } = setup({ forget: STORAGE_UNAVAILABLE });
+    await view.forgetPassword(PRIVATE);
+    expect(notices).toEqual([{ tone: 'danger', title: FORGET_FAILED, message: STORAGE_BLOCKED }]);
   });
 });

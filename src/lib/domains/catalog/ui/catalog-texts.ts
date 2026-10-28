@@ -39,6 +39,23 @@ const FIX_FIELDS_TEXT = 'Fix the marked field, then test again.';
 
 const PASSWORD_ASKED_EACH_SESSION = 'Password: asked each session';
 
+const PASSWORD_REMEMBERED = 'Password: remembered on this device';
+
+const REMEMBER_PASSWORD_LABEL = 'Remember the password on this device';
+
+const REMEMBER_PASSWORD_HINT = 'Only on a personal device, never on a shared or public one.';
+
+const REMEMBER_PASSWORD_WARNING =
+  'Anyone who can open Dokseo on this device can browse and download from this catalog with your account. Remember a password only on a device that is yours alone.';
+
+const PASSWORD_KEPT_FOR_SESSION = 'Kept until you close Dokseo.';
+
+const PASSWORD_KEPT_ON_DEVICE = 'Kept on this device, encrypted, until you forget it.';
+
+function passwordHint(remember: boolean): string {
+  return remember ? PASSWORD_KEPT_ON_DEVICE : PASSWORD_KEPT_FOR_SESSION;
+}
+
 function urlProblemText(problem: RootUrlProblem): string {
   return match(problem)
     .with('unparseable', () => 'Enter a full address, such as https://calibre.example/opds.')
@@ -213,10 +230,11 @@ function catalogHost(rootUrl: string): string {
   return URL.canParse(rootUrl) ? new URL(rootUrl).host : rootUrl;
 }
 
-function catalogDescription(catalog: Catalog): string {
+function catalogDescription(catalog: Catalog, remembered: boolean): string {
   const host = catalogHost(catalog.rootUrl);
   if (catalog.auth.kind === 'none') return host;
-  return `${host} · ${catalog.auth.username} · ${PASSWORD_ASKED_EACH_SESSION}`;
+  const password = remembered ? PASSWORD_REMEMBERED : PASSWORD_ASKED_EACH_SESSION;
+  return `${host} · ${catalog.auth.username} · ${password}`;
 }
 
 export {
@@ -232,9 +250,14 @@ export {
   downloadFailureText,
   feedProblemText,
   needsPickText,
+  passwordHint,
   updateFailureText,
   FIX_FIELDS_TEXT,
   PASSWORD_ASKED_EACH_SESSION,
+  PASSWORD_REMEMBERED,
+  REMEMBER_PASSWORD_HINT,
+  REMEMBER_PASSWORD_LABEL,
+  REMEMBER_PASSWORD_WARNING,
   catalogDescription,
   catalogHost,
   connectionOutcome,

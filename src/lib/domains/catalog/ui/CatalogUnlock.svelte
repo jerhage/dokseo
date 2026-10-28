@@ -9,10 +9,11 @@
   type Props = {
     readonly catalog: Catalog;
     readonly refused: boolean;
-    readonly onunlock: (password: string) => void;
+    readonly remembered: boolean;
+    readonly onunlock: (password: string, remember: boolean) => void;
   };
 
-  let { catalog, refused, onunlock }: Props = $props();
+  let { catalog, refused, remembered, onunlock }: Props = $props();
 
   const unlock = createUnlock();
 </script>
@@ -23,5 +24,11 @@
   {/snippet}
 </EmptyState>
 {#if unlock.prompt.kind === 'asking'}
-  <CatalogPasswordModal {catalog} {refused} {onunlock} ondismiss={() => unlock.dismiss()} />
+  <CatalogPasswordModal
+    {catalog}
+    {refused}
+    {remembered}
+    {onunlock}
+    ondismiss={() => unlock.dismiss()}
+  />
 {/if}
