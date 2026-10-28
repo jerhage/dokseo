@@ -90,7 +90,7 @@
             {...control}
             name="username"
             type="text"
-            autocomplete="off"
+            autocomplete="username"
             disabled={view.saving}
             bind:value={view.username}
           />
@@ -103,7 +103,7 @@
             {...control}
             name="password"
             type="password"
-            autocomplete="off"
+            autocomplete="current-password"
             disabled={view.saving}
             bind:value={view.password}
           />
