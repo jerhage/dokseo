@@ -107,6 +107,15 @@ const CATALOG_ORIGINS_DATABASE: DatabaseLayout = {
   },
 };
 
+const CATALOG_PASSWORDS_DATABASE: DatabaseLayout = {
+  name: 'catalog-passwords',
+  version: 1,
+  stores: {
+    keys: { options: undefined, indexes: {} },
+    passwords: { options: { keyPath: 'catalogId' }, indexes: {} },
+  },
+};
+
 const SYNC_DATABASE: DatabaseLayout = {
   name: 'sync',
   version: 3,
@@ -117,5 +126,12 @@ const SYNC_DATABASE: DatabaseLayout = {
   },
 };
 
-export { CATALOG_ORIGINS_DATABASE, READER_DATABASE, RECOGNITION_DATABASE, SYNC_DATABASE, layoutOf };
+export {
+  CATALOG_ORIGINS_DATABASE,
+  CATALOG_PASSWORDS_DATABASE,
+  READER_DATABASE,
+  RECOGNITION_DATABASE,
+  SYNC_DATABASE,
+  layoutOf,
+};
 export type { DatabaseLayout, OpenedDatabase, Upgrade };

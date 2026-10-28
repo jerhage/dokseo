@@ -87,7 +87,7 @@ function loadSyncServer(): Promise<SyncServer> {
 function buildSync(
   shelf: LibraryRepository,
   captures: CaptureRepository,
-  catalog: Pick<CatalogUseCases, 'downloadPublication'>,
+  catalog: Pick<CatalogUseCases, 'downloadPublication' | 'forgetCatalogPassword'>,
 ): SyncUseCases {
   const state = createSyncStateStore();
   const catalogs = createCatalogOriginsRepository();
@@ -116,7 +116,7 @@ function buildSync(
     ...deps,
     shelf: { repository: createLibraryRepository('unmarked'), now: Date.now },
     captures: { captures: createCaptureRepository('unmarked') },
-    catalogs: { catalogs: unmarkedCatalogs },
+    catalogs: { catalogs: unmarkedCatalogs, forgetPassword: catalog.forgetCatalogPassword },
     held: createHeldChangeStore(),
     tried: createTriedDownloadStore(),
   };

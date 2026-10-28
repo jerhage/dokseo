@@ -2,6 +2,7 @@ import { newCatalogId } from '$lib/shared/ids';
 import type { CatalogId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { SessionCatalogPasswords } from '../domains/catalog/adapters/session-catalog-passwords';
+import { createIndexedDbRememberedPasswords } from '../domains/catalog/adapters/indexeddb-remembered-passwords';
 import { createCatalogOriginsRepository } from '../domains/catalog/adapters/indexeddb-catalog-origins.repo';
 import { catalogSourceFor } from './catalog-sources';
 import type { BookOrigin } from '../domains/catalog/domain/book-origin';
@@ -31,12 +32,16 @@ import { findOrigin } from '../domains/catalog/use-cases/find-origin';
 import type { FindOriginResult } from '../domains/catalog/use-cases/find-origin';
 import { forgetDanglingOrigins } from '../domains/catalog/use-cases/forget-dangling-origins';
 import type { ForgetDanglingOriginsResult } from '../domains/catalog/use-cases/forget-dangling-origins';
+import { forgetCatalogPassword } from '../domains/catalog/use-cases/forget-catalog-password';
+import type { ForgetCatalogPasswordResult } from '../domains/catalog/use-cases/forget-catalog-password';
 import { forgetOrigin } from '../domains/catalog/use-cases/forget-origin';
 import type { ForgetOriginResult } from '../domains/catalog/use-cases/forget-origin';
 import { heldOrigins } from '../domains/catalog/use-cases/held-origins';
 import type { HeldOriginsResult, ReadBook } from '../domains/catalog/use-cases/held-origins';
 import { listCatalogOrigins } from '../domains/catalog/use-cases/list-catalog-origins';
 import type { ListCatalogOriginsResult } from '../domains/catalog/use-cases/list-catalog-origins';
+import { listRememberedPasswords } from '../domains/catalog/use-cases/list-remembered-passwords';
+import type { ListRememberedPasswordsResult } from '../domains/catalog/use-cases/list-remembered-passwords';
 import { listOrigins } from '../domains/catalog/use-cases/list-origins';
 import type { ListOriginsResult } from '../domains/catalog/use-cases/list-origins';
 import { listCatalogs } from '../domains/catalog/use-cases/list-catalogs';
@@ -68,7 +73,13 @@ type CatalogUseCases = {
     password: string | null,
     signal?: AbortSignal,
   ) => Promise<TestCatalogConnectionResult>;
-  readonly unlockCatalog: (id: CatalogId, password: string) => UnlockCatalogResult;
+  readonly unlockCatalog: (
+    id: CatalogId,
+    password: string,
+    remember: boolean,
+  ) => Promise<UnlockCatalogResult>;
+  readonly forgetCatalogPassword: (id: CatalogId) => Promise<ForgetCatalogPasswordResult>;
+  readonly listRememberedPasswords: () => Promise<ListRememberedPasswordsResult>;
   readonly browseCatalog: (
     id: CatalogId,
     address: FeedAddress | null,
@@ -119,13 +130,15 @@ function buildCatalog(library: CatalogLibrary): CatalogUseCases {
   const catalogs = repository;
   const origins = repository;
   const passwords = new SessionCatalogPasswords();
+  const remembered = createIndexedDbRememberedPasswords();
   const sourceFor = catalogSourceFor;
-  const access = { catalogs, passwords, sourceFor };
+  const access = { catalogs, passwords, remembered, sourceFor };
 
   return {
     addCatalog: (draft: CatalogDraft) => addCatalog({ catalogs, newId: newCatalogId }, draft),
     editCatalog: (id: CatalogId, draft: CatalogDraft) => editCatalog({ catalogs }, id, draft),
-    removeCatalog: (id: CatalogId) => removeCatalog({ catalogs, origins, passwords }, id),
+    removeCatalog: (id: CatalogId) =>
+      removeCatalog({ catalogs, origins, passwords, remembered }, id),
     listCatalogs: () => listCatalogs({ catalogs }),
     recordOrigin: (origin: BookOrigin) => recordOrigin({ origins }, origin),
     listCatalogOrigins: (id: CatalogId) => listCatalogOrigins({ origins }, id),
@@ -133,7 +146,10 @@ function buildCatalog(library: CatalogLibrary): CatalogUseCases {
     findOrigin: (id: CatalogId, entryId: string) => findOrigin({ origins }, id, entryId),
     testCatalogConnection: (draft, password, signal) =>
       testCatalogConnection({ sourceFor }, draft, password, signal),
-    unlockCatalog: (id: CatalogId, password: string) => unlockCatalog({ passwords }, id, password),
+    unlockCatalog: (id: CatalogId, password: string, remember: boolean) =>
+      unlockCatalog({ passwords, remembered }, id, password, remember),
+    forgetCatalogPassword: (id: CatalogId) => forgetCatalogPassword({ passwords, remembered }, id),
+    listRememberedPasswords: () => listRememberedPasswords({ remembered }),
     browseCatalog: (id, address, path, signal) => browseCatalog(access, id, address, path, signal),
     searchCatalog: (id, search, query, path, signal) =>
       searchCatalog(access, id, search, query, path, signal),

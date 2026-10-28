@@ -303,7 +303,10 @@ function world(start: {
       tried: triedStore,
       shelf: { repository: shelf, now: () => 99 },
       captures: { captures: captureRepository },
-      catalogs: { catalogs: catalogRepository },
+      catalogs: {
+        catalogs: catalogRepository,
+        forgetPassword: () => Promise.resolve({ kind: 'success' } as const),
+      },
       origins: { origins: catalogRepository },
       tags: { tags: { list: notUsed, save: notUsed, remove: notUsed } },
       now: () => 1234,

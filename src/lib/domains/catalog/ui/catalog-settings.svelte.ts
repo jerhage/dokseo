@@ -25,7 +25,11 @@ import { connectionOutcome, fieldRefusal } from './catalog-texts';
 import type { ConnectionOutcome, FormField } from './catalog-texts';
 
 type CatalogSettingsUseCases = CatalogWrites & {
-  readonly unlockCatalog: (id: CatalogId, password: string) => UnlockCatalogResult;
+  readonly unlockCatalog: (
+    id: CatalogId,
+    password: string,
+    remember: boolean,
+  ) => Promise<UnlockCatalogResult>;
 };
 
 type AuthChoice = 'none' | 'basic';
@@ -226,7 +230,7 @@ class CatalogSettingsView {
     match(result)
       .with({ kind: 'success' }, ({ catalog }) => {
         if (catalog.auth.kind === 'basic' && this.password.length > 0) {
-          this.#cases.unlockCatalog(catalog.id, this.password);
+          void this.#cases.unlockCatalog(catalog.id, this.password, false);
         }
         this.closeForm();
       })

@@ -8,7 +8,11 @@
 
   type Props = {
     readonly catalog: Pick<CatalogReads, 'listCatalogs'> & {
-      readonly unlockCatalog: (id: CatalogId, password: string) => UnlockCatalogResult;
+      readonly unlockCatalog: (
+        id: CatalogId,
+        password: string,
+        remember: boolean,
+      ) => Promise<UnlockCatalogResult>;
     };
     readonly catalogId: CatalogId;
     readonly refused: boolean;
@@ -27,7 +31,7 @@
         catalog={found}
         {refused}
         onunlock={(password) => {
-          catalog.unlockCatalog(catalogId, password);
+          void catalog.unlockCatalog(catalogId, password, false);
           onunlocked();
         }}
         {ondismiss}
