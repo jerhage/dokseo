@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.0](https://github.com/jerhage/dokseo/compare/v1.4.0...v1.5.0) (2026-10-28)
+
+
+### Features
+
+* **catalog:** keep a remembered catalog password encrypted on this device and use it when the session has none ([23588ca](https://github.com/jerhage/dokseo/commit/23588ca7e6b48226d7fc36b3abdf80b5e1dd8407))
+* **catalog:** let a password manager fill a catalog's username and password ([c2e9931](https://github.com/jerhage/dokseo/commit/c2e9931115320eacfd2e624ba1cad41360cc518f))
+* **catalog:** offer to remember a catalog's password on this device, with a personal-device warning and a Forget password action ([1bb9545](https://github.com/jerhage/dokseo/commit/1bb954577e6ed282ffbd7418bbbcc3330aa7a5cf))
+
 ## [1.4.0](https://github.com/jerhage/dokseo/compare/v1.3.0...v1.4.0) (2026-10-27)
 
 
