@@ -9,7 +9,7 @@ const STORAGE_SECTIONS = {
   persist: 'Asking for persistence',
   homeScreen: 'The home-screen app on iOS',
   map: 'Where Dokseo keeps each kind of data',
-  databases: "Dokseo's five databases",
+  databases: "Dokseo's six databases",
   books: 'Book files and the writer worker',
   cache: 'Model weights and the app shell',
   preferences: 'Preferences in localStorage',

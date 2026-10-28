@@ -14,6 +14,7 @@ const REMOTE_SECTIONS = {
   update: 'Replacing a held book',
   series: 'Series: flat for now',
   credentials: 'Passwords',
+  remembering: 'Remembering a password',
   proxy: 'Setting up a proxy',
   open: 'What is not built',
 } as const;

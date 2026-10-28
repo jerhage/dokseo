@@ -20,6 +20,8 @@ describe('the stored layout on the page', () => {
       'catalog-origins v2 origins',
       'catalog-origins v2 outbox',
       'catalog-origins v2 record-versions',
+      'catalog-passwords v1 keys',
+      'catalog-passwords v1 passwords',
       'sync v3 settings',
       'sync v3 held-changes',
       'sync v3 tried-downloads',
@@ -33,6 +35,11 @@ describe('the stored layout on the page', () => {
   it('marks the sync held-changes and tried-downloads stores as outside the compatibility promise', () => {
     expect(STORE_ROWS.find((row) => row.store === 'held-changes')?.coverage).toBe('outside');
     expect(STORE_ROWS.find((row) => row.store === 'tried-downloads')?.coverage).toBe('outside');
+  });
+
+  it('marks the catalog password stores as outside the compatibility promise', () => {
+    expect(STORE_ROWS.find((row) => row.store === 'passwords')?.coverage).toBe('outside');
+    expect(STORE_ROWS.find((row) => row.store === 'keys')?.coverage).toBe('outside');
   });
 
   it('names a compound index by both of its key paths and marks it unique', () => {

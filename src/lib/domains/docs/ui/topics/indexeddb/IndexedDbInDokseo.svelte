@@ -55,9 +55,9 @@
 
 <DocsSection title={INDEXEDDB_SECTIONS.databases}>
   <p>
-    Dokseo keeps its records in five databases, one per domain that stores records, so a change to
+    Dokseo keeps its records in six databases, one per domain that stores records, so a change to
     one domain's layout never bumps another's version.
-    <a href={STORAGE_DATABASES_HREF}>Dokseo's five databases</a> says what each store holds; this table
+    <a href={STORAGE_DATABASES_HREF}>Dokseo's six databases</a> says what each store holds; this table
     shows how each one is keyed and indexed.
   </p>
   <Table size="sm" caption="Every store and index, as the upgrade functions create them">
@@ -202,7 +202,7 @@
   <p>
     Dokseo can be open in more than one tab, and after a release one tab can run the new build while
     another still runs the old one. The steps of that case are in
-    <a href={STORAGE_DATABASES_HREF}>Dokseo's five databases</a>. The two halves in
+    <a href={STORAGE_DATABASES_HREF}>Dokseo's six databases</a>. The two halves in
     <code>connection.ts</code>
     are short. The holding side closes its connection on <code>versionchange</code> and marks it retired,
     so the next helper call opens a fresh connection:

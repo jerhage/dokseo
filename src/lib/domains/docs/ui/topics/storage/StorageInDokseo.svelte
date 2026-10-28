@@ -16,6 +16,7 @@
   import { BLOCKED_PATIENCE_MS } from '$lib/platform/idb/connection';
   import {
     CATALOG_ORIGINS_DATABASE,
+    CATALOG_PASSWORDS_DATABASE,
     READER_DATABASE,
     RECOGNITION_DATABASE,
     SYNC_DATABASE,
@@ -93,6 +94,19 @@
       key: 'bookId, indexed by catalogId and by catalog and entry',
       holds:
         "Where a downloaded book came from, one row per book. A catalog's feeds are never copied here",
+    },
+    {
+      database: `${CATALOG_PASSWORDS_DATABASE.name} v${CATALOG_PASSWORDS_DATABASE.version}`,
+      store: 'passwords',
+      key: 'catalogId',
+      holds:
+        'A catalog password the reader chose to remember on this device, encrypted with AES-GCM. It never syncs and is not in the export file',
+    },
+    {
+      database: `${CATALOG_PASSWORDS_DATABASE.name} v${CATALOG_PASSWORDS_DATABASE.version}`,
+      store: 'keys',
+      key: 'a fixed name',
+      holds: 'The non-extractable WebCrypto key that encrypts those passwords',
     },
     {
       database: `${SYNC_DATABASE.name} v${SYNC_DATABASE.version}`,

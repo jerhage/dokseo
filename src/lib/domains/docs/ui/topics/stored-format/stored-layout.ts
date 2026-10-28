@@ -4,6 +4,7 @@ import { isStoredFields, isText } from '$lib/shared/corrupt-row';
 import GOLDEN_FILE from '$lib/shared/testing/stored-format/captures-v1.golden.json';
 import {
   CATALOG_ORIGINS_DATABASE,
+  CATALOG_PASSWORDS_DATABASE,
   READER_DATABASE,
   RECOGNITION_DATABASE,
   SYNC_DATABASE,
@@ -28,6 +29,8 @@ type GoldenCount = {
 };
 
 const STORE_ONLY_ROWS = new Set(['model-consent', 'recognizer-setup']);
+
+const DEVICE_ONLY_STORES = new Set(['keys', 'passwords']);
 
 const SYNC_BOOKKEEPING_STORES = new Set([
   OUTBOX_STORE,
@@ -65,7 +68,7 @@ function indexText(name: string, keyPath: unknown, options: unknown): string {
 }
 
 function coverageOf(store: string): Coverage {
-  if (SYNC_BOOKKEEPING_STORES.has(store)) return 'outside';
+  if (SYNC_BOOKKEEPING_STORES.has(store) || DEVICE_ONLY_STORES.has(store)) return 'outside';
   return STORE_ONLY_ROWS.has(store) ? 'store only' : 'rows';
 }
 
@@ -87,6 +90,7 @@ const STORE_ROWS: readonly StoreRow[] = [
   ...storeRows(RECOGNITION_DATABASE),
   FLOWING_STORE,
   ...storeRows(CATALOG_ORIGINS_DATABASE),
+  ...storeRows(CATALOG_PASSWORDS_DATABASE),
   ...storeRows(SYNC_DATABASE),
 ];
 
