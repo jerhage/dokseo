@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useQueryClient } from '@tanstack/svelte-query';
   import { tick, untrack } from 'svelte';
   import type { Catalog } from '../domain/catalog';
   import type { BookOriginLink } from '../domain/remote-item';
@@ -16,6 +17,8 @@
   import CatalogMore from './CatalogMore.svelte';
   import CatalogPublications from './CatalogPublications.svelte';
   import CatalogUnlock from './CatalogUnlock.svelte';
+  import RememberedData from './RememberedData.svelte';
+  import { unlockCatalogNow } from './unlock-catalog-now';
 
   type Props = {
     readonly catalog: Catalog;
@@ -27,6 +30,7 @@
   let { catalog, placeId, downloads, held }: Props = $props();
 
   const deps = useCatalogDeps();
+  const client = useQueryClient();
 
   const { session, navigation } = deps;
   const here = untrack(() => placeId);
@@ -58,14 +62,19 @@
       onretry={() => void navigation.resolveFirstPage(here)}
     >
       {#snippet locked(lock, retry)}
-        <CatalogUnlock
-          {catalog}
-          refused={lock.refused}
-          onunlock={(password) => {
-            void deps.cases.unlockCatalog(catalog.id, password, false);
-            retry();
-          }}
-        />
+        <RememberedData catalog={deps.cases}>
+          {#snippet children(remembered)}
+            <CatalogUnlock
+              {catalog}
+              refused={lock.refused}
+              remembered={remembered.has(catalog.id)}
+              onunlock={(password, remember) => {
+                void unlockCatalogNow(deps.cases, client, catalog.id, password, remember);
+                retry();
+              }}
+            />
+          {/snippet}
+        </RememberedData>
       {/snippet}
       {#snippet children(feed)}
         {@const listing = listingOf(feed.items)}

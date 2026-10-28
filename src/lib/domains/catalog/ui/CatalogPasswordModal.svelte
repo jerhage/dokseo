@@ -1,31 +1,41 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import Alert from '$lib/ui/components/Alert.svelte';
   import Button from '$lib/ui/components/Button.svelte';
+  import Checkbox from '$lib/ui/components/Checkbox.svelte';
   import Field from '$lib/ui/components/Field.svelte';
   import Input from '$lib/ui/components/Input.svelte';
   import Modal from '$lib/ui/components/Modal.svelte';
   import type { Catalog } from '../domain/catalog';
-  import { UNAUTHORIZED_TEXT } from './catalog-texts';
+  import {
+    REMEMBER_PASSWORD_HINT,
+    REMEMBER_PASSWORD_LABEL,
+    REMEMBER_PASSWORD_WARNING,
+    UNAUTHORIZED_TEXT,
+    passwordHint,
+  } from './catalog-texts';
 
   type Props = {
     readonly catalog: Catalog;
     readonly refused: boolean;
-    readonly onunlock: (password: string) => void;
+    readonly remembered: boolean;
+    readonly onunlock: (password: string, remember: boolean) => void;
     readonly ondismiss: () => void;
   };
 
-  let { catalog, refused, onunlock, ondismiss }: Props = $props();
+  let { catalog, refused, remembered, onunlock, ondismiss }: Props = $props();
 
   const uid = $props.id();
   const formId = `${uid}-form`;
 
   let open = $state(true);
   let password = $state('');
+  let remember = $state(untrack(() => remembered));
 
   function submit(event: SubmitEvent): void {
     event.preventDefault();
     if (password === '') return;
-    onunlock(password);
+    onunlock(password, remember);
   }
 </script>
 
@@ -49,7 +59,7 @@
         {/snippet}
       </Field>
     {/if}
-    <Field label="Password" hint="Kept until you close Dokseo. It is never saved.">
+    <Field label="Password" hint={passwordHint(remember)}>
       {#snippet children(control)}
         <Input
           {...control}
@@ -60,6 +70,12 @@
         />
       {/snippet}
     </Field>
+    <Checkbox bind:checked={remember} hint={REMEMBER_PASSWORD_HINT}>
+      {REMEMBER_PASSWORD_LABEL}
+    </Checkbox>
+    {#if remember}
+      <Alert variant="warning">{REMEMBER_PASSWORD_WARNING}</Alert>
+    {/if}
   </form>
 
   {#snippet footer(close)}

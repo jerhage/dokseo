@@ -4,6 +4,7 @@ import type { ReadState } from '$lib/shared/read-state';
 import type { Catalog } from '../domain/catalog';
 import type { ListCatalogsResult } from '../use-cases/list-catalogs';
 import type { ListOriginsResult } from '../use-cases/list-origins';
+import type { ListRememberedPasswordsResult } from '../use-cases/list-remembered-passwords';
 
 type CatalogListState =
   | {
@@ -59,5 +60,15 @@ function listedOrigins(state: ReadState<OriginsListing>): OriginsListed {
   };
 }
 
-export { catalogListOf, listedCatalogs, listedOrigins };
+const NO_REMEMBERED: ReadonlySet<CatalogId> = new Set();
+
+function rememberedIdsOf(
+  state: ReadState<ListRememberedPasswordsResult>,
+): ReadonlySet<CatalogId> | null {
+  if (state.kind === 'loading') return null;
+  if (state.kind === 'failed') return NO_REMEMBERED;
+  return state.value.kind === 'success' ? state.value.ids : NO_REMEMBERED;
+}
+
+export { catalogListOf, listedCatalogs, listedOrigins, rememberedIdsOf };
 export type { CatalogListState, OriginsListed, OriginsListing };

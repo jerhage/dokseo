@@ -1,7 +1,9 @@
 import type { BookId, CatalogId } from '$lib/shared/ids';
 import type { CoverReads, FeedReads, HeldReads } from '../queries/catalog-feed-queries';
 import type { RemotePublication } from '../domain/remote-publication';
+import type { ForgetCatalogPasswordResult } from '../use-cases/forget-catalog-password';
 import type { ForgetDanglingOriginsResult } from '../use-cases/forget-dangling-origins';
+import type { ListRememberedPasswordsResult } from '../use-cases/list-remembered-passwords';
 import type { UnlockCatalogResult } from '../use-cases/unlock-catalog';
 import type { DownloadsChoices, DownloadsUseCases } from './catalog-downloads.svelte';
 import type { CatalogSession } from './catalog-session.svelte';
@@ -20,6 +22,8 @@ type CatalogUseCases = DownloadsUseCases &
       password: string,
       remember: boolean,
     ) => Promise<UnlockCatalogResult>;
+    readonly forgetCatalogPassword: (id: CatalogId) => Promise<ForgetCatalogPasswordResult>;
+    readonly listRememberedPasswords: () => Promise<ListRememberedPasswordsResult>;
     readonly forgetDanglingOrigins: (id: CatalogId) => Promise<ForgetDanglingOriginsResult>;
   };
 

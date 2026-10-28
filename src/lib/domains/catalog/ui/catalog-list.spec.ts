@@ -3,7 +3,7 @@ import { bookId, catalogId } from '$lib/shared/ids';
 import { LOADING, readFailed, readReady } from '$lib/shared/read-state';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { BookOrigin } from '../domain/book-origin';
-import { catalogListOf, listedCatalogs, listedOrigins } from './catalog-list';
+import { catalogListOf, listedCatalogs, listedOrigins, rememberedIdsOf } from './catalog-list';
 import { ARCHIVE, HOME } from './catalog-ui-fixtures';
 
 function origin(book: string, owner: BookOrigin['catalogId']): BookOrigin {
@@ -86,5 +86,22 @@ describe('listedOrigins', () => {
   it('lists nothing while reading or after a failed read', () => {
     expect(listedOrigins(LOADING)).toEqual({ catalogs: [], owners: new Map() });
     expect(listedOrigins(readFailed('denied'))).toEqual({ catalogs: [], owners: new Map() });
+  });
+});
+
+describe('rememberedIdsOf', () => {
+  it('waits while the listing loads', () => {
+    expect(rememberedIdsOf(LOADING)).toBeNull();
+  });
+
+  it('reads nothing remembered when the listing failed or storage is unavailable', () => {
+    expect(rememberedIdsOf(readFailed('boom'))?.size).toBe(0);
+    expect(rememberedIdsOf(readReady(STORAGE_UNAVAILABLE))?.size).toBe(0);
+  });
+
+  it('lists the remembered catalog ids', () => {
+    const ids = new Set([catalogId('home')]);
+
+    expect(rememberedIdsOf(readReady({ kind: 'success', ids }))).toBe(ids);
   });
 });
