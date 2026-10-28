@@ -34,13 +34,28 @@
     {#if refused}
       <Alert variant="warning" aria-live="polite">{UNAUTHORIZED_TEXT}</Alert>
     {/if}
+    {#if catalog.auth.kind === 'basic'}
+      {@const username = catalog.auth.username}
+      <Field label="Username">
+        {#snippet children(control)}
+          <Input
+            {...control}
+            name="username"
+            type="text"
+            autocomplete="username"
+            readonly
+            value={username}
+          />
+        {/snippet}
+      </Field>
+    {/if}
     <Field label="Password" hint="Kept until you close Dokseo. It is never saved.">
       {#snippet children(control)}
         <Input
           {...control}
           name="password"
           type="password"
-          autocomplete="off"
+          autocomplete="current-password"
           bind:value={password}
         />
       {/snippet}
