@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.1](https://github.com/jerhage/dokseo/compare/v1.5.0...v1.5.1) (2026-10-29)
+
+
+### Fixes
+
+* **catalog:** mark a book changed when a download records its origin, so the origin reaches the other devices ([1488bdf](https://github.com/jerhage/dokseo/commit/1488bdfb024316cc559e01f2528d5d618e248d86))
+* **catalog:** refresh the catalogs and their origins after a sync downloads a book, so the from-catalog pill appears without a reload ([6105aa6](https://github.com/jerhage/dokseo/commit/6105aa650bac2495d637918f93ca9f24ea106cd9))
+* **sync:** record the catalog origin a book change carries when the book is already on this device, keeping an origin this device recorded itself ([50fe6d2](https://github.com/jerhage/dokseo/commit/50fe6d2d4bfb3f4048ce8fa63d21b70bfbcab7f3))
+
 ## [1.5.0](https://github.com/jerhage/dokseo/compare/v1.4.0...v1.5.0) (2026-10-28)
 
 
