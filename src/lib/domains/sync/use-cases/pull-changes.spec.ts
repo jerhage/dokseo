@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Catalog } from '$lib/domains/catalog/domain/catalog';
 import type { CatalogRepository } from '$lib/domains/catalog/domain/catalog-repository';
+import type { BookOrigin } from '$lib/domains/catalog/domain/book-origin';
 import type { OriginRepository } from '$lib/domains/catalog/domain/origin-repository';
 import { applyEdit } from '$lib/domains/library/domain/book/book';
 import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/reading-defaults';
@@ -14,6 +15,7 @@ import { changeMarker } from '$lib/shared/change-marker';
 import type { AcceptedVersion, ChangeMarker, RecordVersion } from '$lib/shared/change-marker';
 import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, catalogId, contentHash, imageIndex, tagId } from '$lib/shared/ids';
+import type { BookId } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { Change, ChangeData, StoredChange, SyncKind } from '../domain/change';
@@ -135,6 +137,7 @@ function world(start: {
   captures?: readonly Capture[];
   tags?: readonly Tag[];
   catalogs?: readonly Catalog[];
+  origins?: readonly BookOrigin[];
   autoDownload?: boolean;
   tried?: readonly string[];
   download?: DownloadPublication;
@@ -144,6 +147,9 @@ function world(start: {
   const captures = new Map((start.captures ?? []).map((capture) => [capture.id, capture]));
   const tags = new Map((start.tags ?? []).map((tag) => [tag.id, tag]));
   const catalogs = new Map((start.catalogs ?? []).map((catalog) => [catalog.id, catalog]));
+  const originRows = new Map<BookId, BookOrigin>(
+    (start.origins ?? []).map((origin) => [origin.bookId, origin]),
+  );
   const clearedOrigins: string[] = [];
   const markers = new Map<string, ChangeMarker>();
   const versions = new Map<string, RecordVersion>();
@@ -255,10 +261,15 @@ function world(start: {
     get: (id) => Promise.resolve({ kind: 'success', catalog: catalogs.get(id) ?? null } as const),
     save: notUsed,
     remove: notUsed,
-    put: notUsed,
+    put: (origin) => {
+      originRows.set(origin.bookId, origin);
+      return success();
+    },
     listAll: notUsed,
     listByCatalog: notUsed,
     find: notUsed,
+    findByBook: (id) =>
+      Promise.resolve({ kind: 'success', origin: originRows.get(id) ?? null } as const),
     deleteByBook: notUsed,
     deleteByCatalog: notUsed,
   };
@@ -320,6 +331,7 @@ function world(start: {
     tags,
     catalogs,
     clearedOrigins,
+    originRows,
     markers,
     versions,
     held,
@@ -602,6 +614,17 @@ const CHOICES = { matching: 'content', defaults: INITIAL_READING_DEFAULTS } as c
 
 const OTHER_HASH = contentHash('fedcba9876543210fedcba9876543210');
 
+const LOCAL_ORIGIN: BookOrigin = {
+  bookId: BOOK.id,
+  catalogId: CATALOG_ID,
+  entryId: 'urn:uuid:downloaded-here',
+  acquisition: { href: '/get/here.cbz', format: 'cbz', mediaType: 'x', length: null },
+  updated: '2026-03-01T10:00:00Z',
+  feedPath: [],
+  feedPosition: 0,
+  downloadedAt: 42,
+};
+
 function hold(
   source: ReturnType<typeof world>,
   data: ChangeData,
@@ -650,6 +673,31 @@ describe('listRemoteBooks', () => {
 
     expect(await listRemoteBooks(source.deps)).toEqual({ kind: 'success', books: [] });
     expect(source.held.size).toBe(0);
+  });
+
+  it('records the origin of a book this device already holds', async () => {
+    const source = world({ catalogs: [CATALOG] });
+    await hold(source, BOOK_DATA_WITH_ORIGIN);
+
+    source.arrive(BOOK);
+    await applyHeldChanges(source.deps);
+
+    expect(source.originRows.get(BOOK.id)).toMatchObject({
+      bookId: BOOK.id,
+      catalogId: CATALOG_ID,
+      entryId: 'urn:uuid:5d1c',
+      feedPosition: 3,
+    });
+  });
+
+  it('keeps the origin this device recorded when it downloaded the book itself', async () => {
+    const source = world({ catalogs: [CATALOG], origins: [LOCAL_ORIGIN] });
+    await hold(source, BOOK_DATA_WITH_ORIGIN);
+
+    source.arrive(BOOK);
+    await applyHeldChanges(source.deps);
+
+    expect(source.originRows.get(BOOK.id)).toEqual(LOCAL_ORIGIN);
   });
 
   it('drops a book once this device holds the same file and held changes are applied', async () => {

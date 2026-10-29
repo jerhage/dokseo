@@ -20,6 +20,7 @@ import { removeCatalog } from './remove-catalog';
 import { forgetCatalogPassword } from './forget-catalog-password';
 import { listRememberedPasswords } from './list-remembered-passwords';
 import { applyRemoteCatalogRemoval } from './apply-remote-catalog-removal';
+import { applyRemoteOrigin } from './apply-remote-origin';
 import { unlockCatalog } from './unlock-catalog';
 
 type Fault = 'none' | 'unavailable' | 'unreadable';
@@ -104,6 +105,13 @@ function fakes(fault: Fault = 'none') {
         origin:
           originRows.find((found) => found.catalogId === id && found.entryId === entry) ?? null,
       }),
+    findByBook: (id) => {
+      if (fault === 'unavailable') return Promise.resolve(STORAGE_UNAVAILABLE);
+      return Promise.resolve({
+        kind: 'success',
+        origin: originRows.find((found) => found.bookId === id) ?? null,
+      });
+    },
     deleteByBook: () => Promise.resolve({ kind: 'success' }),
     deleteByCatalog: (id) => {
       log.push(`clear ${id}`);
@@ -328,6 +336,38 @@ describe('recordOrigin', () => {
     expect(await recordOrigin({ origins }, origin('book-1', CALIBRE, 'a'))).toEqual(
       STORAGE_UNAVAILABLE,
     );
+  });
+});
+
+describe('applyRemoteOrigin', () => {
+  it('records an origin the device holds no origin for', async () => {
+    const { origins, originRows } = fakes();
+    const arrived = origin('book-1', CALIBRE, 'a');
+
+    const applied = await applyRemoteOrigin({ origins }, arrived);
+
+    expect(applied).toEqual({ kind: 'success', recorded: true });
+    expect(originRows).toEqual([arrived]);
+  });
+
+  it('keeps the origin the device recorded when it downloaded the book itself', async () => {
+    const { origins, originRows } = fakes();
+    const mine = origin('book-1', CALIBRE, 'a');
+    await recordOrigin({ origins }, mine);
+
+    const applied = await applyRemoteOrigin({ origins }, origin('book-1', OTHER, 'b'));
+
+    expect(applied).toEqual({ kind: 'success', recorded: false });
+    expect(originRows).toEqual([mine]);
+  });
+
+  it('answers storage unavailable without writing', async () => {
+    const { origins, originRows } = fakes('unavailable');
+
+    const applied = await applyRemoteOrigin({ origins }, origin('book-1', CALIBRE, 'a'));
+
+    expect(applied).toEqual(STORAGE_UNAVAILABLE);
+    expect(originRows).toEqual([]);
   });
 });
 

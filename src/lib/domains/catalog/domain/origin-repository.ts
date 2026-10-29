@@ -23,6 +23,7 @@ interface OriginRepository {
   listAll(): Promise<OriginListing>;
   listByCatalog(catalogId: CatalogId): Promise<OriginListing>;
   find(catalogId: CatalogId, entryId: string): Promise<OriginLookup>;
+  findByBook(bookId: BookId): Promise<OriginLookup>;
   deleteByBook(bookId: BookId): Promise<OriginWrite>;
   deleteByCatalog(catalogId: CatalogId): Promise<OriginWrite>;
 }

@@ -155,6 +155,7 @@ function setup(feed: ReadFeedResult = { kind: 'success', page: SHELF_FICTION_FEE
         origins: [...rows.values()].filter((found) => found.catalogId === id),
         unreadable: [],
       }),
+    findByBook: (id) => Promise.resolve({ kind: 'success', origin: rows.get(id) ?? null } as const),
     find: (id, entryId) =>
       Promise.resolve({
         kind: 'success',

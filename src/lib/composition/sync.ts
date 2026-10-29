@@ -117,16 +117,12 @@ function buildSync(
     shelf: { repository: createLibraryRepository('unmarked'), now: Date.now },
     captures: { captures: createCaptureRepository('unmarked') },
     catalogs: { catalogs: unmarkedCatalogs, forgetPassword: catalog.forgetCatalogPassword },
+    origins: { origins: unmarkedCatalogs },
     held: createHeldChangeStore(),
     tried: createTriedDownloadStore(),
   };
   const downloading = { ...applying, downloadPublication: catalog.downloadPublication };
-  const everything = {
-    ...downloading,
-    origins: { origins: unmarkedCatalogs },
-    tags: { tags },
-    now: Date.now,
-  };
+  const everything = { ...downloading, tags: { tags }, now: Date.now };
 
   return {
     connectSync: (serverUrl, username, password, deviceName) =>

@@ -212,6 +212,18 @@ function createCatalogOriginsRepository(
       });
     },
 
+    async findByBook(id: BookId): Promise<OriginLookup> {
+      return await unlessUnavailable(async (): Promise<OriginLookup> => {
+        const row = await getRecord<StoredOrigin>(await catalogOriginsDatabase(), ORIGIN_STORE, id);
+        if (row === undefined) return { kind: 'success', origin: null };
+        try {
+          return { kind: 'success', origin: originFromStored(row) };
+        } catch {
+          return { kind: 'unreadable', bookId: id };
+        }
+      });
+    },
+
     put(origin: BookOrigin): Promise<OriginWrite> {
       return unlessUnavailable(async (): Promise<OriginWrite> => {
         const db = await catalogOriginsDatabase();

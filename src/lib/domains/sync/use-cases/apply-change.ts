@@ -2,6 +2,8 @@ import { match } from 'ts-pattern';
 import { applyRemoteCatalog } from '$lib/domains/catalog/use-cases/apply-remote-catalog';
 import { applyRemoteCatalogRemoval } from '$lib/domains/catalog/use-cases/apply-remote-catalog-removal';
 import type { ApplyRemoteCatalogRemovalDeps } from '$lib/domains/catalog/use-cases/apply-remote-catalog-removal';
+import { applyRemoteOrigin } from '$lib/domains/catalog/use-cases/apply-remote-origin';
+import type { ApplyRemoteOriginDeps } from '$lib/domains/catalog/use-cases/apply-remote-origin';
 import { placeFitsLayout } from '$lib/domains/library/domain/book/book';
 import type { Book, BookEdit } from '$lib/domains/library/domain/book/book';
 import type { LibraryRepository } from '$lib/domains/library/domain/book/library-repository';
@@ -20,7 +22,7 @@ import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Change } from '../domain/change';
 import type { HeldChangeStore } from '../domain/held-changes';
 import { fromSyncBookData } from './book-data';
-import type { SyncedBook } from './book-data';
+import type { SyncedBook, SyncedOrigin } from './book-data';
 import { fromSyncCaptureData, placedCapture } from './capture-data';
 import { fromSyncCatalogData } from './catalog-data';
 import { fromSyncPositionData } from './position-data';
@@ -30,6 +32,7 @@ type ApplyDeps = {
   readonly shelf: { readonly repository: LibraryRepository; readonly now: () => number };
   readonly captures: { readonly captures: CaptureRepository };
   readonly catalogs: ApplyRemoteCatalogRemovalDeps;
+  readonly origins: ApplyRemoteOriginDeps;
   readonly held: HeldChangeStore;
 };
 
@@ -139,6 +142,16 @@ async function applyBookRemoval(
   return APPLIED;
 }
 
+async function keepOrigin(
+  deps: ApplyDeps,
+  local: Book,
+  origin: SyncedOrigin | null,
+): Promise<StorageUnavailable | null> {
+  if (origin === null) return null;
+  const recorded = await applyRemoteOrigin(deps.origins, { ...origin, bookId: local.id });
+  return recorded.kind === 'success' ? null : recorded;
+}
+
 async function applyBook(
   deps: ApplyDeps,
   books: BooksByHash,
@@ -149,6 +162,8 @@ async function applyBook(
   if (read.kind !== 'success') return UNREADABLE;
   const local = books.get(change.recordId);
   if (local === undefined) return NOT_READY;
+  const unavailable = await keepOrigin(deps, local, read.origin);
+  if (unavailable !== null) return unavailable;
   return editBook(deps, local, identityEdit(local, read.book), acceptedBy(change));
 }
 

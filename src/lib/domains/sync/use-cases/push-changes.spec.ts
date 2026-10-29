@@ -236,6 +236,7 @@ function world(held: {
     put: notUsed,
     listByCatalog: notUsed,
     find: notUsed,
+    findByBook: notUsed,
     deleteByBook: notUsed,
     deleteByCatalog: notUsed,
   };

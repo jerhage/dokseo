@@ -234,6 +234,32 @@ describe('createCatalogOriginsRepository', () => {
     });
   });
 
+  it('finds the origin of a book and answers null for a book with none', async () => {
+    const repository = createCatalogOriginsRepository();
+    const recorded = origin('book-1', 'calibre', 'urn:uuid:1');
+    await repository.put(recorded);
+
+    expect(await repository.findByBook(recorded.bookId)).toEqual({
+      kind: 'success',
+      origin: recorded,
+    });
+    expect(await repository.findByBook(bookId('book-2'))).toEqual({
+      kind: 'success',
+      origin: null,
+    });
+  });
+
+  it('reports a damaged origin row as unreadable when found by book', async () => {
+    const repository = createCatalogOriginsRepository();
+    await repository.put(origin('book-1', 'calibre', 'urn:uuid:1'));
+    store('origins').set('book-1', { bookId: 'book-1', catalogId: 'calibre' });
+
+    expect(await repository.findByBook(bookId('book-1'))).toEqual({
+      kind: 'unreadable',
+      bookId: 'book-1',
+    });
+  });
+
   it('replaces the origin of an entry when another book is recorded for it', async () => {
     const repository = createCatalogOriginsRepository();
     await repository.put(origin('book-1', 'calibre', 'urn:uuid:1'));
