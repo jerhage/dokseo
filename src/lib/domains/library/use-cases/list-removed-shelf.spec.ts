@@ -80,6 +80,7 @@ function repositoryWith(outcomes: Outcomes): LibraryRepository {
     update: notUsed,
     readSource: notUsed,
     readCover: notUsed,
+    markChanged: notUsed,
     storedBytes: notUsed,
   };
 }

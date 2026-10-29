@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { bookId, catalogId } from '$lib/shared/ids';
-import type { BookId } from '$lib/shared/ids';
+import { bookId, catalogId, contentHash } from '$lib/shared/ids';
+import type { BookId, ContentHash } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { fakePasswords } from './fake-passwords';
 import { fakeRememberedPasswords } from './fake-remembered-passwords';
@@ -179,6 +179,8 @@ function setup(feed: ReadFeedResult = { kind: 'success', page: SHELF_FICTION_FEE
       liveBooks.has(id) ? { kind: 'success', book: { id } as never } : { kind: 'not-found', id },
     );
 
+  const marked: ContentHash[] = [];
+
   return {
     sourceFor,
     protocols,
@@ -187,7 +189,12 @@ function setup(feed: ReadFeedResult = { kind: 'success', page: SHELF_FICTION_FEE
     passwords,
     remembered,
     readBook,
+    markBookChanged: (hash: ContentHash) => {
+      marked.push(hash);
+      return Promise.resolve({ kind: 'success' } as const);
+    },
     rows,
+    marked,
     deleted,
     liveBooks,
     requests,
@@ -425,6 +432,8 @@ describe('readCatalogCover', () => {
   });
 });
 
+const HELD_HASH = contentHash('0123456789abcdef0123456789abcdef');
+
 function downloading(world: ReturnType<typeof setup>, opened: Awaited<ReturnType<OpenFile>>) {
   const openFile: OpenFile = () => Promise.resolve(opened);
   const deps = { ...world, openFile, now: () => 1234 };
@@ -432,7 +441,7 @@ function downloading(world: ReturnType<typeof setup>, opened: Awaited<ReturnType
 }
 
 describe('downloadPublication', () => {
-  const held = { id: bookId('held-book') } as never;
+  const held = { id: bookId('held-book'), contentHash: HELD_HASH } as never;
 
   it.each([
     { kind: 'added', book: held },
@@ -454,6 +463,14 @@ describe('downloadPublication', () => {
       feedPosition: 3,
       downloadedAt: 1234,
     });
+  });
+
+  it('marks the book changed so the origin travels with it', async () => {
+    const world = setup();
+
+    await downloading(world, { kind: 'already-held', book: held, merge: {} as never });
+
+    expect(world.marked).toEqual([HELD_HASH]);
   });
 
   it('names the fallback file from the title and the format', async () => {

@@ -159,6 +159,7 @@ function deps(holdings: Holdings = {}): ExportCapturesDeps {
     update: notUsed,
     readSource: notUsed,
     readCover: notUsed,
+    markChanged: notUsed,
     storedBytes: notUsed,
   };
   const tags: TagRepository = {

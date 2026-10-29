@@ -84,6 +84,7 @@ vi.mock('./domains/library/adapters/indexeddb-opfs-library.repo', () => ({
     update: notUsed,
     readSource: notUsed,
     readCover: notUsed,
+    markChanged: notUsed,
     storedBytes: notUsed,
   }),
 }));

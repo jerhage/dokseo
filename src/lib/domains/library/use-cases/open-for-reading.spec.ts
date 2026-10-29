@@ -91,6 +91,7 @@ function fakeRepository(
     update: () => Promise.resolve(NO_BOOK),
     readSource: () => Promise.resolve(source),
     readCover: () => Promise.resolve(file(null)),
+    markChanged: () => Promise.resolve(WRITTEN),
     storedBytes: () => Promise.resolve({ kind: 'success', bytes: 0 }),
     readPageList: () => Promise.resolve({ kind: 'success', pageList: { kind: 'unlisted' } }),
     savePageList: () => Promise.resolve(WRITTEN),

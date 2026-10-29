@@ -61,6 +61,7 @@ function libraryRepository(
     update: notUsed,
     readSource: notUsed,
     readCover: notUsed,
+    markChanged: notUsed,
     storedBytes: notUsed,
     ...writes,
   };

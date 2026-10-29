@@ -80,6 +80,7 @@ function fakes(): Fakes {
       exportBookCaptures: unused,
       editBook: unused,
       saveReadingPlace: unused,
+      markBookChanged: unused,
       markFinished: unused,
       markUnread: unused,
       readLibrarySize: unused,

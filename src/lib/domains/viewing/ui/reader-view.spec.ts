@@ -293,6 +293,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
         world.stored = { ...world.stored, position: place };
         return { kind: 'success', book: world.stored };
       },
+      markBookChanged: () => Promise.reject(new Error('not used')),
       markFinished: () => Promise.reject(new Error('not used')),
       markUnread: () => Promise.reject(new Error('not used')),
       readLibrarySize: () => Promise.resolve({ kind: 'success', bytes: 0 }),

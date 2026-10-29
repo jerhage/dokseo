@@ -152,6 +152,7 @@ function repositories(into: World) {
     update: notUsed,
     readSource: notUsed,
     readCover: notUsed,
+    markChanged: notUsed,
     storedBytes: notUsed,
   };
   const tags: TagRepository = {

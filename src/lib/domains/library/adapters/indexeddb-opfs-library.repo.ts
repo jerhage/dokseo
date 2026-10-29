@@ -25,13 +25,14 @@ import type {
   SettledMarker,
 } from '$lib/shared/change-marker';
 import { parsedBookId } from '$lib/shared/ids';
-import type { BookId } from '$lib/shared/ids';
+import type { BookId, ContentHash } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { applyEdit } from '../domain/book/book';
 import type { Book, BookEdit } from '../domain/book/book';
 import {
   bookMarkers,
+  identityMarkers,
   editMarkers,
   heldBookMarkers,
   replacementMarkers,
@@ -480,6 +481,14 @@ function createLibraryRepository(tracking: ChangeTracking = 'marked'): LibraryRe
 
     readCover(id: BookId): Promise<FileLookup> {
       return readBlob(id, (keys) => keys.cover);
+    },
+
+    async markChanged(hash: ContentHash): Promise<LibraryWrite> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      const writes = markingWrites(tracking, identityMarkers(hash, Date.now()));
+      if (writes.length === 0) return WRITTEN;
+      await writeRecords(await database(), writes);
+      return WRITTEN;
     },
 
     async pendingChanges(): Promise<PendingMarkers> {

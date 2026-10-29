@@ -1069,6 +1069,15 @@ describe('the change markers of createLibraryRepository', () => {
     ]);
   });
 
+  it('marks only the book when it is told the book changed', async () => {
+    const written = await createLibraryRepository().markChanged(contentHash(HASH));
+
+    expect(written).toEqual({ kind: 'success' });
+    expect(outbox()).toEqual([
+      { kind: 'book', recordId: HASH, deleted: false, at: 42, changeId: expect.any(String) },
+    ]);
+  });
+
   it('writes no marker when the repository is built unmarked', async () => {
     shelve();
     const repository = createLibraryRepository('unmarked');
@@ -1076,6 +1085,7 @@ describe('the change markers of createLibraryRepository', () => {
     await repository.update(SHELVED.id, { alias: 'Mine' });
     await repository.add(ARRIVING, new Blob(['s']), null, INTRINSIC_ORDER, () => undefined);
     await repository.remove(SHELVED.id, REMOVED_AT);
+    await repository.markChanged(contentHash(HASH));
 
     expect(outbox()).toEqual([]);
   });

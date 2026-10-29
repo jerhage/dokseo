@@ -1,6 +1,6 @@
 import { partialMd5 } from '$lib/platform/crypto/partial-md5';
 import { requestPersistence } from '$lib/platform/storage/persistence';
-import type { BookId } from '$lib/shared/ids';
+import type { BookId, ContentHash } from '$lib/shared/ids';
 import type { PageSource } from '$lib/shared/page-source';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import { blobDigestHasher } from '../domains/library/adapters/blob-digest-hasher';
@@ -20,6 +20,8 @@ import { editBook } from '../domains/library/use-cases/edit-book';
 import type { EditBookResult } from '../domains/library/use-cases/edit-book';
 import { listBooks } from '../domains/library/use-cases/list-books';
 import type { ListBooksResult } from '../domains/library/use-cases/list-books';
+import { markBookChanged } from '../domains/library/use-cases/mark-book-changed';
+import type { MarkBookChangedResult } from '../domains/library/use-cases/mark-book-changed';
 import { markFinished } from '../domains/library/use-cases/mark-finished';
 import type { MarkFinishedResult } from '../domains/library/use-cases/mark-finished';
 import { markUnread } from '../domains/library/use-cases/mark-unread';
@@ -61,6 +63,7 @@ type LibraryUseCases = {
   readonly editBook: (id: BookId, edit: BookEdit) => Promise<EditBookResult>;
   readonly removeBook: (id: BookId) => Promise<RemoveBookResult>;
   readonly saveReadingPlace: (id: BookId, place: ReadingPlace) => Promise<SaveReadingPlaceResult>;
+  readonly markBookChanged: (hash: ContentHash) => Promise<MarkBookChangedResult>;
   readonly markFinished: (id: BookId) => Promise<MarkFinishedResult>;
   readonly markUnread: (id: BookId) => Promise<MarkUnreadResult>;
   readonly readLibrarySize: () => Promise<ReadLibrarySizeResult>;
@@ -109,6 +112,7 @@ function buildLibrary(repository: LibraryRepository, mergeInto: MergeInto): Libr
     removeBook: (id: BookId) => removeBook({ repository, now: Date.now }, id),
     saveReadingPlace: (id: BookId, place: ReadingPlace) =>
       saveReadingPlace({ repository, now: Date.now }, id, place),
+    markBookChanged: (hash: ContentHash) => markBookChanged({ repository }, hash),
     markFinished: (id: BookId) => markFinished({ repository, now: Date.now }, id),
     markUnread: (id: BookId) => markUnread({ repository }, id),
     readLibrarySize: () => readLibrarySize({ repository }),

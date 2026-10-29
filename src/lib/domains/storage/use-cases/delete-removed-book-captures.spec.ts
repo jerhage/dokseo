@@ -62,6 +62,7 @@ function world(outcomes: Outcomes = {}) {
     update: notUsed,
     readSource: notUsed,
     readCover: notUsed,
+    markChanged: notUsed,
     storedBytes: notUsed,
   };
   const deps: DeleteRemovedBookCapturesDeps = {

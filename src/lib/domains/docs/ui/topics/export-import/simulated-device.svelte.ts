@@ -117,6 +117,7 @@ class SimulatedDevice {
       update: notInTheDemo,
       readSource: notInTheDemo,
       readCover: notInTheDemo,
+      markChanged: notInTheDemo,
       storedBytes: notInTheDemo,
     };
     const tags: TagRepository = {

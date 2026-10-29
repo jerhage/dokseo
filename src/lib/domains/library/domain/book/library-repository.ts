@@ -4,7 +4,7 @@ import type {
   RecordVersions,
   SettledMarker,
 } from '$lib/shared/change-marker';
-import type { BookId } from '$lib/shared/ids';
+import type { BookId, ContentHash } from '$lib/shared/ids';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Book, BookEdit } from './book';
 import type { PageList, PageOrder } from './page-list';
@@ -101,6 +101,7 @@ interface LibraryRepository {
   readSource(id: BookId): Promise<FileLookup>;
   readCover(id: BookId): Promise<FileLookup>;
   storedBytes(): Promise<ByteCount>;
+  markChanged(hash: ContentHash): Promise<LibraryWrite>;
   pendingChanges(): Promise<PendingMarkers>;
   settleChanges(settled: readonly SettledMarker[]): Promise<LibraryWrite>;
   recordVersions(): Promise<RecordVersions>;

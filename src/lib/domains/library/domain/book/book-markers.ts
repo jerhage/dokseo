@@ -18,6 +18,10 @@ function bookMarkers(hash: string, deleted: boolean, at: number): readonly Chang
   return [changeMarker('book', hash, deleted, at), changeMarker('position', hash, deleted, at)];
 }
 
+function identityMarkers(hash: string, at: number): readonly ChangeMarker[] {
+  return [changeMarker('book', hash, false, at)];
+}
+
 function heldBookMarkers(hash: unknown, deleted: boolean, at: number): readonly ChangeMarker[] {
   return isText(hash) ? bookMarkers(hash, deleted, at) : [];
 }
@@ -45,4 +49,4 @@ function replacementMarkers(
   return [...heldBookMarkers(previousHash, true, at), ...added];
 }
 
-export { bookMarkers, editMarkers, heldBookMarkers, replacementMarkers };
+export { bookMarkers, editMarkers, heldBookMarkers, identityMarkers, replacementMarkers };

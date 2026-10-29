@@ -48,6 +48,7 @@ function fakeRepository(outcome: BookLookup) {
     },
     readSource: () => Promise.resolve({ kind: 'success', file: null }),
     readCover: () => Promise.resolve({ kind: 'success', file: null }),
+    markChanged: () => Promise.resolve({ kind: 'success' as const }),
     storedBytes: () => Promise.resolve({ kind: 'success', bytes: 0 }),
     readPageList: () => Promise.resolve({ kind: 'success', pageList: { kind: 'unlisted' } }),
     savePageList: () => Promise.resolve({ kind: 'success' }),

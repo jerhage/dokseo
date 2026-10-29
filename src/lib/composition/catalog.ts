@@ -24,6 +24,7 @@ import type {
 } from '../domains/catalog/use-cases/update-publication';
 import type {
   DownloadPublicationResult,
+  MarkBookChanged,
   OpenFile,
 } from '../domains/catalog/use-cases/download-publication';
 import { editCatalog } from '../domains/catalog/use-cases/edit-catalog';
@@ -121,6 +122,7 @@ type CatalogUseCases = {
 
 type CatalogLibrary = {
   readonly openFile: OpenFile;
+  readonly markBookChanged: MarkBookChanged;
   readonly replaceBookFile: ReplaceFile;
   readonly readBook: ReadBook;
 };
@@ -164,7 +166,13 @@ function buildCatalog(library: CatalogLibrary): CatalogUseCases {
       signal,
     ) =>
       downloadPublication(
-        { ...access, origins, openFile: library.openFile, now: Date.now },
+        {
+          ...access,
+          origins,
+          openFile: library.openFile,
+          markBookChanged: library.markBookChanged,
+          now: Date.now,
+        },
         publication,
         acquisition,
         feedPosition,

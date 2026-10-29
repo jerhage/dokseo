@@ -116,6 +116,7 @@ function setup(
     update: notUsed,
     readSource: notUsed,
     readCover: notUsed,
+    markChanged: notUsed,
     storedBytes: notUsed,
   };
   const builder: SourceBuilder = {

@@ -161,6 +161,7 @@ function deps(holdings: Holdings = {}): ExportBookCapturesDeps {
     update: notUsed,
     readSource: notUsed,
     readCover: notUsed,
+    markChanged: notUsed,
     storedBytes: notUsed,
   };
   const tags: TagRepository = {

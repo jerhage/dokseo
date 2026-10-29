@@ -72,6 +72,7 @@ function world(outcomes: Outcomes = {}) {
     update: notUsed,
     readSource: notUsed,
     readCover: notUsed,
+    markChanged: notUsed,
     storedBytes: notUsed,
   };
   const deps: RemoveBookAndCapturesDeps = {
@@ -186,6 +187,7 @@ function storedOrigin(stopAt: number, stop: Stop) {
     update: notUsed,
     readSource: notUsed,
     readCover: notUsed,
+    markChanged: notUsed,
     storedBytes: notUsed,
   };
   const removing: RemoveBookAndCapturesDeps = {
