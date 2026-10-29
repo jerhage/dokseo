@@ -8,6 +8,7 @@
   import { createDeviceDetails } from '$lib/domains/catalog/ui/device-details.svelte';
   import CatalogUnlockPrompt from '$lib/domains/catalog/ui/CatalogUnlockPrompt.svelte';
   import LibraryWithCatalogs from '$lib/domains/catalog/ui/LibraryWithCatalogs.svelte';
+  import { refreshOrigins } from '$lib/domains/catalog/ui/catalog-refresh';
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
   import { CATALOG_NEEDS } from '$lib/domains/library/ui/catalog-needs';
   import { refreshLibrary } from '$lib/domains/library/ui/library-refresh';
@@ -66,7 +67,8 @@
     choices={CATALOG_NEEDS}
     {notify}
     {unlock}
-    ondownloaded={() => void refreshLibrary(queryClient)}
+    ondownloaded={() =>
+      void Promise.all([refreshLibrary(queryClient), refreshOrigins(queryClient)])}
   />
 {/snippet}
 

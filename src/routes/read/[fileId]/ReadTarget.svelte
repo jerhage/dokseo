@@ -4,6 +4,7 @@
   import { getToaster } from '$lib/ui/components/toast-context';
   import type { Container } from '$lib/container';
   import CatalogUnlockPrompt from '$lib/domains/catalog/ui/CatalogUnlockPrompt.svelte';
+  import { refreshOrigins } from '$lib/domains/catalog/ui/catalog-refresh';
   import { CATALOG_NEEDS } from '$lib/domains/library/ui/catalog-needs';
   import { refreshLibrary } from '$lib/domains/library/ui/library-refresh';
   import ShelfKeysData from '$lib/domains/library/ui/ShelfKeysData.svelte';
@@ -54,7 +55,8 @@
                 choices={CATALOG_NEEDS}
                 {notify}
                 {unlock}
-                ondownloaded={() => void refreshLibrary(queryClient)}
+                ondownloaded={() =>
+                  void Promise.all([refreshLibrary(queryClient), refreshOrigins(queryClient)])}
               />
             {/if}
           {/snippet}

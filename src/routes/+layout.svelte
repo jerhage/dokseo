@@ -9,6 +9,7 @@
   import { createToaster } from '$lib/ui/components/toaster.svelte';
   import { buildContainer } from '$lib/container';
   import { provideContainer } from '$lib/context';
+  import { refreshCatalogRecords } from '$lib/domains/catalog/ui/catalog-refresh';
   import { CATALOG_NEEDS } from '$lib/domains/library/ui/catalog-needs';
   import { refreshLibrary } from '$lib/domains/library/ui/library-refresh';
   import SyncBackground from '$lib/domains/sync/ui/SyncBackground.svelte';
@@ -51,7 +52,8 @@
     sync={container.sync}
     choices={CATALOG_NEEDS}
     notify={toastNotify(toaster)}
-    onsynced={() => void refreshLibrary(queryClient)}
+    onsynced={() =>
+      void Promise.all([refreshLibrary(queryClient), refreshCatalogRecords(queryClient)])}
   />
   <svelte:boundary onerror={(error) => logUnexpected('render', error)}>
     {@render children()}
